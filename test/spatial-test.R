@@ -1,39 +1,32 @@
 require(rgdal)
 require(MCMCpack)
 
-# Read the counties in Alabama
+# Read the counties in Connecticut
 path <- "../data/tl_2010_09_county10/tl_2010_09_county10.shp"
 counties <- readOGR(path, layer = "tl_2010_09_county10")
 plot(counties)
 
-# Select Autauga county and plot it
-idx <- which(counties$NAME10 == 'Autauga')
+# Select a county and plot it
+idx <- which(counties$NAME10 == 'Fairfield')
 plot(counties[idx,])
 
-# How to sample uniformly from Autauga county?
-#   It's not a convex shape, so we can't just find its convex hull.
-#   We could put a convex envelope around it and sample from that!
+# Sample uniformly from the county
+# A bounding box around the county comes in the shapefile
+# Sample from that uniformly and subset to the county
 
-a <- counties[idx,]
-a@polygons
+lon.low <- a@bbox[1,1]
+lon.hi <- a@bbox[1,2]
+lat.low <- a@bbox[2,1]
+lat.hi <- a@bbox[2,2]
 
-V <- matrix(NA, 4, 2)
-V[1:2,] <- t(a@bbox)
-V[3,] <- c(V[1,1], V[2,2])
-V[4,] <- c(V[2,1], V[1,2])
-
-points(V)
-
-lambda <- rdirichlet(1000, rep(1,4))
-u <- lambda %*% V
-points(u, col = "blue")
-
-u <- as.data.frame(u)
-colnames(u) <- c("Longitude", "Latitude")
+n <- 4000
+u.lon <- runif(n, lon.low, lon.hi)
+u.lat <- runif(n, lat.low, lat.hi)
+u <- data.frame(Longitude = u.lon, Latitude = u.lat)
 coordinates(u) <- ~ Longitude + Latitude
 proj4string(u) <- proj4string(counties)
+points(u)
 
 # Now reject the ones outside of the county...
-idx <- which(over(u, counties)$NAME10 == "Autauga")
+idx <- which(over(u, counties)$NAME10 == "Fairfield")
 points(u[idx], col = "red")
-
