@@ -2,9 +2,8 @@ require(rgdal)
 require(MCMCpack)
 
 # Read the counties in Alabama
-path <- "~/Documents/datasets/alabama2010_countiestl_2010_01_county10.shp"
-# path <- "H:/work/projects/maf/20150225-revisions/mapping/counties/tl_2010_01_county10.shp"
-counties <- readOGR(path, layer = "tl_2010_01_county10")
+path <- "../data/tl_2010_09_county10/tl_2010_09_county10.shp"
+counties <- readOGR(path, layer = "tl_2010_09_county10")
 plot(counties)
 
 # Select Autauga county and plot it
@@ -14,8 +13,6 @@ plot(counties[idx,])
 # How to sample uniformly from Autauga county?
 #   It's not a convex shape, so we can't just find its convex hull.
 #   We could put a convex envelope around it and sample from that!
-
-chull(x, y = NULL)
 
 a <- counties[idx,]
 a@polygons
