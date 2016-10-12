@@ -1,0 +1,9 @@
+\.git$
+\.o$
+\.so$
+\.rds$
+doc$
+^README\.md$
+\.gitignore$
+Makefile
+^stcos$

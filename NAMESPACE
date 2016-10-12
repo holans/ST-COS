@@ -1,0 +1,6 @@
+useDynLib(stcos)
+
+import(Rcpp)
+
+# Export specific functions when we're further along
+exportPattern("*")
