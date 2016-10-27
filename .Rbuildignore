@@ -7,3 +7,4 @@ doc$
 \.gitignore$
 Makefile
 ^stcos$
+matlab
