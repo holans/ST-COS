@@ -1,5 +1,4 @@
 require(rgdal)
-require(MCMCpack)
 
 # Read the counties in Connecticut
 path <- "../data/tl_2010_09_county10/tl_2010_09_county10.shp"
@@ -10,9 +9,11 @@ plot(counties)
 idx <- which(counties$NAME10 == 'Fairfield')
 plot(counties[idx,])
 
-# Sample uniformly from the county
-# A bounding box around the county comes in the shapefile
-# Sample from that uniformly and subset to the county
+# Sample uniformly from the county.
+# A bounding box around the county comes in the shapefile.
+# Sample from that uniformly and subset to the county.
+# To sample uniformly from a rectangle, we can sample unoformly
+# from each coordinate independently.
 
 lon.low <- a@bbox[1,1]
 lon.hi <- a@bbox[1,2]
