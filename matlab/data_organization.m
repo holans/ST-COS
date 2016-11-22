@@ -1263,25 +1263,25 @@ X = cat(2,X0,cat(1,X1,zeros(n-size(X1,1),1)),cat(1,zeros(size(X1,1),1),X2,zeros(
 
 %Basis Functions
 
-SGBF1= ArealBi2_spacetime(county1,2013,level,[],[],100,0.5,0.5);
-SGBF3= ArealBi2_spacetime(county3,2009:2013,level,[],[],100,0.5,0.5);
-SGBF1_2012= ArealBi2_spacetime(county1_2012,2012,level,[],[],100,0.5,0.5);
-SGBF2_2012= ArealBi2_spacetime(county2_2012,2010:2012,level,[],[],100,0.5,0.5);
-SGBF3_2012= ArealBi2_spacetime(county3_2012,2008:2012,level,[],[],100,0.5,0.5);
-SGBF1_2011= ArealBi2_spacetime(county1_2011,2011,level,[],[],100,0.5,0.5);
-SGBF2_2011= ArealBi2_spacetime(county2_2011,2009:2011,level,[],[],100,0.5,0.5);
-SGBF3_2011= ArealBi2_spacetime(county3_2011,2007:2011,level,[],[],100,0.5,0.5);
-SGBF1_2010= ArealBi2_spacetime(county1_2010,2010,level,[],[],100,0.5,0.5);
-SGBF2_2010= ArealBi2_spacetime(county2_2010,2008:2010,level,[],[],100,0.5,0.5);
-SGBF3_2010= ArealBi2_spacetime(county3_2010,2006:2010,level,[],[],100,0.5,0.5);
-SGBF1_2009= ArealBi2_spacetime(county1_2009,2009,level,[],[],100,0.5,0.5);
-SGBF2_2009= ArealBi2_spacetime(county2_2009,2007:2009,level,[],[],100,0.5,0.5);
-SGBF3_2009= ArealBi2_spacetime(county3_2009,2005:2009,level,[],[],100,0.5,0.5);
-SGBF1_2008= ArealBi2_spacetime(county1_2008,2008,level,[],[],100,0.5,0.5);
-SGBF2_2008= ArealBi2_spacetime(county2_2008,2006:2008,level,[],[],100,0.5,0.5);
-SGBF1_2007= ArealBi2_spacetime(county1_2007,2007,level,[],[],100,0.5,0.5);
-SGBF2_2007= ArealBi2_spacetime(county2_2007,2005:2007,level,[],[],100,0.5,0.5);
-SGBF1_2006= ArealBi2_spacetime(county1_2006,2006,level,[],[],100,0.5,0.5);
+SGBF1 = ArealBi2_spacetime(county1,2013,level,[],[],100,0.5,0.5);
+SGBF3 = ArealBi2_spacetime(county3,2009:2013,level,[],[],100,0.5,0.5);
+SGBF1_2012 = ArealBi2_spacetime(county1_2012,2012,level,[],[],100,0.5,0.5);
+SGBF2_2012 = ArealBi2_spacetime(county2_2012,2010:2012,level,[],[],100,0.5,0.5);
+SGBF3_2012 = ArealBi2_spacetime(county3_2012,2008:2012,level,[],[],100,0.5,0.5);
+SGBF1_2011 = ArealBi2_spacetime(county1_2011,2011,level,[],[],100,0.5,0.5);
+SGBF2_2011 = ArealBi2_spacetime(county2_2011,2009:2011,level,[],[],100,0.5,0.5);
+SGBF3_2011 = ArealBi2_spacetime(county3_2011,2007:2011,level,[],[],100,0.5,0.5);
+SGBF1_2010 = ArealBi2_spacetime(county1_2010,2010,level,[],[],100,0.5,0.5);
+SGBF2_2010 = ArealBi2_spacetime(county2_2010,2008:2010,level,[],[],100,0.5,0.5);
+SGBF3_2010 = ArealBi2_spacetime(county3_2010,2006:2010,level,[],[],100,0.5,0.5);
+SGBF1_2009 = ArealBi2_spacetime(county1_2009,2009,level,[],[],100,0.5,0.5);
+SGBF2_2009 = ArealBi2_spacetime(county2_2009,2007:2009,level,[],[],100,0.5,0.5);
+SGBF3_2009 = ArealBi2_spacetime(county3_2009,2005:2009,level,[],[],100,0.5,0.5);
+SGBF1_2008 = ArealBi2_spacetime(county1_2008,2008,level,[],[],100,0.5,0.5);
+SGBF2_2008 = ArealBi2_spacetime(county2_2008,2006:2008,level,[],[],100,0.5,0.5);
+SGBF1_2007 = ArealBi2_spacetime(county1_2007,2007,level,[],[],100,0.5,0.5);
+SGBF2_2007 = ArealBi2_spacetime(county2_2007,2005:2007,level,[],[],100,0.5,0.5);
+SGBF1_2006 = ArealBi2_spacetime(county1_2006,2006,level,[],[],100,0.5,0.5);
 
 % S = cat(1,SGBF1,SGBF3,SGBF1_2012,SGBF2_2012,SGBF3_2012,...
 %     SGBF1_2011,SGBF2_2011,SGBF3_2011,SGBF1_2010,SGBF2_2010,SGBF3_2010,...
