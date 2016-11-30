@@ -1,8 +1,8 @@
-gibbs.stcos <- function(Z, S, sigma2.eps, C.inv, H, R = 1000,
+gibbs.stcos <- function(Z, S, sig2eps, C.inv, H, R = 1000,
 	report.period = R+1, burn = 0, thin = 1)
 {
 	Vinv <- 1 / sig2eps
-	HpVinv <- t(H) %*% diag(Vinv) 
+	HpVinv <- t(H) %*% diag(Vinv)
 	HpinvVH <- HpVinv %*% H
 	eig.HpinvVH <- eigen(HpinvVH)
 
@@ -26,7 +26,7 @@ gibbs.stcos <- function(Z, S, sigma2.eps, C.inv, H, R = 1000,
 	sig2K <- 1
 
 	for (j in 1:r) {
-		SpinvV[j,] <- S[,j] / sigma2.eps
+		SpinvV[j,] <- S[,j] / sig2eps
 	}
 
 	logger("Gibbs sampler starting\n")
