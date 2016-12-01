@@ -2,9 +2,12 @@ gibbs.stcos <- function(Z, S, sig2eps, C.inv, H, R = 1000,
 	report.period = R+1, burn = 0, thin = 1)
 {
 	Vinv <- 1 / sig2eps
-	HpVinv <- t(H) %*% diag(Vinv)
+	HpVinv <- t(H) %*% Diagonal(n = length(Vinv), x = Vinv)
 	HpinvVH <- HpVinv %*% H
+
+	logger("Begin computing eigenvalues/vectors of HpinvVH\n")
 	eig.HpinvVH <- eigen(HpinvVH)
+	logger("Finished computing eigenvalues/vectors of HpinvVH\n")
 
 	r <- ncol(S)
 	n <- nrow(Z)
@@ -20,49 +23,56 @@ gibbs.stcos <- function(Z, S, sig2eps, C.inv, H, R = 1000,
 
 	# Initial values
 	eta <- rnorm(r)
-	xi <- rep(1, n)
+	xi <- rep(1,n)
 	sig2mu <- 1
 	sig2xi <- 1
 	sig2K <- 1
 
+	logger("Begin computing SpinvV\n")
+	SpinvV <- matrix(NA, r, n)
 	for (j in 1:r) {
 		SpinvV[j,] <- S[,j] / sig2eps
 	}
+	SpinvVS <- SpinvV %*% S
+	logger("Finished computing SpinvV\n")
 
-	logger("Gibbs sampler starting\n")
+	logger("Begin Gibbs sampler\n")
 
 	for (tt in 1:R) {
 		# Full Conditional for mu_B
 		# sparse matrix inverse
-		PostLam <- diag(1 / (eig.HpinvVH$values + 1/sig2mu))
-		V.mu_B <- eig.HpinvVH$vectors * PostLam * t(eig.HpinvVH$vectors)
-		V.mu_B.half <- eig.HpinvVH$vectors * sqrt(PostLam)
-		mean.mu_B <- eig.HpinvVH$vectors * PostLam * V.mu_B * HpVinv * (Z - S*eta - xi)
-		mu_B <- mean.mu_B + V.mu_B.half * rnorm(n)
+		PostLam <- Diagonal(n_mu, 1 / (eig.HpinvVH$values + 1/sig2mu))
+		V.mu_B <- eig.HpinvVH$vectors %*% PostLam %*% t(eig.HpinvVH$vectors)	# SLOW
+		# V.mu_B <- eig.HpinvVH$vectors %*% (1 / (eig.HpinvVH$values + 1/sig2mu) * t(eig.HpinvVH$vectors))
+		V.mu_B.half <- eig.HpinvVH$vectors %*% sqrt(PostLam)
+		mean.mu_B <- eig.HpinvVH$vectors %*% PostLam %*% V.mu_B %*% HpVinv %*% (Z - S %*% eta - xi)
+		mu_B <- mean.mu_B + V.mu_B.half %*% rnorm(n_mu)
 
 		# Full Conditional for sig2mu
-		shapesig2mu <- 0.5 * t(mu_B) %*% mu_B
-		sig2mu <- 1/rgamma(1, n_mu/2 + 1, 1 / (0.000001 + shapesig2mu))
+		shape.sig2mu <- as.numeric(0.5 * t(mu_B) %*% mu_B)
+		sig2mu <- 1/rgamma(1, n_mu/2 + 1, 1 / (0.000001 + shape.sig2mu))
 
 		# Full Conditional for eta
-		zresid <- Z - H*mu_B - xi
-		V.eta <- solve((1/sig2K) * C.inv + SpinvV*S)
-		mean.eta <- V.eta * SpinvV * zresid
-		eta <- mean.eta + chol(V.eta) * rnorm(r)
+		# The solve below reports that the matrix is exactly singular
+		# How is this working in Matlab? Why is this not taking forever in Matlab?
+		zresid <- Z - H %*% mu_B - xi
+		V.eta <- solve(as.matrix((1/sig2K * C.inv) + SpinvVS))
+		mean.eta <- V.eta %*% (SpinvV %*% zresid)
+		eta <- mean.eta + chol(V.eta) %*% rnorm(r)
 
 		# Full Conditional for xi
 		# sparse matrix inverse
-		Sigma.xi.inv <- Vinv + 1 / sig2xi
+		Sigma.xi.inv <- Vinv + 1/sig2xi
 		Sigma.xi <- 1 / Sigma.xi.inv
-		mean.xi <- Sigma.xi * Vinv * (Z - S*eta - H*mu_B)
+		mean.xi <- Sigma.xi * Vinv * (Z - S %*% eta - H %*% mu_B)
 		xi <- mean.xi + sqrt(Sigma.xi) * rnorm(n)
 
 		# Full Conditional for sig2K
-		scale <- 0.5 * t(eta) %*% C.inv %*% eta
+		scale <- as.numeric(0.5 * t(eta) %*% C.inv %*% eta)
 		sig2K <- 1 / rgamma(1, r/2 + 1, 1 / (0.000001 + scale))
 
 		# Update Y
-		Y = S*eta + H*mu_B + xi
+		Y <- S %*% eta + H %*% mu_B + xi
 
 		if (tt %% report.period == 0) {
 			print(tt)
@@ -78,7 +88,7 @@ gibbs.stcos <- function(Z, S, sig2eps, C.inv, H, R = 1000,
 			Y.hist[tt,] <- Y
 		}
 
-		logger("Gibbs sampler finished\n")
+		logger("Finished Gibbs sampler\n")
 	}
 
 	list(mu_B.hist = mu_B.hist,
