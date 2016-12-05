@@ -1,5 +1,3 @@
-library(Matrix)
-
 # HMATRIX_OVERLAP.M 
 # calculate area of overlap of data polygons and grid polygons
 # to form a change of support matrix, H

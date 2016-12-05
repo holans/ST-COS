@@ -1,6 +1,6 @@
-library(rgdal)
-library(rgeos)
-library(raster)
+#library(rgdal)
+#library(rgeos)
+#library(raster)
 
 # From Matlab code:
 # proj4string(res3$area)
@@ -18,7 +18,7 @@ library(raster)
 # layername <- "period2_2007"
 # proj4string(area.orig)
 
-area.orig <- readOGR(shpfile, layer = layername, verbose = FALSE)
+# area.orig <- readOGR(shpfile, layer = layername, verbose = FALSE)
 
 get.period.data <- function(shpfile, datfile, layername)
 {

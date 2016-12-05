@@ -13,6 +13,7 @@ gibbs.stcos <- function(Z, S, sig2eps, C.inv, H, R = 1000,
 	n <- nrow(Z)
 	n_mu <- nrow(HpVinv)
 
+	tt.keep <- 0
 	mu_B.hist <- matrix(NA, R, n_mu)
 	xi.hist <- matrix(NA, R, n)
 	eta.hist <- matrix(NA, R, r)
@@ -39,6 +40,10 @@ gibbs.stcos <- function(Z, S, sig2eps, C.inv, H, R = 1000,
 	logger("Begin Gibbs sampler\n")
 
 	for (tt in 1:R) {
+		if (tt %% report.period == 0) {
+			logger("Begin iteration %d, using %0.2f GB RAM\n", tt, mem_used() / 2^30)
+		}
+
 		# Full Conditional for mu_B
 		# sparse matrix inverse
 		PostLam <- Diagonal(n_mu, 1 / (eig.HpinvVH$values + 1/sig2mu))
@@ -67,6 +72,10 @@ gibbs.stcos <- function(Z, S, sig2eps, C.inv, H, R = 1000,
 		mean.xi <- Sigma.xi * Vinv * (Z - S %*% eta - H %*% mu_B)
 		xi <- mean.xi + sqrt(Sigma.xi) * rnorm(n)
 
+		# Full Conditional xi
+		shape.sig2xi = as.numeric(0.5 * t(xi) %*% xi)
+        sig2xi <- 1 / rgamma(1, n/2 + 1, 1 / (0.000001 + shape.sig2xi))
+
 		# Full Conditional for sig2K
 		scale <- as.numeric(0.5 * t(eta) %*% C.inv %*% eta)
 		sig2K <- 1 / rgamma(1, r/2 + 1, 1 / (0.000001 + scale))
@@ -74,22 +83,20 @@ gibbs.stcos <- function(Z, S, sig2eps, C.inv, H, R = 1000,
 		# Update Y
 		Y <- S %*% eta + H %*% mu_B + xi
 
-		if (tt %% report.period == 0) {
-			print(tt)
-		}
-
 		# Save history
-		if ((tt > burn) & (tt %% thin == 0) {
-			mu_B[tt,] <- mu_B
-			eta[tt,] <- eta
-			xi[tt,] <- xi
-			sig2mu[tt] <- sig2mu
-			sig2K[tt] <- sig2K
-			Y.hist[tt,] <- Y
+		if ((tt > burn) & (tt %% thin == 0)) {
+			tt.keep <- tt.keep + 1
+			mu_B.hist[tt.keep,] <- as.numeric(mu_B)
+			eta.hist[tt.keep,] <- as.numeric(eta)
+			xi.hist[tt.keep,] <- as.numeric(xi)
+			sig2mu.hist[tt.keep] <- sig2mu
+			sig2xi.hist[tt.keep] <- sig2xi
+			sig2K.hist[tt.keep] <- sig2K
+			Y.hist[tt.keep,] <- as.numeric(Y)
 		}
-
-		logger("Finished Gibbs sampler\n")
 	}
+
+	logger("Finished Gibbs sampler\n")
 
 	list(mu_B.hist = mu_B.hist,
 		xi.hist = xi.hist,
