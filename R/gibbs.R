@@ -1,13 +1,19 @@
 gibbs.stcos <- function(Z, S, sig2eps, C.inv, H, R = 1000,
+	LamHpinvVH, EigHinvVHp,
 	report.period = R+1, burn = 0, thin = 1)
 {
 	Vinv <- 1 / sig2eps
 	HpVinv <- t(H) %*% Diagonal(n = length(Vinv), x = Vinv)
 	HpinvVH <- HpVinv %*% H
 
-	logger("Begin computing eigenvalues/vectors of HpinvVH\n")
-	eig.HpinvVH <- eigen(HpinvVH, symmetric = TRUE)
-	logger("Finished computing eigenvalues/vectors of HpinvVH\n")
+	# logger("Begin computing eigenvalues/vectors of HpinvVH\n")
+	# eig.HpinvVH <- eigen(HpinvVH, symmetric = TRUE)
+	# logger("Finished computing eigenvalues/vectors of HpinvVH\n")
+
+	eig.HpinvVH <- list(
+		vectors = EigHinvVHp,
+		values = LamHpinvVH
+	)
 
 	r <- ncol(S)
 	n <- nrow(Z)
@@ -58,7 +64,8 @@ gibbs.stcos <- function(Z, S, sig2eps, C.inv, H, R = 1000,
 			# mu_B <- mean.mu_B + V.mu_B.half %*% rnorm(n_mu)
 			# mu_B <- mean.mu_B + V.mu_B.half %*% rep(1, n_mu)
 			
-			mu_B <- mean.mu_B + (eig.HpinvVH$vectors %*% (sqrt(PostLam) * rnorm(n_mu)))
+			# mu_B <- mean.mu_B + (eig.HpinvVH$vectors %*% (sqrt(PostLam) * rnorm(n_mu)))
+			mu_B <- mean.mu_B + (eig.HpinvVH$vectors %*% (sqrt(PostLam) * rep(1, n_mu)))
 			# mu_B <- as.numeric(rmvnorm(1, mean.mu_B, V.mu_B))
 			
 			# browser()
