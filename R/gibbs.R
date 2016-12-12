@@ -14,13 +14,14 @@ gibbs.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 	n_mu <- nrow(HpVinv)
 
 	tt.keep <- 0
-	mu_B.hist <- matrix(NA, R, n_mu)
-	xi.hist <- matrix(NA, R, n)
-	eta.hist <- matrix(NA, R, r)
-	sig2mu.hist <- matrix(NA, R, 1)
-	sig2xi.hist <- matrix(NA, R, 1)
-	sig2K.hist <- matrix(NA, R, 1)
-	Y.hist <- matrix(NA, R, n)
+	R.keep <- ceiling((R - burn) / thin)
+	mu_B.hist <- matrix(NA, R.keep, n_mu)
+	xi.hist <- matrix(NA, R.keep, n)
+	eta.hist <- matrix(NA, R.keep, r)
+	sig2mu.hist <- matrix(NA, R.keep, 1)
+	sig2xi.hist <- matrix(NA, R.keep, 1)
+	sig2K.hist <- matrix(NA, R.keep, 1)
+	Y.hist <- matrix(NA, R.keep, n)
 
 	# Initial values
 	mu_B <- rnorm(n_mu)
