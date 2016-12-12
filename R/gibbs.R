@@ -1,19 +1,13 @@
-gibbs.stcos <- function(Z, S, sig2eps, C.inv, H, R = 1000,
-	LamHpinvVH, EigHinvVHp,
+gibbs.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 	report.period = R+1, burn = 0, thin = 1)
 {
 	Vinv <- 1 / sig2eps
 	HpVinv <- t(H) %*% Diagonal(n = length(Vinv), x = Vinv)
 	HpinvVH <- HpVinv %*% H
 
-	# logger("Begin computing eigenvalues/vectors of HpinvVH\n")
-	# eig.HpinvVH <- eigen(HpinvVH, symmetric = TRUE)
-	# logger("Finished computing eigenvalues/vectors of HpinvVH\n")
-
-	eig.HpinvVH <- list(
-		vectors = EigHinvVHp,
-		values = LamHpinvVH
-	)
+	logger("Begin computing eigenvalues/vectors of HpinvVH\n")
+	eig.HpinvVH <- eigen(HpinvVH, symmetric = TRUE)
+	logger("Finished computing eigenvalues/vectors of HpinvVH\n")
 
 	r <- ncol(S)
 	n <- nrow(Z)
@@ -30,8 +24,7 @@ gibbs.stcos <- function(Z, S, sig2eps, C.inv, H, R = 1000,
 
 	# Initial values
 	mu_B <- rnorm(n_mu)
-	# eta <- rnorm(r)
-	eta <- numeric(r)
+	eta <- rnorm(r)
 	xi <- numeric(n)
 	sig2mu <- 1
 	sig2xi <- 1
@@ -54,67 +47,37 @@ gibbs.stcos <- function(Z, S, sig2eps, C.inv, H, R = 1000,
 		}
 
 		# Full Conditional for mu_B, using sparse matrix inverse
-		if (TRUE) {
-			PostLam <- 1 / (eig.HpinvVH$values + 1/sig2mu)
-			V.mu_B <- eig.HpinvVH$vectors %*% (PostLam * t(eig.HpinvVH$vectors))
-			# V.mu_B.half <- eig.HpinvVH$vectors * sqrt(PostLam)
-			# V.mu_B.half <- chol(V.mu_B)
-			# V.mu_B.half <- eig.HpinvVH$vectors %*% Diagonal(length(PostLam), sqrt(PostLam))
-			mean.mu_B <- V.mu_B %*% HpVinv %*% (Z - S %*% eta - xi)
-			# mu_B <- mean.mu_B + V.mu_B.half %*% rnorm(n_mu)
-			# mu_B <- mean.mu_B + V.mu_B.half %*% rep(1, n_mu)
-			
-			# mu_B <- mean.mu_B + (eig.HpinvVH$vectors %*% (sqrt(PostLam) * rnorm(n_mu)))
-			mu_B <- mean.mu_B + (eig.HpinvVH$vectors %*% (sqrt(PostLam) * rep(1, n_mu)))
-			# mu_B <- as.numeric(rmvnorm(1, mean.mu_B, V.mu_B))
-			
-			# browser()
-			# Gamma <- t(H) %*% Diagonal(n, Vinv) %*% H + Diagonal(n_mu, 1/sig2mu)
-			# norm(solve(Gamma) - V.mu_B, "F")
-			# norm(chol(solve(Gamma)) - V.mu_B.half, "F")
-			# norm(solve(Gamma) - V.mu_B.half %*% t(V.mu_B.half), "F")
-			# norm(V.mu_B - V.mu_B.half %*% t(V.mu_B.half), "F")
-		}
-
-		if (FALSE) {
-			LamHpVinvH <- eig.HpinvVH$values
-			EigHpVinvV <- eig.HpinvVH$vectors
-			PostLaminv <- LamHpVinvH + 1/sig2mu
-			PostLam <- 1 / PostLaminv
-			PostCov <- EigHpVinvV %*% Diagonal(length(PostLam), PostLam) %*% t(EigHpVinvV)
-			muxi <- PostCov %*% (HpVinv %*% (Z - S %*% eta - xi))
-			# zz <- rnorm(n_mu)
-			zz <- rep(1, n_mu)
-			mu_B <- muxi + EigHpVinvV %*% Diagonal(length(PostLam), sqrt(PostLam)) %*% zz
-		}
+		PostLam <- 1 / (eig.HpinvVH$values + 1/sig2mu)
+		V.mu_B <- eig.HpinvVH$vectors %*% (PostLam * t(eig.HpinvVH$vectors))
+		mean.mu_B <- V.mu_B %*% (HpVinv %*% (Z - S %*% eta - xi))
+		mu_B <- mean.mu_B + (eig.HpinvVH$vectors %*% (sqrt(PostLam) * rnorm(n_mu)))
 
 		# Full Conditional for sig2mu
 		scale <- as.numeric(0.5 * t(mu_B) %*% mu_B)
-		printf("sig2mu scale = %f\n", scale)
 		sig2mu <- 1 / rgamma(1, n_mu/2 + 1, 0.000001 + scale)
 
 		# Full Conditional for eta
-		# zresid <- Z - H %*% mu_B - xi
-		# V.eta <- solve(as.matrix((1/sig2K * C.inv) + SpinvVS))
-		# mean.eta <- V.eta %*% (SpinvV %*% zresid)
-		# eta <- mean.eta + chol(V.eta) %*% rnorm(r)
+		zresid <- Z - H %*% mu_B - xi
+		V.eta <- solve(as.matrix((1/sig2K * C.inv) + SpinvVS))
+		mean.eta <- V.eta %*% (SpinvV %*% zresid)
+		eta <- mean.eta + chol(V.eta) %*% rnorm(r)
 
 		# Full Conditional for xi, using sparse matrix inverse
-		# Sigma.xi.inv <- Vinv + 1/sig2xi
-		# Sigma.xi <- 1 / Sigma.xi.inv
-		# mean.xi <- Sigma.xi * Vinv * (Z - S %*% eta - H %*% mu_B)
-		# xi <- mean.xi + sqrt(Sigma.xi) * rnorm(n)
+		Sigma.xi.inv <- Vinv + 1/sig2xi
+		Sigma.xi <- 1 / Sigma.xi.inv
+		mean.xi <- Sigma.xi * Vinv * (Z - S %*% eta - H %*% mu_B)
+		xi <- mean.xi + sqrt(Sigma.xi) * rnorm(n)
 
 		# Full Conditional sig2xi
-		# scale <- as.numeric(0.5 * t(xi) %*% xi)
-		# sig2xi <- 1 / rgamma(1, n/2 + 1, 0.000001 + scale)
+		scale <- as.numeric(0.5 * t(xi) %*% xi)
+		sig2xi <- 1 / rgamma(1, n/2 + 1, 0.000001 + scale)
 
 		# Full Conditional for sig2K
-		# scale <- as.numeric(0.5 * t(eta) %*% C.inv %*% eta)
-		# sig2K <- 1 / rgamma(1, r/2 + 1, 0.000001 + scale)
+		scale <- as.numeric(0.5 * t(eta) %*% C.inv %*% eta)
+		sig2K <- 1 / rgamma(1, r/2 + 1, 0.000001 + scale)
 
 		# Update Y
-		# Y <- S %*% eta + H %*% mu_B + xi
+		Y <- S %*% eta + H %*% mu_B + xi
 
 		# Save history
 		# TBD: This is very expensive to keep in memory. We should be able to
