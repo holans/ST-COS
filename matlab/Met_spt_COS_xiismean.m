@@ -1,4 +1,4 @@
-function [Y, S,eta, xi, xi2, sig2xi,sig2xi2, acceptW, varW,lambda_eta] = Met_spt_COS_xiismean(Z,T,X,S,sig2eps,Kinv,LamHpVinvH,EigHpVinvV,HpVinv,H,burn,thin)
+function [Y_hist, S, eta_hist, xi_hist, xi2_hist, sig2xi_hist, sig2xi2_hist, acceptW, varW, lambda_eta_hist] = Met_spt_COS_xiismean(Z,T,X,S,sig2eps,Kinv,LamHpVinvH,EigHpVinvV,HpVinv,H,burn,thin)
 % 
 % Z = Zagg;
 % H = eye(5757);
@@ -190,7 +190,5 @@ if mod(tt,thin) == 0 && tt > burn
 end
 
 end
-
-
 
 end
