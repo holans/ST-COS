@@ -10,8 +10,11 @@ logger('Input data loaded, now running MCMC');
  
 betahat = pinv(X0'*X0)*X0'*Zagg;
 
+burn = 0;
+thin = 1;
+
 %MCMC
-[Y, S,eta, xi, xi2, sig2xi,sig2xi2, acceptW, varW,lambda_eta] = Met_spt_COS_xiismean(Zagg,10000,X0,S1,sigmavar,Kinv,LamHpinvVH,EigHinvVHp,HpVinv,H);
+[Y, S,eta, xi, xi2, sig2xi,sig2xi2, acceptW, varW,lambda_eta] = Met_spt_COS_xiismean(Zagg,10000,X0,S1,sigmavar,Kinv,LamHpinvVH,EigHinvVHp,HpVinv,H,burn,thin);
 
 logger('MCMC finished, saving output');
 
