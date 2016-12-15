@@ -29,6 +29,7 @@ eta_hist = zeros(r,T_keep);
 sig2xi_hist = ones(1,T_keep);
 sig2xi2_hist = ones(1,T_keep);
 lambda_eta_hist =ones(T_keep,1);
+Y_hist = zeros(n,T_keep);
 % beta_hist = zeros(p,T_keep);
 % W = zeros(2,T_keep);
 
