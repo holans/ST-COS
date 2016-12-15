@@ -20,16 +20,17 @@ r = size(S,2);
 n = size(Z,1);
 nxi = size(HpVinv,1);
 
-xi_hist = zeros(nxi,T);
-xi2_hist = zeros(n,T);
-eta_hist = zeros(r,T);
+T_keep = ceil((T - burn) / thin);
+xi_hist = zeros(nxi,T_keep);
+xi2_hist = zeros(n,T_keep);
+eta_hist = zeros(r,T_keep);
 % eta_hist(:,1) = randn([r,1]);
-% Lambda = ones(r,T);
-sig2xi_hist = ones(1,T);
-sig2xi2_hist = ones(1,T);
-lambda_eta_hist =ones(T,1);
-% beta_hist = zeros(p,T);
-% W = zeros(2,T);
+% Lambda = ones(r,T_keep);
+sig2xi_hist = ones(1,T_keep);
+sig2xi2_hist = ones(1,T_keep);
+lambda_eta_hist =ones(T_keep,1);
+% beta_hist = zeros(p,T_keep);
+% W = zeros(2,T_keep);
 
 % Initial values
 xi = zeros(nxi,1);
@@ -56,19 +57,23 @@ b=0;
 tt = 1;
 tt_keep = 0;
 
-while tt < T 
-tt = tt + 1;
-
 msg = sprintf('Using burn = %d and thin = %d', burn, thin);
 logger(msg);
 
-msg = sprintf('Starting iteration %d', tt);
-logger(msg);
+while tt < T 
+tt = tt + 1;
 
 if mod(tt,bb)==0
     b=1;
 else
     b=0;
+end
+
+if mod(tt,1) == 0
+	msg = sprintf('Starting iteration %d', tt);
+	logger(msg);
+	% disp(tt);
+	% disp([acceptW/tt, varW]);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -148,7 +153,7 @@ PostLam = (1./PostLaminv);
 muxi1 = (Vinv.*(Z-X*beta - S*eta - H*xi));
 muxi =PostLam.*muxi1;
 xispatial = sqrt(PostLam).*real(randn([n,1]));
-xi2(:,tt) = muxi + xispatial;
+xi2 = muxi + xispatial;
 
 % % 
 %    shapesig2xi2 = 0.5*(xi2(:,tt)'*xi2(:,tt)); 
@@ -166,11 +171,14 @@ lambda_eta =1/gamrnd((r/2 +1),(1/(0.000001+scale)));
  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Y(:,tt) = X*beta+S*eta + H*xi + xi2;
+Y = X*beta+S*eta + H*xi + xi2;
 
 
 if mod(tt,thin) == 0 && tt > burn
-	tt_keep += 1;
+	tt_keep = tt_keep + 1;
+
+	msg = sprintf('\tSaving item %d to history', tt_keep);
+	logger(msg);
 
 	xi_hist(:,tt_keep) = xi;
 	xi2_hist(:,tt_keep) = xi2;
@@ -178,11 +186,7 @@ if mod(tt,thin) == 0 && tt > burn
 	sig2xi_hist(:,tt_keep) = sig2xi;
 	sig2xi2_hist(:,tt_keep) = sig2xi2;
 	lambda_eta_hist(tt_keep,:) = lambda_eta;
-end
-
-if mod(tt,1)==0
-disp(tt);
-% disp([acceptW/tt, varW]);
+	Y_hist(:,tt_keep) = Y;
 end
 
 end
