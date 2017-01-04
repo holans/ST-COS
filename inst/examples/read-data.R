@@ -23,12 +23,12 @@
 get.period.data <- function(shpfile, datfile, layername)
 {
 	area.orig <- readOGR(shpfile, layer = layername, verbose = FALSE)
-	if (is.na(proj4string(area.orig))) {
-		area.orig <- readOGR(shpfile, layer = layername, verbose = FALSE,
-			p4s = "+proj=aea +lat_0=24.395833 +lon_0=-96 +x_0=0 +y_0=0 +units=us-ft +ellps=GRS80")
-	} else {
-		area.orig <- spTransform(area.orig, "+proj=aea +lat_0=24.395833 +lon_0=-96 +x_0=0 +y_0=0 +units=us-ft +ellps=GRS80")
-	}
+	#if (is.na(proj4string(area.orig))) {
+	#	area.orig <- readOGR(shpfile, layer = layername, verbose = FALSE,
+	#		p4s = "+proj=aea +lat_0=24.395833 +lon_0=-96 +x_0=0 +y_0=0 +units=us-ft +ellps=GRS80")
+	#} else {
+	#	area.orig <- spTransform(area.orig, "+proj=aea +lat_0=24.395833 +lon_0=-96 +x_0=0 +y_0=0 +units=us-ft +ellps=GRS80")
+	#}
 	# area.tx <- spTransform(area.orig, "+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=24.395833 +lon_0=-96 +x_0=0 +y_0=0 +datum=NAD83 +units=us-ft +no_defs +ellps=GRS80 +towgs84=0,0,0")
 
 	states <- area.orig@data$STATE

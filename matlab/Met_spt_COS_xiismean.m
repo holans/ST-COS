@@ -105,7 +105,11 @@ end
 % xispatial = EigHpVinvV*(sqrt(PostLam)*randn([size(HpVinv,1),1]));
 % xi(:,tt) = muxi + xispatial;
 
-PostLaminv = diag(LamHpVinvH) + (1/sig2xi)*ones(size(LamHpVinvH,1),1);
+% Introduce the mistake from Jon's code
+sig2xi_wrong = 1;
+
+PostLaminv = diag(LamHpVinvH) + (1/sig2xi_wrong)*ones(size(LamHpVinvH,1),1);
+%PostLaminv = diag(LamHpVinvH) + (1/sig2xi)*ones(size(LamHpVinvH,1),1);
 PostLam = 1./PostLaminv;
 PostCov = EigHpVinvV * ((PostLam * ones(1, nxi)) .* EigHpVinvV');
 muxi = (PostCov*(HpVinv*(Z -X*beta- S*eta - xi2)));
