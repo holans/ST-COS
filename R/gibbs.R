@@ -48,36 +48,43 @@ gibbs.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 		}
 
 		# Full Conditional for mu_B, using sparse matrix inverse
+		logger("mu_B step\n")
 		PostLam <- 1 / (eig.HpinvVH$values + 1/sig2mu)
 		V.mu_B <- eig.HpinvVH$vectors %*% (PostLam * t(eig.HpinvVH$vectors))
 		mean.mu_B <- V.mu_B %*% (HpVinv %*% (Z - S %*% eta - xi))
 		mu_B <- mean.mu_B + (eig.HpinvVH$vectors %*% (sqrt(PostLam) * rnorm(n_mu)))
 
 		# Full Conditional for sig2mu
+		logger("sig2mu step\n")
 		scale <- as.numeric(0.5 * t(mu_B) %*% mu_B)
 		sig2mu <- 1 / rgamma(1, n_mu/2 + 1, 0.000001 + scale)
 
 		# Full Conditional for eta
+		logger("eta step\n")
 		zresid <- Z - H %*% mu_B - xi
 		V.eta <- solve(as.matrix((1/sig2K * C.inv) + SpinvVS))
 		mean.eta <- V.eta %*% (SpinvV %*% zresid)
 		eta <- mean.eta + chol(V.eta) %*% rnorm(r)
 
 		# Full Conditional for xi, using sparse matrix inverse
+		logger("xi step\n")
 		Sigma.xi.inv <- Vinv + 1/sig2xi
 		Sigma.xi <- 1 / Sigma.xi.inv
 		mean.xi <- Sigma.xi * Vinv * (Z - S %*% eta - H %*% mu_B)
 		xi <- mean.xi + sqrt(Sigma.xi) * rnorm(n)
 
 		# Full Conditional sig2xi
+		logger("sig2xi step\n")
 		scale <- as.numeric(0.5 * t(xi) %*% xi)
 		sig2xi <- 1 / rgamma(1, n/2 + 1, 0.000001 + scale)
 
 		# Full Conditional for sig2K
+		logger("sig2K step\n")
 		scale <- as.numeric(0.5 * t(eta) %*% C.inv %*% eta)
 		sig2K <- 1 / rgamma(1, r/2 + 1, 0.000001 + scale)
 
 		# Update Y
+		logger("Y step\n")
 		Y <- S %*% eta + H %*% mu_B + xi
 
 		# Save history
