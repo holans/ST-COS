@@ -1,0 +1,59 @@
+\documentclass[10pt]{article}
+
+\usepackage{araim-common}
+\usepackage{araim-tex}
+
+\makeatletter
+\def\blfootnote{\xdef\@thefnmark{}\@footnotetext}
+\makeatother
+
+\title{Note on Prediction in STCOS Model}
+%\date{}
+\author{Andrew M. Raim
+\vspace{0.5em} \\
+$^*$Center for Statistical Research and Methodology, U.S. Census Bureau
+}
+
+\begin{document}
+
+\maketitle
+
+% ---------------------------------------------------
+\section{Introduction}
+\label{sec:intro}
+Recall that the process model in \citet{BradleyEtAl2016-STAT} is
+%
+\begin{align*}
+Y_t^{(\ell)}(A) = h(A)^T \mu_B + \psi_t^{(\ell)}(A)^T \eta + \xi_t^{(\ell)}(A).
+\end{align*}
+%
+Our first objectives are to reproduce Figures 1(g) and 1(h). These represent 2013 3-year ACS estimates and standard deviations from the model. The model-based estimate from the paper is written as
+%
+\begin{align*}
+\hat{Y}_t^{(\ell)}(A) = \E[ Y_t^{(\ell)}(A) \mid \{ Z_t^{(\ell)}(A) \} ],
+\quad A \in D_{t,A}^{(\ell)};
+\quad t = T_L, \ldots, T_U, 
+\quad \ell = 1,3,5.
+\end{align*}
+%
+From this expression, the quantity $\hat{Y}_t^{(\ell)}(A)$ could be approximated using MCMC draws $\{ Y_t^{(\ell, r)}(A) : r = 1, \ldots, R \}$ as
+%
+\begin{align*}
+\frac{1}{R} \sum_{r=1}^R Y_t^{(\ell, r)}(A).
+\end{align*}
+%
+However, this does not help us to compute predictions for parts of space-time that did not have observations. One notable example is that the model was fit without 2013 3-year ACS data (which is being displayed in the figures of interest). Then how should we compute its predictions? Another idea is to use draws of the parameters $\{ \eta^{(r)} : r = 1, \ldots, R \}$ and $\{ \mu_B^{(r)} : r = 1, \ldots, R \}$, so that
+%
+\begin{align*}
+\hat{Y}_t^{(\ell)}(A) = \frac{1}{R} \sum_{r=1}^R \left[ h(A)^T \mu_B^{(r)} + \psi_t^{(\ell)}(A)^T \eta^{(r)} \right].
+\end{align*}
+%
+The complication here is that we need to compute $\psi_t^{(\ell)}(A)$ for the new space-time point.
+
+
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+%\input{references.bbl}
+
+\end{document}
