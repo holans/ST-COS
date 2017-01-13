@@ -58,7 +58,7 @@ compute.overlap <- function(D, G, denomflag, Dxyflag, Gxyflag, n_mc, report.peri
 
 	for (k in 1:nd) {
 		if (k %% report.period == 0) {
-			logger("Location: %d\n", k)
+			logger("Location %d of %d\n", k, nd)
 		}
 
 		# if (Dxyflag == 1) {
@@ -70,7 +70,7 @@ compute.overlap <- function(D, G, denomflag, Dxyflag, Gxyflag, n_mc, report.peri
 		# }
 		
 		dd <- D[k,]
-		#Darea <- gArea(dd)
+		Darea <- gArea(dd)
 
 		#dd.xmin <- dd@bbox[1,1]
 		#dd.xmax <- dd@bbox[1,2]
