@@ -7,11 +7,11 @@
 \def\blfootnote{\xdef\@thefnmark{}\@footnotetext}
 \makeatother
 
-\title{Note on Prediction in STCOS Model}
+\title{Questions about Prediction in STCOS Model}
 %\date{}
 \author{Andrew M. Raim
 \vspace{0.5em} \\
-$^*$Center for Statistical Research and Methodology, U.S. Census Bureau
+Center for Statistical Research and Methodology, U.S. Census Bureau
 }
 
 \begin{document}
@@ -42,14 +42,69 @@ From this expression, the quantity $\hat{Y}_t^{(\ell)}(A)$ could be approximated
 \frac{1}{R} \sum_{r=1}^R Y_t^{(\ell, r)}(A).
 \end{align*}
 %
-However, this does not help us to compute predictions for parts of space-time that did not have observations. One notable example is that the model was fit without 2013 3-year ACS data (which is being displayed in the figures of interest). Then how should we compute its predictions? Another idea is to use draws of the parameters $\{ \eta^{(r)} : r = 1, \ldots, R \}$ and $\{ \mu_B^{(r)} : r = 1, \ldots, R \}$, so that
+However, this does not permit predictions for parts of space-time that did not have observations, which is what is needed to reproduce Figures 1(g) and 1(h). Then how should we compute predictions? Another idea is to use draws of the parameters $\{ \eta^{(r)} : r = 1, \ldots, R \}$ and $\{ \mu_B^{(r)} : r = 1, \ldots, R \}$, so that
 %
-\begin{align*}
+\begin{align}
 \hat{Y}_t^{(\ell)}(A) = \frac{1}{R} \sum_{r=1}^R \left[ h(A)^T \mu_B^{(r)} + \psi_t^{(\ell)}(A)^T \eta^{(r)} \right].
-\end{align*}
+\label{eqn:predict-mcmc}
+\end{align}
 %
-The complication here is that we need to compute $\psi_t^{(\ell)}(A)$ for the new space-time point, which is also not quite clear.
+The complication here is that we need to compute $\psi_t^{(\ell)}(A)$ for the new space-time point, which is also not quite clear. The following block of Matlab code in \code{data\_organization.m} computes the basis functions.
 
+\begin{lstlisting}
+%Basis Functions
+SGBF1 = ArealBi2_spacetime(county1,2013,level,[],[],100,0.5,0.5);
+SGBF3 = ArealBi2_spacetime(county3,2009:2013,level,[],[],100,0.5,0.5);
+SGBF1_2012 = ArealBi2_spacetime(county1_2012,2012,level,[],[],100,0.5,0.5);
+SGBF2_2012 = ArealBi2_spacetime(county2_2012,2010:2012,level,[],[],100,0.5,0.5);
+SGBF3_2012 = ArealBi2_spacetime(county3_2012,2008:2012,level,[],[],100,0.5,0.5);
+SGBF1_2011 = ArealBi2_spacetime(county1_2011,2011,level,[],[],100,0.5,0.5);
+SGBF2_2011 = ArealBi2_spacetime(county2_2011,2009:2011,level,[],[],100,0.5,0.5);
+SGBF3_2011 = ArealBi2_spacetime(county3_2011,2007:2011,level,[],[],100,0.5,0.5);
+SGBF1_2010 = ArealBi2_spacetime(county1_2010,2010,level,[],[],100,0.5,0.5);
+SGBF2_2010 = ArealBi2_spacetime(county2_2010,2008:2010,level,[],[],100,0.5,0.5);
+SGBF3_2010 = ArealBi2_spacetime(county3_2010,2006:2010,level,[],[],100,0.5,0.5);
+SGBF1_2009 = ArealBi2_spacetime(county1_2009,2009,level,[],[],100,0.5,0.5);
+SGBF2_2009 = ArealBi2_spacetime(county2_2009,2007:2009,level,[],[],100,0.5,0.5);
+SGBF3_2009 = ArealBi2_spacetime(county3_2009,2005:2009,level,[],[],100,0.5,0.5);
+SGBF1_2008 = ArealBi2_spacetime(county1_2008,2008,level,[],[],100,0.5,0.5);
+SGBF2_2008 = ArealBi2_spacetime(county2_2008,2006:2008,level,[],[],100,0.5,0.5);
+SGBF1_2007 = ArealBi2_spacetime(county1_2007,2007,level,[],[],100,0.5,0.5);
+SGBF2_2007 = ArealBi2_spacetime(county2_2007,2005:2007,level,[],[],100,0.5,0.5);
+SGBF1_2006 = ArealBi2_spacetime(county1_2006,2006,level,[],[],100,0.5,0.5);
+
+
+S = cat(1,SGBF1,SGBF1_2012,SGBF1_2011,SGBF1_2010,SGBF1_2009,SGBF1_2008,SGBF1_2007,SGBF1_2006,...
+    SGBF2_2012,SGBF2_2011,SGBF2_2010,SGBF2_2009,SGBF2_2008,SGBF2_2007,...
+    SGBF3,SGBF3_2012,SGBF3_2011,SGBF3_2010,SGBF3_2009);
+
+[S1,idx]=licols(S);
+\end{lstlisting}
+%
+The matrix \code{S1} was used as the design matrix in the MCMC. One issue is that licols does not appear to be a built-in Matlab function. I found a version on the web at \url{https://www.mathworks.com/matlabcentral/answers/49984-how-to-remove-dependent-rows-in-a-matrix}, but am not sure if this is the same thing Jon used. But let's move forward assuming that it is. To set up the covariate for 3-year 2013 ACS, I assume I should run something like this.
+%
+\begin{lstlisting}
+SGBF2 = ArealBi2_spacetime(county2, 2013, level, [], [], 100, 0.5, 0.5);
+[SGBF2_1, idx_new] = licols(SGBF2);
+\end{lstlisting}
+%
+The problem now is that \code{SGBF2\_1} is not compatible with the dimension of $\eta$ that we have used to fit the model. The matrix \code{S} is $32836 \times 4750$, \code{S1} is $32836 \times 1250$, and \code{idx} is a vector of length $1250$. Using my guess code, we get that \code{SGBF2} is $1838 \times 4750$, \code{SGBF2\_1} is $1838 \times 734$, and \code{idx} is is a vector of length $734$. This \code{SGBF2\_1} is obviously incompatible with the prediction method \eqref{eqn:predict-mcmc}. Perhaps, instead, I should use \code{idx} to pick out the correct columns of \code{SGBF2}, as
+%
+\begin{lstlisting}
+SGBF2_1 = SGBF2(:,idx);
+\end{lstlisting}
+%
+which would at least yield a \code{SGBF2\_1} compatible with \eqref{eqn:predict-mcmc}. This may be a good time to ask; otherwise, it may be difficult to tell if we are accurately reproducing Jon's results.
+
+\vspace{1em}
+\noindent
+To summarize, the outstanding questions are:
+%
+\begin{enumerate*}
+\item How did Jon compute predictions?
+\item Which \code{licols} function did Jon use?
+\item How did Jon compute the design matrix for the 3-year 2013 ACS domain, if they are needed?
+\end{enumerate*}
 
 
 \bibliographystyle{plainnat}
