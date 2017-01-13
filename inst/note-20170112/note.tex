@@ -45,11 +45,22 @@ From this expression, the quantity $\hat{Y}_t^{(\ell)}(A)$ could be approximated
 However, this does not permit predictions for parts of space-time that did not have observations, which is what is needed to reproduce Figures 1(g) and 1(h). Then how should we compute predictions? Another idea is to use draws of the parameters $\{ \eta^{(r)} : r = 1, \ldots, R \}$ and $\{ \mu_B^{(r)} : r = 1, \ldots, R \}$, so that
 %
 \begin{align}
-\hat{Y}_t^{(\ell)}(A) = \frac{1}{R} \sum_{r=1}^R \left[ h(A)^T \mu_B^{(r)} + \psi_t^{(\ell)}(A)^T \eta^{(r)} \right].
+\hat{Y}_t^{(\ell)}(A) \approx \frac{1}{R} \sum_{r=1}^R \mu_t^{(\ell, r)}(A), \quad
+\text{where $\mu_t^{(\ell, r)}(A) = h(A)^T \mu_B^{(r)} + \psi_t^{(\ell)}(A)^T \eta^{(r)}$}.
 \label{eqn:predict-mcmc}
 \end{align}
 %
-The complication here is that we need to compute $\psi_t^{(\ell)}(A)$ for the new space-time point, which is also not quite clear. The following block of Matlab code in \code{data\_organization.m} computes the basis functions.
+To compute the posterior standard deviation, I am guessing that the computation
+\begin{align*}
+\sigma_t^{(\ell)}(A) \approx \left[
+\frac{1}{R-1} \sum_{r=1}^R \left\{ \mu_t^{(\ell, r)}(A) - \overline{\mu_t^{(\ell, \cdot)}(A)} \right\}^2
+\right]^{1/2}, \quad
+\text{where $\overline{\mu_t^{(\ell, \cdot)}(A)} = \frac{1}{R} \sum_{r=1}^R \mu_t^{(\ell, r)}(A)$}
+\end{align*}
+%
+was used.
+
+A complication here is that we need to compute $\psi_t^{(\ell)}(A)$ for the new space-time point, which is also not quite clear. The following block of Matlab code in \code{data\_organization.m} computes the basis functions.
 
 \begin{lstlisting}
 %Basis Functions
@@ -81,30 +92,45 @@ S = cat(1,SGBF1,SGBF1_2012,SGBF1_2011,SGBF1_2010,SGBF1_2009,SGBF1_2008,SGBF1_200
 [S1,idx]=licols(S);
 \end{lstlisting}
 %
-The matrix \code{S1} was used as the design matrix in the MCMC. One issue is that licols does not appear to be a built-in Matlab function. I found a version on the web at \url{https://www.mathworks.com/matlabcentral/answers/49984-how-to-remove-dependent-rows-in-a-matrix}, but am not sure if this is the same thing Jon used. But let's move forward assuming that it is. To set up the covariate for 3-year 2013 ACS, I assume I should run something like this.
+The matrix \code{S1} was used as the design matrix in the MCMC. One issue is that licols does not appear to be a built-in Matlab function. I found a version on the web at \url{https://www.mathworks.com/matlabcentral/answers/49984-how-to-remove-dependent-rows-in-a-matrix}, but am not sure if this is the same thing Jon used. But let's move forward assuming that it is. To set up the covariate for 3-year 2013 ACS, I assume I should run something like this,
 %
 \begin{lstlisting}
-SGBF2 = ArealBi2_spacetime(county2, 2013, level, [], [], 100, 0.5, 0.5);
-[SGBF2_1, idx_new] = licols(SGBF2);
+SGBF3 = ArealBi2_spacetime(county3, 2013, level, [], [], 100, 0.5, 0.5);
+[SGBF3_1, idx] = licols(SGBF3);
 \end{lstlisting}
 %
-The problem now is that \code{SGBF2\_1} is not compatible with the dimension of $\eta$ that we have used to fit the model. The matrix \code{S} is $32836 \times 4750$, \code{S1} is $32836 \times 1250$, and \code{idx} is a vector of length $1250$. Using my guess code, we get that \code{SGBF2} is $1838 \times 4750$, \code{SGBF2\_1} is $1838 \times 734$, and \code{idx} is is a vector of length $734$. This \code{SGBF2\_1} is obviously incompatible with the prediction method \eqref{eqn:predict-mcmc}. Perhaps, instead, I should use \code{idx} to pick out the correct columns of \code{SGBF2}, as
-%
-\begin{lstlisting}
-SGBF2_1 = SGBF2(:,idx);
-\end{lstlisting}
-%
-which would at least yield a \code{SGBF2\_1} compatible with \eqref{eqn:predict-mcmc}. This may be a good time to ask; otherwise, it may be difficult to tell if we are accurately reproducing Jon's results.
+Here, I am attempting to compute basis functions for 2013 on the complete set of counties, which are contained in \code{county3}. I am then using \code{idx} to pick out the columns of \code{SGBF3} corresponding to the ones used to fit the MCMC. Now, \code{SGBF3\_1} is a $3109 \times 1250$ matrix. We also need to compute the overlaps $h(A)$ that correspond to this area. The matrix \code{H.new} of these overlaps should be  $3109 \times 3109$; I am thinking this should just be the identity matrix, since predictions are being requested on the fine-level spatial support (denoted $D_B$ in the paper).
 
-\vspace{1em}
+\vspace{0.5em}
 \noindent
-To summarize, the outstanding questions are:
+To summarize, the outstanding questions were:
 %
 \begin{enumerate*}
-\item How did Jon compute predictions?
+\item How did Jon compute predictions and their standard deviations?
 \item Which \code{licols} function did Jon use?
-\item How did Jon compute the design matrix for the 3-year 2013 ACS domain, if they are needed?
+\item How did Jon compute the design matrix $S$ and the overlap matrix $H$ for the 3-year 2013 ACS domain, if they are needed?
 \end{enumerate*}
+%
+Using the assumptions I have made above, I get the results in Figure~\ref{fig:post}, which appear to be somewhat close to Figures 1(g) and 1(h) in \citet{BradleyEtAl2016-STAT}. Note that I am using only 1,000 of the available 10,000 draws because I am using my home PC which has limited memory.
+
+\begin{figure}
+\centering
+\begin{subfigure}[b]{.95\textwidth}
+  \centering
+  \includegraphics[width=0.95\textwidth]{post-mean.pdf}
+  \label{fig:post-mean}
+\end{subfigure}
+
+\begin{subfigure}[b]{.95\textwidth}
+  \centering
+  \includegraphics[width=0.95\textwidth]{post-sd.pdf}
+  \label{fig:post-sd}
+\end{subfigure}
+\caption{Posterior mean and standard deviation using my assumptions.}
+\label{fig:post}
+\end{figure}
+
+
 
 
 \bibliographystyle{plainnat}
