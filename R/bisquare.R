@@ -15,6 +15,12 @@ local.bisquare.basis.points <- function(uu, times, w.s, w.t, cc, gg)
 	m.t <- length(gg)
 	Psi <- array(0, dim = c(q, r, m.t))
 
+	# browser()
+	G <- as.matrix(dist(cbind(cc, gg)))
+	G[lower.tri(G)] <- NA
+	rl <- w.s * quantile(G[G>0], 0.05, na.rm = TRUE)
+	# S <- matrix(0, nrow(crd), nrow(level1) + nrow(level2) + nrow(level3))
+
 	for (i in 1:q) {
 		u <- uu[i,]
 		dist.u <- sqrt(rowSums((matrix(u, r, d, byrow = TRUE) - cc)^2))
@@ -23,7 +29,8 @@ local.bisquare.basis.points <- function(uu, times, w.s, w.t, cc, gg)
 		idx.t <- which(dist.t <= w.t)
 		if (length(idx.u) > 0) {
 			for (idx in idx.t) {
-				Psi[i, idx.u, idx] <- (1 - dist.u[idx.u]^2/w.s^2 - dist.t[idx]^2/w.t^2)^2
+				# Psi[i, idx.u, idx] <- (1 - dist.u[idx.u]^2/w.s^2 - dist.t[idx]^2/w.t^2)^2
+				Psi[i, idx.u, idx] <- (1 - dist.u[idx.u]^2 / rl^2 - dist.t[idx]^2 / w.t^2)^2
 			}
 		}
 	}
@@ -73,6 +80,8 @@ local.bisquare.basis.domain <- function(D, times, w.s, w.t, cc, gg, n = 500)
 
 	# TBD: Check this against Jon's code. I just made this up so far.
 
+	logger("Begin computing bisquare basis for given domain and times\n")
+
 	for (k in 1:length(times)) {
 		for (i in 1:n) {
 			logger("Computing bisquare basis for time %f, area %d in domain\n", times[k], i)
@@ -80,6 +89,8 @@ local.bisquare.basis.domain <- function(D, times, w.s, w.t, cc, gg, n = 500)
 			S[i,] <- S[i,] + as.numeric(ret)
 		}
 	}
+
+	logger("Finished computing bisquare basis for given domain and times\n")
 
 	return(S / m.t)
 }
