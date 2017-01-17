@@ -79,3 +79,31 @@ level3 <- matrix(NA, 0, 0)
 # dim(S1)
 
 S1 <- ArealBi2(D, times = 2013, level, B = 100, srad = 0.5, trad = 0.5, report.period = 1)
+
+
+# Compute the full S matrix, the same way as Jon's code
+SGBF1 <- ArealBi2(county1, times = 2013, cc = level[,1:2], B = 100, w.s = 0.5, w.t = 0.5);
+SGBF3 <- ArealBi2(county3, times = 2009:2013, cc = level[,1:2], B = 100, w.s = 0.5, w.t = 0.5);
+SGBF1_2012 <- ArealBi2(county1_2012, times = 2012, cc = level[,1:2], B = 100, w.s = 0.5, w.t = 0.5);
+SGBF2_2012 <- ArealBi2(county2_2012, times = 2010:2012, cc = level[,1:2], B = 100, w.s = 0.5, w.t = 0.5);
+SGBF3_2012 <- ArealBi2(county3_2012, times = 2008:2012, cc = level[,1:2], B = 100, w.s = 0.5, w.t = 0.5);
+SGBF1_2011 <- ArealBi2(county1_2011, times = 2011, cc = level[,1:2], B = 100, w.s = 0.5, w.t = 0.5);
+SGBF2_2011 <- ArealBi2(county2_2011, times = 2009:2011, cc = level[,1:2], B = 100, w.s = 0.5, w.t = 0.5);
+SGBF3_2011 <- ArealBi2(county3_2011, times = 2007:2011, cc = level[,1:2], B = 100, w.s = 0.5, w.t = 0.5);
+SGBF1_2010 <- ArealBi2(county1_2010, times = 2010, cc = level[,1:2], B = 100, w.s = 0.5, w.t = 0.5);
+SGBF2_2010 <- ArealBi2(county2_2010, times = 2008:2010, cc = level[,1:2], B = 100, w.s = 0.5, w.t = 0.5);
+SGBF3_2010 <- ArealBi2(county3_2010, times = 2006:2010, cc = level[,1:2], B = 100, w.s = 0.5, w.t = 0.5);
+SGBF1_2009 <- ArealBi2(county1_2009, times = 2009, cc = level[,1:2], B = 100, w.s = 0.5, w.t = 0.5);
+SGBF2_2009 <- ArealBi2(county2_2009, times = 2007:2009, cc = level[,1:2], B = 100, w.s = 0.5, w.t = 0.5);
+SGBF3_2009 <- ArealBi2(county3_2009, times = 2005:2009, cc = level[,1:2], B = 100, w.s = 0.5, w.t = 0.5);
+SGBF1_2008 <- ArealBi2(county1_2008, times = 2008, cc = level[,1:2], B = 100, w.s = 0.5, w.t = 0.5);
+SGBF2_2008 <- ArealBi2(county2_2008, times = 2006:2008, cc = level[,1:2], B = 100, w.s = 0.5, w.t = 0.5);
+SGBF1_2007 <- ArealBi2(county1_2007, times = 2007, cc = level[,1:2], B = 100, w.s = 0.5, w.t = 0.5);
+SGBF2_2007 <- ArealBi2(county2_2007, times = 2005:2007, cc = level[,1:2],100, w.s = 0.5, w.t = 0.5);
+SGBF1_2006 <- ArealBi2(county1_2006, times = 2006, cc = level[,1:2], B = 100, w.s = 0.5, w.t = 0.5);
+
+S <- rbind(SGBF1, SGBF1_2012, SGBF1_2011, SGBF1_2010, SGBF1_2009, SGBF1_2008,
+	SGBF1_2007, SGBF1_2006, SGBF2_2012, SGBF2_2011, SGBF2_2010, SGBF2_2009,
+	SGBF2_2008, SGBF2_2007, SGBF3, SGBF3_2012, SGBF3_2011, SGBF3_2010, SGBF3_2009)
+
+[S1,idx]=licols(S);

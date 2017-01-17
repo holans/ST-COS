@@ -44,7 +44,7 @@ ArealBi2 <- function(D, times, level1, level2 = matrix(NA, 0, 0),
 	s.lat <- matrix(NA, n, B)
 
 	for (i in 1:n) {
-		p <- sample_Ds(B, D[i])
+		p <- sample_Ds(B, D[i,])
 		s.lon[i,] <- p[,1]
 		s.lat[i,] <- p[,2]
 	}
