@@ -26,8 +26,7 @@ sample_Ds <- function(n, A)
 	}
 
 	# plot(A)
-	# points(u[-idx], col = "black")
-	# points(u[idx], col = "red")
+	# points(uu, col = "red")
 	return(uu[1:n,])
 }
 
@@ -69,27 +68,26 @@ Create_S <- function(crd, times, level1, level2, level3, w, tw)
 		stop("Levels 2 and 3 not supported in this implementation")
 	}
 
-	# AMR: Do we need this?
-	# if isempty(level{i}) == 0
-	#	[B,IX] = sort(level1,1)
-	#	level1 = level1(IX(:,2),:)
-	# else
-	#	level1 = []
-	# end
-
-	G <- dist(level1)
-	rl <- w * quantile(G[G > 0],0.05)
-	S <- matrix(0, nrow(crd), nrow(level1))
-
 	if (nrow(level1) == 0) {
-		return(S)
+		return(matrix(0, nrow(crd), 0))
 	}
+
+	# AMR: Not sure why Jon sorted this way, but we need to do it to get
+	# similar results
+	idx <- order(level1[,2])
+	level1 <- level1[idx,]
+
+	# TBD: This is kind of wasteful to be recomputing over and over
+	G <- as.matrix(dist(level1))
+	G[lower.tri(G)] <- NA
+	rl <- w * quantile(G[G > 0], 0.05, na.rm = TRUE)
+	S <- matrix(0, nrow(crd), nrow(level1))
 
 	for (j in 1:nrow(crd)) {
 		h <- sqrt((level1[,1] - crd[j,1])^2 + (level1[,2] - crd[j,2])^2)
 		ht <- sqrt((level1[,3] - times)^2)
 		s <- (1 - (h / rl)^2 - (ht / tw)^2)^2
-		# s[h > rl | ht > tw] <- 0
+		# s[h > rl | ht > tw] <- 0		# TBD: Shouldn't we be doing this??
 		s[h > rl] <- 0
 		S[j,] <- s
 	}
