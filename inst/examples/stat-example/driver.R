@@ -189,9 +189,10 @@ Sconnector6 <- ArealBi2(county3$area, times = 2010, level1 = level, B = 100, sra
 Sconnector7 <- ArealBi2(county3$area, times = 2011, level1 = level, B = 100, srad = 0.5, trad = 0.5)
 Sconnector8 <- ArealBi2(county3$area, times = 2012, level1 = level, B = 100, srad = 0.5, trad = 0.5)
 Sconnector9 <- ArealBi2(county3$area, times = 2013, level1 = level, B = 100, srad = 0.5, trad = 0.5)
-Sconnector = rbind(Sconnector1, Sconnector2, Sconnector3, Sconnector4,
+Sconnector <- rbind(Sconnector1, Sconnector2, Sconnector3, Sconnector4,
 	Sconnector5, Sconnector6, Sconnector7, Sconnector8, Sconnector9)
-Sconnectorf <- Sconnector[,idx];
+# TBD: This idx is coming from the other basis computation. Needs to be implemented
+Sconnectorf <- Sconnector[,idx]
 
 Kinv <- make_full_model_sptcovar_9(Q, M, Sconnectorf, 3109)
 [P,D] <- eigen(Kinv)
