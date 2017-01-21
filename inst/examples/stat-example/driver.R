@@ -124,6 +124,12 @@ if (FALSE) {
 	ret <- licols(as.matrix(S))
 	S1 <- ret$Xsub
 	idx <- ret$idx
+} else {
+	S.el <- read.csv("dat/S_sparse.txt.gz", header = FALSE)
+	S <- sparseMatrix(i = S.el[,1], j = S.el[,2], x = S.el[,3])
+	rm(S.el)
+
+	idx <- as.integer(read.csv("dat/S_idx_licols.dat.gz", header = FALSE))
 }
 
 # ----- Compute and save the H matrix -----
@@ -175,17 +181,27 @@ H <- t(cbind(H1, H1_2012, H1_2011, H1_2010, H1_2009, H1_2008, H1_2007, H1_2006,
 # ----- Moran's I Propagator -----
 # AMR notes: GBI is almost exactly the identity matrix...
 # R and Matlab return different M... the decompisition isn't supposed to be unique, is it?
-Adj <- gTouches(county3$area, byid = TRUE)
-n <- nrow(Adj)
-for (j in 1:nrow(Adj)) {
-	ss <- sum(Adj[j,])
-	if (ss > 0) {
-		Adj[j,] <- Adj[j,] / ss
+if (FALSE) {
+	Adj <- gTouches(county3$area, byid = TRUE)
+	n <- nrow(Adj)
+	for (j in 1:nrow(Adj)) {
+		ss <- sum(Adj[j,])
+		if (ss > 0) {
+			Adj[j,] <- Adj[j,] / ss
+		}
 	}
+	Q <- Matrix(diag(1,n) - 0.9*Adj)
+	Qinv <- ginv(Q)
+	eig.Q <- eigen(Q)
+} else {
+	Q.el <- read.csv("dat/Q_sparse.txt.gz", header = FALSE)
+	Q <- sparseMatrix(i = Q.el[,1], j = Q.el[,2], x = Q.el[,3])
+	Qinv <- solve(Q)
+	rm(Q.el)
+	n <- nrow(Q)
 }
-Q <- Matrix(diag(1,n) - 0.9*Adj)
-Qinv <- ginv(Q)
-eig.Q <- eigen(Q)
+
+
 
 B <- cbind(t(eig.Q$vectors) %*% matrix(1, n, 1), diag(1,n))
 GBI <- B %*% ginv(t(B) %*% B) %*% t(B)
@@ -211,23 +227,28 @@ if (FALSE) {
 	Sconnector <- rbind(Sconnector1, Sconnector2, Sconnector3, Sconnector4,
 						Sconnector5, Sconnector6, Sconnector7, Sconnector8, Sconnector9)
 	Sconnectorf <- Sconnector[,idx]
+} else {
+	Sconnectorf.el <- read.csv("dat/Sconnectorf_sparse.txt.gz", header = FALSE)
+	Sconnectorf <- sparseMatrix(i = Sconnectorf.el[,1], j = Sconnectorf.el[,2], x = Sconnectorf.el[,3])
+	rm(Sconnectorf.el)
 }
 
-Sconnectorf.el <- read.csv("dat/Sconnectorf_sparse.txt.gz", header = FALSE)
-Sconnectorf <- sparseMatrix(i = Sconnectorf.el[,1], j = Sconnectorf.el[,2], x = Sconnectorf.el[,3])
-rm(Sconnectorf.el)
+if (FALSE) {
+	# My sptcovar9 function doesn't return exactly the same thing as Matlab
+	Kinv <- sptcovar9(Q, M, Sconnectorf, n)
+	r <- ncol(Kinv)
+	Kinv.eig <- eigen(Kinv)
+	D <- Re(Kinv.eig$values)
+	P <- Re(Kinv.eig$vectors)
+	D[D < 0] <- 0
+	Dinv <- numeric(r)
+	Dinv[D > 0] <- 1 / D[D > 0]
+	K <- as.matrix(P %*% Diagonal(r, Dinv) %*% t(P))
+	Kinv <- as.matrix(P %*% Diagonal(r, D) %*% t(P))
+} else {
+	Kinv <- as.matrix(read.csv("dat/Kinv.txt.gz", head = FALSE))
+}
 
-Kinv2 <- sptcovar9(Q, M, Sconnectorf, n)
-Kinv <- as.matrix(read.csv("dat/Kinv.txt.gz", head = FALSE))
-r <- ncol(Kinv)
-Kinv.eig <- eigen(Kinv)
-D <- Re(Kinv.eig$values)
-P <- Re(Kinv.eig$vectors)
-D[D < 0] <- 0
-Dinv <- numeric(r)
-Dinv[D > 0] <- 1 / D[D > 0]
-K <- as.matrix(P %*% Diagonal(r, Dinv) %*% t(P))
-Kinv <- as.matrix(P %*% Diagonal(r, D) %*% t(P))
 
 # ----- Compute and save Z -----
 Zagg <- c(

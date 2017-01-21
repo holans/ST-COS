@@ -14,6 +14,9 @@ csvwrite('EigHinvVHp_sparse.txt', [I, J, nonzeros(EigHinvVHp)]);
 [I,J] = find(Sconnectorf);
 csvwrite('Sconnectorf_sparse.txt', [I, J, nonzeros(Sconnectorf)]);
 
+[I,J] = find(Q);
+csvwrite('Q_sparse.txt', [I, J, nonzeros(Q)]);
+
 csvwrite('Zagg.txt', Zagg);
 csvwrite('sigmavar.txt', sigmavar);
 csvwrite('Kinv.txt', Kinv);
