@@ -1,5 +1,6 @@
 library(stcos)
 library(MASS)
+library(Matrix)
 
 get.period.data <- function(shpfile, datfile, layername)
 {
@@ -56,6 +57,15 @@ county2_2007 <- get.period.data("shp/period2_2007.shp", "shp/period2_2007.csv", 
 county1_2006 <- get.period.data("shp/period1_2006.shp", "shp/period1_2006.csv", "period1_2006")
 
 # ----- Set up spatio-temporal knots for computing bisquare basis
+
+# We'll use the results from Matlab; licols produces different results between
+# and R Matlab because of differences in the qr function.
+S1.el <- read.csv("dat/S1_sparse.txt.gz", header = FALSE)
+S1 <- sparseMatrix(i = S1.el[,1], j = S1.el[,2], x = S1.el[,3])
+rm(S1.el)
+
+idx <- as.integer(read.csv("dat/S_idx_licols.dat.gz", header = FALSE))
+
 # Read spatial knots
 cc <- read.csv("dat/knots250_ACS_amr.csv", head = FALSE)
 
@@ -84,34 +94,37 @@ level.times = c(
 )
 level <- cbind(cc = cc, gg = level.times)
 
-# ----- Compute the full S matrix -----
-# Do it as close as possible to Jon's code
-SGBF1 <- ArealBi2(county1$area, times = 2013, level1 = level, B = 100, srad = 0.5, trad = 0.5)
-SGBF3 <- ArealBi2(county3$area, times = 2009:2013, level1 = level, B = 100, srad = 0.5, trad = 0.5)
-SGBF1_2012 <- ArealBi2(county1_2012$area, times = 2012, level1 = level, B = 100, srad = 0.5, trad = 0.5)
-SGBF2_2012 <- ArealBi2(county2_2012$area, times = 2010:2012, level1 = level, B = 100, srad = 0.5, trad = 0.5)
-SGBF3_2012 <- ArealBi2(county3_2012$area, times = 2008:2012, level1 = level, B = 100, srad = 0.5, trad = 0.5)
-SGBF1_2011 <- ArealBi2(county1_2011$area, times = 2011, level1 = level, B = 100, srad = 0.5, trad = 0.5)
-SGBF2_2011 <- ArealBi2(county2_2011$area, times = 2009:2011, level1 = level, B = 100, srad = 0.5, trad = 0.5)
-SGBF3_2011 <- ArealBi2(county3_2011$area, times = 2007:2011, level1 = level, B = 100, srad = 0.5, trad = 0.5)
-SGBF1_2010 <- ArealBi2(county1_2010$area, times = 2010, level1 = level, B = 100, srad = 0.5, trad = 0.5)
-SGBF2_2010 <- ArealBi2(county2_2010$area, times = 2008:2010, level1 = level, B = 100, srad = 0.5, trad = 0.5)
-SGBF3_2010 <- ArealBi2(county3_2010$area, times = 2006:2010, level1 = level, B = 100, srad = 0.5, trad = 0.5)
-SGBF1_2009 <- ArealBi2(county1_2009$area, times = 2009, level1 = level, B = 100, srad = 0.5, trad = 0.5)
-SGBF2_2009 <- ArealBi2(county2_2009$area, times = 2007:2009, level1 = level, B = 100, srad = 0.5, trad = 0.5)
-SGBF3_2009 <- ArealBi2(county3_2009$area, times = 2005:2009, level1 = level, B = 100, srad = 0.5, trad = 0.5)
-SGBF1_2008 <- ArealBi2(county1_2008$area, times = 2008, level1 = level, B = 100, srad = 0.5, trad = 0.5)
-SGBF2_2008 <- ArealBi2(county2_2008$area, times = 2006:2008, level1 = level, B = 100, srad = 0.5, trad = 0.5)
-SGBF1_2007 <- ArealBi2(county1_2007$area, times = 2007, level1 = level, B = 100, srad = 0.5, trad = 0.5)
-SGBF2_2007 <- ArealBi2(county2_2007$area, times = 2005:2007, level1 = level,100, srad = 0.5, trad = 0.5)
-SGBF1_2006 <- ArealBi2(county1_2006$area, times = 2006, level1 = level, B = 100, srad = 0.5, trad = 0.5)
-S <- rbind(SGBF1, SGBF1_2012, SGBF1_2011, SGBF1_2010, SGBF1_2009, SGBF1_2008,
-	SGBF1_2007, SGBF1_2006, SGBF2_2012, SGBF2_2011, SGBF2_2010, SGBF2_2009,
-	SGBF2_2008, SGBF2_2007, SGBF3, SGBF3_2012, SGBF3_2011, SGBF3_2010, SGBF3_2009)
+if (FALSE) {
+	# ----- Compute the full S matrix -----
+	# Do it as close as possible to Jon's code
+	SGBF1 <- ArealBi2(county1$area, times = 2013, level1 = level, B = 100, srad = 0.5, trad = 0.5)
+	SGBF3 <- ArealBi2(county3$area, times = 2009:2013, level1 = level, B = 100, srad = 0.5, trad = 0.5)
+	SGBF1_2012 <- ArealBi2(county1_2012$area, times = 2012, level1 = level, B = 100, srad = 0.5, trad = 0.5)
+	SGBF2_2012 <- ArealBi2(county2_2012$area, times = 2010:2012, level1 = level, B = 100, srad = 0.5, trad = 0.5)
+	SGBF3_2012 <- ArealBi2(county3_2012$area, times = 2008:2012, level1 = level, B = 100, srad = 0.5, trad = 0.5)
+	SGBF1_2011 <- ArealBi2(county1_2011$area, times = 2011, level1 = level, B = 100, srad = 0.5, trad = 0.5)
+	SGBF2_2011 <- ArealBi2(county2_2011$area, times = 2009:2011, level1 = level, B = 100, srad = 0.5, trad = 0.5)
+	SGBF3_2011 <- ArealBi2(county3_2011$area, times = 2007:2011, level1 = level, B = 100, srad = 0.5, trad = 0.5)
+	SGBF1_2010 <- ArealBi2(county1_2010$area, times = 2010, level1 = level, B = 100, srad = 0.5, trad = 0.5)
+	SGBF2_2010 <- ArealBi2(county2_2010$area, times = 2008:2010, level1 = level, B = 100, srad = 0.5, trad = 0.5)
+	SGBF3_2010 <- ArealBi2(county3_2010$area, times = 2006:2010, level1 = level, B = 100, srad = 0.5, trad = 0.5)
+	SGBF1_2009 <- ArealBi2(county1_2009$area, times = 2009, level1 = level, B = 100, srad = 0.5, trad = 0.5)
+	SGBF2_2009 <- ArealBi2(county2_2009$area, times = 2007:2009, level1 = level, B = 100, srad = 0.5, trad = 0.5)
+	SGBF3_2009 <- ArealBi2(county3_2009$area, times = 2005:2009, level1 = level, B = 100, srad = 0.5, trad = 0.5)
+	SGBF1_2008 <- ArealBi2(county1_2008$area, times = 2008, level1 = level, B = 100, srad = 0.5, trad = 0.5)
+	SGBF2_2008 <- ArealBi2(county2_2008$area, times = 2006:2008, level1 = level, B = 100, srad = 0.5, trad = 0.5)
+	SGBF1_2007 <- ArealBi2(county1_2007$area, times = 2007, level1 = level, B = 100, srad = 0.5, trad = 0.5)
+	SGBF2_2007 <- ArealBi2(county2_2007$area, times = 2005:2007, level1 = level,100, srad = 0.5, trad = 0.5)
+	SGBF1_2006 <- ArealBi2(county1_2006$area, times = 2006, level1 = level, B = 100, srad = 0.5, trad = 0.5)
+	S <- rbind(SGBF1, SGBF1_2012, SGBF1_2011, SGBF1_2010, SGBF1_2009, SGBF1_2008,
+		SGBF1_2007, SGBF1_2006, SGBF2_2012, SGBF2_2011, SGBF2_2010, SGBF2_2009,
+		SGBF2_2008, SGBF2_2007, SGBF3, SGBF3_2012, SGBF3_2011, SGBF3_2010, SGBF3_2009)
 
-# TBD: Extract submatrix of interest and save.
-# [S1,idx]=licols(S);
-
+	# Extract submatrix of interest and save.
+	ret <- licols(as.matrix(S))
+	S1 <- ret$Xsub
+	idx <- ret$idx
+}
 
 # ----- Compute and save the H matrix -----
 H2.prime <- compute.overlap(D = county3$area, G = county2$area, denomflag = 2, Dxyflag = 1, Gxyflag = 1, report.period = 100)
@@ -155,7 +168,6 @@ H3_2009 <- H3_2009.prime / Matrix(colSums(H3_2009.prime), nrow(H3_2009.prime), n
 H3_2010 <- H3_2010.prime / Matrix(colSums(H3_2010.prime), nrow(H3_2010.prime), ncol(H3_2010.prime))
 H3_2011 <- H3_2011.prime / Matrix(colSums(H3_2011.prime), nrow(H3_2011.prime), ncol(H3_2011.prime))
 H3_2012 <- H3_2012.prime / Matrix(colSums(H3_2012.prime), nrow(H3_2012.prime), ncol(H3_2012.prime))
-
 H <- t(cbind(H1, H1_2012, H1_2011, H1_2010, H1_2009, H1_2008, H1_2007, H1_2006,
 	H2_2012, H2_2011, H2_2010, H2_2009, H2_2008, H2_2007, diag(1,3109), H3_2012,
 	H3_2011, H3_2010, H3_2009))
@@ -163,45 +175,59 @@ H <- t(cbind(H1, H1_2012, H1_2011, H1_2010, H1_2009, H1_2008, H1_2007, H1_2006,
 # ----- Moran's I Propagator -----
 # AMR notes: GBI is almost exactly the identity matrix...
 # R and Matlab return different M... the decompisition isn't supposed to be unique, is it?
-Adj <- gTouches(county3$area, byid=TRUE)
+Adj <- gTouches(county3$area, byid = TRUE)
+n <- nrow(Adj)
 for (j in 1:nrow(Adj)) {
-	ss <- sum(countAdj[j,])
+	ss <- sum(Adj[j,])
 	if (ss > 0) {
 		Adj[j,] <- Adj[j,] / ss
 	}
 }
-Q <- diag(1,nrow(Adj)) - 0.9*Adj
+Q <- Matrix(diag(1,n) - 0.9*Adj)
 Qinv <- ginv(Q)
 eig.Q <- eigen(Q)
 
-B <- cbind(t(eig.Q$vectors) %*% matrix(1, 3109, 1), diag(1,3109))
+B <- cbind(t(eig.Q$vectors) %*% matrix(1, n, 1), diag(1,n))
 GBI <- B %*% ginv(t(B) %*% B) %*% t(B)
 eig.GBI <- eigen(GBI)
-M <- Re(eig.GBI$vectors)
+if (FALSE) {
+	M <- Re(eig.GBI$vectors)
+} else {
+	M <- as.matrix(read.csv("dat/M.txt.gz", head = FALSE))
+}
+
 
 # ----- Compute and save the C.inv matrix -----
-Sconnector1 <- ArealBi2(county3$area, times = 2005, level1 = level, B = 100, srad = 0.5, trad = 0.5)
-Sconnector2 <- ArealBi2(county3$area, times = 2006, level1 = level, B = 100, srad = 0.5, trad = 0.5)
-Sconnector3 <- ArealBi2(county3$area, times = 2007, level1 = level, B = 100, srad = 0.5, trad = 0.5)
-Sconnector4 <- ArealBi2(county3$area, times = 2008, level1 = level, B = 100, srad = 0.5, trad = 0.5)
-Sconnector5 <- ArealBi2(county3$area, times = 2009, level1 = level, B = 100, srad = 0.5, trad = 0.5)
-Sconnector6 <- ArealBi2(county3$area, times = 2010, level1 = level, B = 100, srad = 0.5, trad = 0.5)
-Sconnector7 <- ArealBi2(county3$area, times = 2011, level1 = level, B = 100, srad = 0.5, trad = 0.5)
-Sconnector8 <- ArealBi2(county3$area, times = 2012, level1 = level, B = 100, srad = 0.5, trad = 0.5)
-Sconnector9 <- ArealBi2(county3$area, times = 2013, level1 = level, B = 100, srad = 0.5, trad = 0.5)
-Sconnector <- rbind(Sconnector1, Sconnector2, Sconnector3, Sconnector4,
-	Sconnector5, Sconnector6, Sconnector7, Sconnector8, Sconnector9)
-# TBD: This idx is coming from the other basis computation. Needs to be implemented
-Sconnectorf <- Sconnector[,idx]
+if (FALSE) {
+	Sconnector1 <- ArealBi2(county3$area, times = 2005, level1 = level, B = 100, srad = 0.5, trad = 0.5)
+	Sconnector2 <- ArealBi2(county3$area, times = 2006, level1 = level, B = 100, srad = 0.5, trad = 0.5)
+	Sconnector3 <- ArealBi2(county3$area, times = 2007, level1 = level, B = 100, srad = 0.5, trad = 0.5)
+	Sconnector4 <- ArealBi2(county3$area, times = 2008, level1 = level, B = 100, srad = 0.5, trad = 0.5)
+	Sconnector5 <- ArealBi2(county3$area, times = 2009, level1 = level, B = 100, srad = 0.5, trad = 0.5)
+	Sconnector6 <- ArealBi2(county3$area, times = 2010, level1 = level, B = 100, srad = 0.5, trad = 0.5)
+	Sconnector7 <- ArealBi2(county3$area, times = 2011, level1 = level, B = 100, srad = 0.5, trad = 0.5)
+	Sconnector8 <- ArealBi2(county3$area, times = 2012, level1 = level, B = 100, srad = 0.5, trad = 0.5)
+	Sconnector9 <- ArealBi2(county3$area, times = 2013, level1 = level, B = 100, srad = 0.5, trad = 0.5)
+	Sconnector <- rbind(Sconnector1, Sconnector2, Sconnector3, Sconnector4,
+						Sconnector5, Sconnector6, Sconnector7, Sconnector8, Sconnector9)
+	Sconnectorf <- Sconnector[,idx]
+}
 
-Kinv <- make_full_model_sptcovar_9(Q, M, Sconnectorf, 3109)
-[P,D] <- eigen(Kinv)
-D <- real(diag(D))
-D(D<0) <- 0
-Dinv <- D
-Dinv(D>0) <- (1/D(D>0))
-K <- real(P) %*% diag(Dinv) %*% real(P')
-Kinv <- real(P) %*% diag(D) %*% real(P')
+Sconnectorf.el <- read.csv("dat/Sconnectorf_sparse.txt.gz", header = FALSE)
+Sconnectorf <- sparseMatrix(i = Sconnectorf.el[,1], j = Sconnectorf.el[,2], x = Sconnectorf.el[,3])
+rm(Sconnectorf.el)
+
+Kinv2 <- sptcovar9(Q, M, Sconnectorf, n)
+Kinv <- as.matrix(read.csv("dat/Kinv.txt.gz", head = FALSE))
+r <- ncol(Kinv)
+Kinv.eig <- eigen(Kinv)
+D <- Re(Kinv.eig$values)
+P <- Re(Kinv.eig$vectors)
+D[D < 0] <- 0
+Dinv <- numeric(r)
+Dinv[D > 0] <- 1 / D[D > 0]
+K <- as.matrix(P %*% Diagonal(r, Dinv) %*% t(P))
+Kinv <- as.matrix(P %*% Diagonal(r, D) %*% t(P))
 
 # ----- Compute and save Z -----
 Zagg <- c(
