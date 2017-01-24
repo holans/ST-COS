@@ -8,3 +8,5 @@ doc$
 Makefile
 ^stcos$
 matlab
+^.*\.Rproj$
+^\.Rproj\.user$
