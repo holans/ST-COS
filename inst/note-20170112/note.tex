@@ -117,21 +117,62 @@ Using the assumptions I have made above, I get the results in Figure~\ref{fig:po
 \centering
 \begin{subfigure}[b]{.95\textwidth}
   \centering
-  \includegraphics[width=0.95\textwidth]{post-mean.pdf}
+  \includegraphics[width=0.95\textwidth]{figures/post-mean.pdf}
   \label{fig:post-mean}
 \end{subfigure}
 
 \begin{subfigure}[b]{.95\textwidth}
   \centering
-  \includegraphics[width=0.95\textwidth]{post-sd.pdf}
+  \includegraphics[width=0.95\textwidth]{figures/post-sd.pdf}
   \label{fig:post-sd}
 \end{subfigure}
 \caption{Posterior mean and standard deviation using my assumptions.}
 \label{fig:post}
 \end{figure}
 
+We were having some questions about diagnostics. Figures~\ref{fig:diag-mu}
+through~\ref{fig:diag-sig2K} show
+trace plots and histograms for draws obtained from the draws used to produce
+Figure~\ref{fig:post} (which have the alleged ``mistake'' in the $\mu_B$ step
+where the latest $\sigma_\xi^2$ value is not used). The draws for $\mu_B$,
+$\eta$, $\xi$, $\sigma_\mu^2$, and $\sigma_K^2$ show good mixing. Jon's code
+does not include the $\sigma_\xi^2$ step, so a plot corresponding to this
+variable is not shown.
 
+\begin{figure}
+\centering
+\includegraphics[width=0.95\textwidth]{figures/diag-mu.pdf}
+\caption{}
+\label{fig:diag-mu}
+\end{figure}
 
+\begin{figure}
+\centering
+\includegraphics[width=0.95\textwidth]{figures/diag-eta.pdf}
+\caption{}
+\label{fig:diag-eta}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.95\textwidth]{figures/diag-xi.pdf}
+\caption{}
+\label{fig:diag-xi}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.95\textwidth]{figures/diag-sig2mu.pdf}
+\caption{}
+\label{fig:diag-sig2mu}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.95\textwidth]{figures/diag-sig2K.pdf}
+\caption{}
+\label{fig:diag-sig2K}
+\end{figure}
 
 \bibliographystyle{plainnat}
 \bibliography{references}
