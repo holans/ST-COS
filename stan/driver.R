@@ -24,17 +24,26 @@ n <- ncol(H)
 
 muB.true <- rep(0, n)
 eta.true <- rep(0, r)
-sig2xi.true <- 100^2
+sig2xi.true <- 1000^2
 z <- rnorm(N, as.numeric(H %*% muB.true + S %*% eta.true), sqrt(sig2eps + sig2xi.true))
 
 dat <- list(N = N, n = n, r = r, z = z, H = as.matrix(H), S = as.matrix(S), sig2eps = sig2eps)
+init <- list(mu = rep(0, n), eta = rep(0, r), sig2mu = 1, sig2K = 1, sig2xi = 1000^2)
+
+loglik <- function(theta) {
+	mu <- as.numeric(H %*% theta$mu + S %*% theta$eta)
+	sum(dnorm(z, mu, sqrt(sig2eps + theta$sig2xi), log = TRUE))
+}
+loglik(init)
 
 # NUTS MCMC
 fit <- stan(file = "model.stan", data = dat, 
-	iter = 1000, chains = 1)
+	iter = 1000, chains = 1, init = list(init),
+	verbose = TRUE, warmup = 0)
 print(fit)
 traceplot(fit)
-my_sso <- launch_shinystan(fit)
+# my_sso <- launch_shinystan(fit)
+theta.mcmc <- mcmc(As.mcmc.list(fit)[[1]])
 
 # VB with ADVI
 m <- stan_model(file = "model.stan")
@@ -42,3 +51,4 @@ fit.vb <- vb(m, data = dat, algorithm = "meanfield",
 	elbo_samples = 1000)
 print(fit.vb, pars = "mu")
 traceplot(fit.vb, pars = "mu")
+theta.mcmc.vb <- mcmc(As.mcmc.list(fit.vb)[[1]])

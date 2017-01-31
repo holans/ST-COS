@@ -10,7 +10,7 @@ data {
 parameters {
 	vector[n] mu;
 	vector[r] eta;
-	vector[N] xi;
+	// vector[N] xi;
 	real<lower=0> sig2mu;
 	real<lower=0> sig2xi;
 	real<lower=0> sig2K;
@@ -23,9 +23,6 @@ model {
 	for (j in 1:n) {
 		mu[j] ~ normal(0, sqrt(sig2mu));
 	}
-	for (i in 1:N) {
-		xi[i] ~ normal(0, sqrt(sig2xi));
-	}
 	for (j in 1:r) {
 		eta[j] ~ normal(0, sqrt(sig2K));
 	}
@@ -37,6 +34,9 @@ model {
 	Hmu = H*mu;
 	Seta = S*eta;
 	for (i in 1:N) {
-		z[i] ~ normal(Hmu[i] + Seta[i] + xi[i], sqrt(sig2eps[i] + sig2xi));
+		// print("z[i]=", z[i], " Hmu[i]=", Hmu[i], " Seta[i]=", Seta[i], " sig2eps[i]=", sig2eps[i]);
+		z[i] ~ normal(Hmu[i] + Seta[i], sqrt(sig2eps[i] + sig2xi));
 	}
+
+	print("sig2mu=", sig2mu, " sig2xi=", sig2xi, " sig2K=", sig2K, " log-likelihood=", target());
 }
