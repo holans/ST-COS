@@ -1,0 +1,154 @@
+\documentclass[10pt]{article}
+
+\usepackage{araim-common}
+\usepackage{araim-tex}
+
+\makeatletter
+\def\blfootnote{\xdef\@thefnmark{}\@footnotetext}
+\makeatother
+
+\title{An Alternative MCMC Method for the STCOS Model}
+%\date{}
+\author{Andrew M. Raim
+\vspace{0.5em} \\
+Center for Statistical Research and Methodology, U.S. Census Bureau
+}
+
+\begin{document}
+
+\maketitle
+
+% ---------------------------------------------------
+\section{Introduction}
+\label{sec:intro}
+Recall that the process model in \citet{BradleyEtAl2016-STAT} is
+%
+\begin{align*}
+Z_t^{(\ell)}(A) &\indep \text{N}\left(
+h(A)^T \mu_B + \psi_t^{(\ell)}(A)^T \eta, \;
+\sigma_t^{(\ell)2}(A) + \sigma_\xi^2
+\right), \\
+\mu_B &\sim \text{N}\left(0, \sigma_\mu^2 I \right), \\
+\eta &\sim \text{N}\left(0, \sigma_K^2 \hat{C} \right), \\
+\sigma_\mu^2 &\sim \text{IG}(1, 1), \\
+\sigma_K^2 &\sim \text{IG}(1, 1), \\
+\sigma_\xi^2 &\sim \text{IG}(1, 1),
+\end{align*}
+%
+where $\hat{C}$ is the solution to the Higham approximation without $\sigma_K^2$. We can write this model in the form
+%
+\begin{align}
+y &\sim \text{N}(X \beta, \Omega_\phi^{-1}), \nonumber \\
+\beta &\sim \text{N}(0, G_\phi), \nonumber \\
+\phi &\sim f(\phi),
+\label{eqn:regression}
+\end{align}
+%
+where $\beta = (\mu_B \; \eta) \in \mathbb{R}^{n + r}$, $X = (H \; S) \in \mathbb{R}^{N \times (n + r)}$, $\Omega_\phi^{-1} = \Diag(\sigma_t^{(\ell)2}(A) + \sigma_\xi^2) \in \mathbb{R}^{N \times N}$, and
+%
+\begin{align*}
+G_\phi =
+\begin{pmatrix}
+\sigma_\mu^2 I & 0 \\
+0 & \sigma_K^2 \hat{C}
+\end{pmatrix}.
+\end{align*}
+%
+We have the following result.
+
+\begin{proposition}
+\label{result:posterior}
+Under a model of the form \eqref{eqn:regression}, we have that
+%
+\begin{align*}
+&f(\beta, \phi \mid y) \propto \text{N}(\beta \mid \nu_{\phi, y}, \Gamma_\phi^{-1}) \cdot C(\phi, y) \cdot f(\phi), \\
+&\qquad \Gamma_\phi = X^T \Omega_\phi X + G_\phi^{-1}, \\
+&\qquad \nu_{\phi, y} = \Gamma_\phi^{-1} \; X^T \; \Omega_\phi \; y, \\
+&\qquad \log C(\phi, y) = \frac{1}{2} \log \det \Omega_\phi - \frac{1}{2} \log \det \Gamma_\phi - \frac{1}{2} \log \det G_\phi
+-\frac{1}{2} y^T \; \Omega_\phi \; y + \frac{1}{2} \nu_{\phi, y}^T \; \Gamma_\phi \; \nu_{\phi, y}.
+\end{align*}
+%
+Therefore, we can sample from the joint distribution $[\beta, \phi \mid y]$ by the following
+\begin{enumerate}
+\item Draw $\phi^{(1)}, \ldots, \phi^{(R)}$ from thw unnormalized density $C(\phi, y) \cdot f(\phi)$. (E.g.~using a Metropolis-Hastings sampler).
+\item Draw $\beta^{(r)} \sim \text{N}(\beta \mid \nu_{\phi^{(r)}, y}, \Gamma_{\phi^{(r)}}^{-1})$ for $r = 1, \ldots, R$.
+\end{enumerate}
+
+\end{proposition}
+
+\begin{proof}
+We will drop the $\phi$ and $y$ subscripts to make the notation less cumbersome. First notice that
+%
+\begin{align}
+&f(\beta, \phi \mid y) \propto f(y \mid \beta, \phi) f(\beta) f(\phi), \\
+&\qquad= \text{N}(y \mid X \beta, \Omega^{-1}) \cdot \text{N}(\beta \mid 0, G) \cdot f(\phi) \\
+%
+&\qquad= \underbrace{\frac{1}{ (2\pi)^{N/2} \cdot |\Omega^{-1}|^{1/2}}
+\frac{1}{ (2\pi)^{(n+r)/2} \cdot |G|^{1/2}}}_{C_1}
+\exp\left\{ -\frac{1}{2} (y - X \beta)^T \Omega (y - X \beta) \right\}
+\exp\left\{ -\frac{1}{2} \beta^T G^{-1} \beta \right\}
+\cdot f(\phi) \\
+%
+&\qquad= C_1 \cdot
+\exp\left\{ -\frac{1}{2} \left[ y^T \Omega y - 2 \beta^T X^T \Omega y + \beta^T X^T \Omega X \beta + \beta^T G^{-1} \beta\right] \right\}
+\cdot f(\phi) \\
+%
+&\qquad= \underbrace{C_1 \cdot \exp\left\{ -\frac{1}{2} y^T \Omega y \right\}}_{C_2}
+\exp\left\{ -\frac{1}{2} \left[ \beta^T \underbrace{[X^T \Omega X + G^{-1}]}_{\Gamma} \beta - 2 \beta^T X^T \Omega y \right] \right\}
+\cdot f(\phi) \\
+%
+&\qquad= C_2
+\exp\left\{ -\frac{1}{2} \left[ \beta^T \Gamma \beta - 2 \beta^T X^T \Omega y \right] \right\}
+\cdot f(\phi) \\
+%
+&\qquad= C_2
+\exp\left\{ -\frac{1}{2} \left[ \beta^T \Gamma \beta - 2 \beta^T \Gamma \underbrace{\Gamma^{-1} X^T \Omega y}_{\nu} \right] \right\}
+\cdot f(\phi) \\
+%
+&\qquad= C_2
+\exp\left\{ -\frac{1}{2} \left[ \beta^T \Gamma \beta - 2 \beta^T \Gamma \nu \right] \right\}
+\cdot f(\phi) \\
+%
+&\qquad= \underbrace{C_2 \exp\left\{ \frac{1}{2} \nu^T \Gamma \nu \right\}}_{C_3}
+\exp\left\{ -\frac{1}{2} (\beta - \nu)^T \Gamma (\beta - \nu) \right\}
+\cdot f(\phi) \\
+%
+&\qquad= C_3
+\exp\left\{ -\frac{1}{2} (\beta - \nu)^T \Gamma (\beta - \nu) \right\}
+\cdot f(\phi) \\
+%
+&\qquad= \underbrace{C_3 \cdot (2\pi)^{(n+r)/2} \cdot |\Gamma^{-1}|^{1/2}}_{C}
+\frac{ \exp\left\{ -\frac{1}{2} (\beta - \nu)^T \Gamma (\beta - \nu) \right\} }{ (2\pi)^{(n+r)/2} \cdot |\Gamma^{-1}|^{1/2} }
+\cdot f(\phi) \\
+%
+&\qquad= C \cdot
+\text{N}(\beta \mid \mu, \Gamma^{-1})
+\cdot f(\phi)
+\label{eqn:factoring}
+\end{align}
+%
+Also, by the usual chain rule we have $f(\beta, \phi \mid y) = f(\beta \mid \phi, y) f(\phi \mid y)$. Equating this with \eqref{eqn:factoring}, we have
+%
+\begin{align*}
+f(\beta \mid \phi, y) f(\phi \mid y) \propto \text{N}(\beta \mid \mu, \Gamma^{-1}) \cdot C \cdot f(\phi)
+\end{align*}
+%
+Then we have that $f(\beta \mid \phi, y) = \text{N}(\beta \mid \mu, \Gamma^{-1})$, which is properly normalized, and that $f(\phi \mid y) \propto C \cdot f(\phi)$. Finally, to obtain the expression for $C$,
+%
+\begin{align*}
+C &= \frac{1}{ (2\pi)^{N/2} \cdot |\Omega^{-1}|^{1/2}}
+\frac{1}{ (2\pi)^{(n+r)/2} \cdot |G|^{1/2}} \cdot \exp\left\{ -\frac{1}{2} y^T \Omega y \right\} \exp\left\{ \frac{1}{2} \nu^T \Gamma \nu \right\} \cdot (2\pi)^{(n+r)/2} \cdot |\Gamma^{-1}|^{1/2} \\
+&= (2\pi)^{-N/2} \left\{ \frac{ \det \Omega }{\det G \cdot \det \Gamma} \right\}^{1/2}
+\exp\left\{ -\frac{1}{2} y^T \Omega y \right\} \exp\left\{ \frac{1}{2} \nu^T \Gamma \nu \right\}.
+\end{align*}
+%
+The term $(2\pi)^{-N/2}$ can be dropped from $C$ because it is free of $\phi$.
+
+\end{proof}
+
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+%\input{references.bbl}
+
+\end{document}

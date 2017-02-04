@@ -7,8 +7,10 @@ library(coda)
 n <- 400
 X <- cbind(1, x1 = rnorm(n))
 Beta.true <- c(1,2)
-sigma.true <- 0.25
+sigma.true <- 0.75
 y <- rnorm(n, X %*% Beta.true, sigma.true)
+
+plot(X[,2], y); abline(Beta.true, col = "red", lty = 2, lwd = 2)
 
 Data <- list(y = y, X = X)
 logpost <- function(par, Data) {
