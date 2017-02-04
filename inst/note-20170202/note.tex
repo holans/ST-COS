@@ -44,7 +44,7 @@ y &\sim \text{N}(X \beta, \Omega_\phi^{-1}), \nonumber \\
 \label{eqn:regression}
 \end{align}
 %
-where $\beta = (\mu_B \; \eta) \in \mathbb{R}^{n + r}$, $X = (H \; S) \in \mathbb{R}^{N \times (n + r)}$, $\Omega_\phi^{-1} = \Diag(\sigma_t^{(\ell)2}(A) + \sigma_\xi^2) \in \mathbb{R}^{N \times N}$, and
+where $\phi = (\sigma_\mu^2, \sigma_K^2, \sigma_\xi^2)$, $\beta = (\mu_B \; \eta) \in \mathbb{R}^{n + r}$, $X = (H \; S) \in \mathbb{R}^{N \times (n + r)}$, $\Omega_\phi^{-1} = \Diag(\sigma_t^{(\ell)2}(A) + \sigma_\xi^2) \in \mathbb{R}^{N \times N}$, and
 %
 \begin{align*}
 G_\phi =
@@ -80,46 +80,46 @@ Therefore, we can sample from the joint distribution $[\beta, \phi \mid y]$ by t
 We will drop the $\phi$ and $y$ subscripts to make the notation less cumbersome. First notice that
 %
 \begin{align}
-&f(\beta, \phi \mid y) \propto f(y \mid \beta, \phi) f(\beta) f(\phi), \\
-&\qquad= \text{N}(y \mid X \beta, \Omega^{-1}) \cdot \text{N}(\beta \mid 0, G) \cdot f(\phi) \\
+&f(\beta, \phi \mid y) \propto f(y \mid \beta, \phi) f(\beta) f(\phi), \nonumber \\
+&\qquad= \text{N}(y \mid X \beta, \Omega^{-1}) \cdot \text{N}(\beta \mid 0, G) \cdot f(\phi) \nonumber \\
 %
 &\qquad= \underbrace{\frac{1}{ (2\pi)^{N/2} \cdot |\Omega^{-1}|^{1/2}}
 \frac{1}{ (2\pi)^{(n+r)/2} \cdot |G|^{1/2}}}_{C_1}
 \exp\left\{ -\frac{1}{2} (y - X \beta)^T \Omega (y - X \beta) \right\}
 \exp\left\{ -\frac{1}{2} \beta^T G^{-1} \beta \right\}
-\cdot f(\phi) \\
+\cdot f(\phi) \nonumber \\
 %
 &\qquad= C_1 \cdot
 \exp\left\{ -\frac{1}{2} \left[ y^T \Omega y - 2 \beta^T X^T \Omega y + \beta^T X^T \Omega X \beta + \beta^T G^{-1} \beta\right] \right\}
-\cdot f(\phi) \\
+\cdot f(\phi) \nonumber \\
 %
 &\qquad= \underbrace{C_1 \cdot \exp\left\{ -\frac{1}{2} y^T \Omega y \right\}}_{C_2}
 \exp\left\{ -\frac{1}{2} \left[ \beta^T \underbrace{[X^T \Omega X + G^{-1}]}_{\Gamma} \beta - 2 \beta^T X^T \Omega y \right] \right\}
-\cdot f(\phi) \\
+\cdot f(\phi) \nonumber \\
 %
 &\qquad= C_2
 \exp\left\{ -\frac{1}{2} \left[ \beta^T \Gamma \beta - 2 \beta^T X^T \Omega y \right] \right\}
-\cdot f(\phi) \\
+\cdot f(\phi) \nonumber \\
 %
 &\qquad= C_2
 \exp\left\{ -\frac{1}{2} \left[ \beta^T \Gamma \beta - 2 \beta^T \Gamma \underbrace{\Gamma^{-1} X^T \Omega y}_{\nu} \right] \right\}
-\cdot f(\phi) \\
+\cdot f(\phi) \nonumber \\
 %
 &\qquad= C_2
 \exp\left\{ -\frac{1}{2} \left[ \beta^T \Gamma \beta - 2 \beta^T \Gamma \nu \right] \right\}
-\cdot f(\phi) \\
+\cdot f(\phi) \nonumber \\
 %
 &\qquad= \underbrace{C_2 \exp\left\{ \frac{1}{2} \nu^T \Gamma \nu \right\}}_{C_3}
 \exp\left\{ -\frac{1}{2} (\beta - \nu)^T \Gamma (\beta - \nu) \right\}
-\cdot f(\phi) \\
+\cdot f(\phi) \nonumber \\
 %
 &\qquad= C_3
 \exp\left\{ -\frac{1}{2} (\beta - \nu)^T \Gamma (\beta - \nu) \right\}
-\cdot f(\phi) \\
+\cdot f(\phi) \nonumber \\
 %
 &\qquad= \underbrace{C_3 \cdot (2\pi)^{(n+r)/2} \cdot |\Gamma^{-1}|^{1/2}}_{C}
 \frac{ \exp\left\{ -\frac{1}{2} (\beta - \nu)^T \Gamma (\beta - \nu) \right\} }{ (2\pi)^{(n+r)/2} \cdot |\Gamma^{-1}|^{1/2} }
-\cdot f(\phi) \\
+\cdot f(\phi) \nonumber \\
 %
 &\qquad= C \cdot
 \text{N}(\beta \mid \mu, \Gamma^{-1})
@@ -127,13 +127,13 @@ We will drop the $\phi$ and $y$ subscripts to make the notation less cumbersome.
 \label{eqn:factoring}
 \end{align}
 %
-Also, by the usual chain rule we have $f(\beta, \phi \mid y) = f(\beta \mid \phi, y) f(\phi \mid y)$. Equating this with \eqref{eqn:factoring}, we have
+By the usual chain rule we have $f(\beta, \phi \mid y) = f(\beta \mid \phi, y) f(\phi \mid y)$. Equating this with \eqref{eqn:factoring}, we have
 %
 \begin{align*}
 f(\beta \mid \phi, y) f(\phi \mid y) \propto \text{N}(\beta \mid \mu, \Gamma^{-1}) \cdot C \cdot f(\phi)
 \end{align*}
 %
-Then we have that $f(\beta \mid \phi, y) = \text{N}(\beta \mid \mu, \Gamma^{-1})$, which is properly normalized, and that $f(\phi \mid y) \propto C \cdot f(\phi)$. Finally, to obtain the expression for $C$,
+Then $f(\beta \mid \phi, y) = \text{N}(\beta \mid \mu, \Gamma^{-1})$, which is properly normalized, and $f(\phi \mid y) \propto C \cdot f(\phi)$. Finally, to obtain the expression for $C$,
 %
 \begin{align*}
 C &= \frac{1}{ (2\pi)^{N/2} \cdot |\Omega^{-1}|^{1/2}}

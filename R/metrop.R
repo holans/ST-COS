@@ -19,8 +19,11 @@ metrop.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 	# Log-posterior for [sig2mu, sig2xi, sig2K | Z]
 	logpost <- function(par, Data) {
 		sig2mu <- exp(par[1])
+		# sig2mu <- init$sig2mu
 		sig2K <- exp(par[2])
+		# sig2K <- init$sig2K
 		sig2xi <- exp(par[3])
+		# sig2xi <- init$sig2xi
 
 		# G <- Matrix(0, n_mu+r, n_mu+r)
 		# G[cbind(1:n_mu, 1:n_mu)] <- sig2mu
@@ -71,8 +74,9 @@ metrop.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 		lprior <- dinvgamma(sig2mu, 1, 1, log = TRUE) +
 			dinvgamma(sig2K, 1, 1, log = TRUE) +
 			dinvgamma(sig2xi, 1, 1, log = TRUE)
-		ljacobian <- log(sig2mu) + log(sig2K) + log(sig2xi)
-		ret <- as.numeric(logC + lprior + ljacobian)
+		ltx <- log(sig2mu) + log(sig2K) + log(sig2xi)
+		ret <- as.numeric(logC + lprior + ltx)
+		printf("sig2mu=%e, sig2K=%e, sig2xi=%e, logpost=%e\n", sig2mu, sig2K, sig2xi, ret)
 		# logger("ret took %f secs\n", as.numeric(Sys.time() - st, unit = "secs"))
 		if (is.infinite(ret)) browser()
 		ret
@@ -124,12 +128,18 @@ metrop.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 	Data <- list(y = Z, X = cbind(H, S), sig2eps = sig2eps, C.inv = C.inv,
 		logdet.Cinv = logdet.Cinv, n = n, r = r, n_mu = n_mu)
 	par.init <- log(c(init$sig2mu, init$sig2K, init$sig2xi))
+	proposal <- list(scale = 1, var = diag(c(1,1,1)))
 
 	logger("Begin sampling sig2mu, sig2K, and sig2xi\n")
 	st <- Sys.time()
+
+	# browser()
+	# laplace.out <- laplace(logpost, par.init, Data)
+	# par.init2 <- laplace.out$mode
+
 	rw.out <- rwmetrop(par.init = par.init, logpost = logpost, R = R,
 		burn = burn, thin = thin, report.period = report.period, Data = Data,
-		proposal = list(scale = 1, var = diag(c(1,1,1))), use.cpp = FALSE)
+		proposal = proposal, use.cpp = FALSE)
 	timer$phi <- as.numeric(Sys.time() - st, unit = "secs")
 	par.hist <- rw.out$par
 	phi.hist <- exp(par.hist)
