@@ -2,7 +2,6 @@ library(Matrix)
 library(stcos)
 library(coda)
 
-source("../../../R/metrop.R")
 setwd("~/Documents/simulations/ST-COS/")
 
 Z <- as.matrix(read.csv("dat/Zagg.txt.gz", header = FALSE))
@@ -19,7 +18,7 @@ S <- sparseMatrix(i = S.el[,1], j = S.el[,2], x = S.el[,3])
 rm(S.el)
 
 init <- list(sig2mu = 1e8, sig2K = 0.1, sig2xi = 1e8)
-metrop.out <- metrop.stcos(Z, S, sig2eps, C.inv, H, R = 10,
+metrop.out <- metrop.stcos(Z, S, sig2eps, C.inv, H, R = 20,
 	report.period = 1, burn = 0, thin = 1, init = init)
 
 mu_B.mcmc <- mcmc(metrop.out$mu_B.hist)

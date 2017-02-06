@@ -19,10 +19,11 @@ metrop.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 	# Log-posterior for [sig2mu, sig2xi, sig2K | Z]
 	logpost <- function(par, Data) {
 		sig2mu <- exp(par[1])
-		# sig2mu <- init$sig2mu
 		sig2K <- exp(par[2])
-		# sig2K <- init$sig2K
 		sig2xi <- exp(par[3])
+
+		# sig2mu <- init$sig2mu
+		# sig2K <- init$sig2K
 		# sig2xi <- init$sig2xi
 
 		# G <- Matrix(0, n_mu+r, n_mu+r)
@@ -30,7 +31,6 @@ metrop.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 		# G[1:r + n_mu, 1:r + n_mu] <- sig2K * solve(C.inv)
 
 		# st <- Sys.time()
-		# Ginv <- Matrix(0, n_mu+r, n_mu+r)
 		Ginv <- matrix(0, Data$n_mu + Data$r, Data$n_mu + Data$r)
 		Ginv[cbind(1:Data$n_mu, 1:Data$n_mu)] <- 1/sig2mu
 		Ginv[1:Data$r + Data$n_mu, 1:Data$r + Data$n_mu] <- 1/sig2K * Data$C.inv
@@ -41,20 +41,19 @@ metrop.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 		XtOmega <- t(Omega * Data$X)
 		Gamma <- as.matrix(XtOmega %*% Data$X + Ginv)
 		# logger("Gamma took %f secs\n", as.numeric(Sys.time() - st, unit = "secs"))
+
 		# st <- Sys.time()
 		nu <- solve(Gamma, XtOmega %*% Data$y)
 		# logger("nu took %f secs\n", as.numeric(Sys.time() - st, unit = "secs"))
 
 		# st <- Sys.time()
-		# logdet.Omega <- sum(log(eigen(Omega)$values))
 		logdet.Omega <- sum(log(Omega))
 		# logger("logdet.Omega took %f secs\n", as.numeric(Sys.time() - st, unit = "secs"))
 
 		# st <- Sys.time()
-		# Computing eigen on Gamma is very slow.
-		# It is much faster to use chol, then grab the diagonals
+		# Use cholesky decomposition and grab the diagonals to get the determinant.
+		# Seems to be much faster than directly using eigen.
 		# See http://stackoverflow.com/questions/18117218/alternative-ways-to-calculate-the-determinant-of-a-matrix-in-r
-		# logdet.Gamma <- sum(log(eigen(Gamma)$values))
 		L <- chol(Gamma)
 		logdet.Gamma <- 2 * sum(log(diag(L)))
 		# logger("logdet.Gamma took %f secs\n", as.numeric(Sys.time() - st, unit = "secs"))
@@ -69,17 +68,14 @@ metrop.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 			0.5 * t(nu) %*% Gamma %*% nu
 		# logger("logC took %f secs\n", as.numeric(Sys.time() - st, unit = "secs"))
 
-		# st <- Sys.time()
-		# TBD: Replace with our prior
 		lprior <- dinvgamma(sig2mu, 1, 1, log = TRUE) +
 			dinvgamma(sig2K, 1, 1, log = TRUE) +
 			dinvgamma(sig2xi, 1, 1, log = TRUE)
 		ltx <- log(sig2mu) + log(sig2K) + log(sig2xi)
 		ret <- as.numeric(logC + lprior + ltx)
 		printf("sig2mu=%e, sig2K=%e, sig2xi=%e, logpost=%e\n", sig2mu, sig2K, sig2xi, ret)
-		# logger("ret took %f secs\n", as.numeric(Sys.time() - st, unit = "secs"))
 		if (is.infinite(ret)) browser()
-		ret
+		return(ret)
 	}
 
 	rBeta <- function(par, Data) {
@@ -103,13 +99,6 @@ metrop.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 			# nu <- solve(Gamma, XtOmega %*% Data$y)
 			nu <- Gamma.inv %*% (XtOmega %*% Data$y)
 
-			# logdet.Omega <- sum(log(Omega))
-			# L <- chol(Gamma)
-			# logdet.Gamma <- 2 * sum(log(diag(L)))
-			# logdet.G <- Data$n_mu*log(sig2mu) + r*log(sig2K) - Data$logdet.Cinv
-
-			# browser()
-			# system.time(Beta.draws[s,] <- rmvnorm(1, nu, Gamma.inv))
 			zz <- rnorm(ncol(Data$X), 0, 1)
 			Beta.draws[s,] <- as.numeric(chol(Gamma.inv) %*% zz + nu)
 		}
@@ -117,13 +106,9 @@ metrop.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 		return(Beta.draws)
 	} 
 
-	# browser()
-	# logpost(par.init, Data)
-
 	# A workaround, since some of the eigvals in C.inv are negative
 	# Perhaps because they were transferred from Matlab via CSV.
 	eigvals <- eigen(C.inv)$values
-	# eigvals[eigvals < 0] <- -1*eigvals[eigvals < 0]
 	logdet.Cinv <- sum(log(eigvals[eigvals > 0]))
 	Data <- list(y = Z, X = cbind(H, S), sig2eps = sig2eps, C.inv = C.inv,
 		logdet.Cinv = logdet.Cinv, n = n, r = r, n_mu = n_mu)
@@ -133,30 +118,32 @@ metrop.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 	logger("Begin sampling sig2mu, sig2K, and sig2xi\n")
 	st <- Sys.time()
 
-	# browser()
+	# We could try a laplace approximation first ...
 	# laplace.out <- laplace(logpost, par.init, Data)
 	# par.init2 <- laplace.out$mode
 
 	rw.out <- rwmetrop(par.init = par.init, logpost = logpost, R = R,
 		burn = burn, thin = thin, report.period = report.period, Data = Data,
-		proposal = proposal, use.cpp = FALSE)
+		proposal = proposal)
 	timer$phi <- as.numeric(Sys.time() - st, unit = "secs")
 	par.hist <- rw.out$par
 	phi.hist <- exp(par.hist)
 	logger("Finished sampling sig2mu, sig2K, and sig2xi\n")
 
 	if (FALSE) {
-		# TBD: This part is slow, but easy to do in parallel
+		# TBD: This part is slow because of the Gamma inversion
+		# It would be easy to do in parallel across the draws
 		logger("Begin sampling mu and eta\n")
 		st <- Sys.time()
 		Beta.hist <- rBeta(par.hist, Data)
 		timer$beta <- as.numeric(Sys.time() - st, unit = "secs")
 		logger("Finished sampling mu and eta\n")
 	} else {
+		# Just return NA for now
 		Beta.hist <- matrix(NA, nrow(rw.out$par), ncol(Data$X))
 	}
 
-	# TBD: Remove these	after debugging
+	# TBD: Remove this part after debugging
 	if (FALSE) {
 		print(rw.out$accept)
 		par.mcmc <- mcmc(rw.out$par)
