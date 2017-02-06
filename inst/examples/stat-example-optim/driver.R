@@ -24,5 +24,7 @@ mle.out <- mle.stcos(Z, S, sig2eps, H, init = init,
 mu_B.hat <- mle.out$mu.hat
 eta.hat <- mle.out$eta.hat
 sig2xi.hat <- mle.out$sig2xi.hat
+Z.hat <- as.numeric(H %*% mu_B.hat + S %*% eta.hat)
 
 save.image("results.Rdata")
+q("no")
