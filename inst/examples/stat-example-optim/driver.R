@@ -17,16 +17,12 @@ S.el <- read.csv("dat/S1_sparse.txt.gz", header = FALSE)
 S <- sparseMatrix(i = S.el[,1], j = S.el[,2], x = S.el[,3])
 rm(S.el)
 
-init <- list(sig2mu = 1e8, sig2K = 0.1, sig2xi = 1e8)
-proposal <- list(scale = 0.1, var = diag(c(1,4,2)))
-metrop.out <- metrop.stcos(Z, S, sig2eps, C.inv, H, R = 100,
-	proposal = proposal, report.period = 1, burn = 0,
-	thin = 1, init = init)
+init <- list(sig2xi = exp(34.17265))
+mle.out <- mle.stcos(Z, S, sig2eps, H, init = init,
+	optim.control = list(trace = 6))
 
-mu_B.mcmc <- mcmc(metrop.out$mu_B.hist)
-eta.mcmc <- mcmc(metrop.out$eta.hist)
-sig2mu.mcmc <- mcmc(metrop.out$sig2mu.hist)
-sig2xi.mcmc <- mcmc(metrop.out$sig2xi.hist)
-sig2K.mcmc <- mcmc(metrop.out$sig2K.hist)
+mu_B.hat <- mle.out$mu.hat
+eta.hat <- mle.out$eta.hat
+sig2xi.hat <- mle.out$sig2xi.hat
 
 save.image("results.Rdata")

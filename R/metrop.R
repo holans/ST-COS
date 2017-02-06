@@ -1,5 +1,5 @@
 metrop.stcos <- function(Z, S, sig2eps, C.inv, H, R,
-	report.period = R+1, burn = 0, thin = 1,
+	proposal, report.period = R+1, burn = 0, thin = 1,
 	init = NULL, fixed = NULL)
 {
 	stopifnot(R > burn)
@@ -113,7 +113,6 @@ metrop.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 	Data <- list(y = Z, X = cbind(H, S), sig2eps = sig2eps, C.inv = C.inv,
 		logdet.Cinv = logdet.Cinv, n = n, r = r, n_mu = n_mu)
 	par.init <- log(c(init$sig2mu, init$sig2K, init$sig2xi))
-	proposal <- list(scale = 1, var = diag(c(1,1,1)))
 
 	logger("Begin sampling sig2mu, sig2K, and sig2xi\n")
 	st <- Sys.time()
@@ -124,7 +123,7 @@ metrop.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 
 	rw.out <- rwmetrop(par.init = par.init, logpost = logpost, R = R,
 		burn = burn, thin = thin, report.period = report.period, Data = Data,
-		proposal = proposal)
+		proposal = proposal, grp = c(1,2,3))
 	timer$phi <- as.numeric(Sys.time() - st, unit = "secs")
 	par.hist <- rw.out$par
 	phi.hist <- exp(par.hist)
