@@ -122,7 +122,7 @@ We will drop the $\phi$ and $y$ subscripts to make the notation less cumbersome.
 \cdot f(\phi) \nonumber \\
 %
 &\qquad= C \cdot
-\text{N}(\beta \mid \mu, \Gamma^{-1})
+\text{N}(\beta \mid \nu, \Gamma^{-1})
 \cdot f(\phi)
 \label{eqn:factoring}
 \end{align}
@@ -130,10 +130,10 @@ We will drop the $\phi$ and $y$ subscripts to make the notation less cumbersome.
 By the usual chain rule we have $f(\beta, \phi \mid y) = f(\beta \mid \phi, y) f(\phi \mid y)$. Equating this with \eqref{eqn:factoring}, we have
 %
 \begin{align*}
-f(\beta \mid \phi, y) f(\phi \mid y) \propto \text{N}(\beta \mid \mu, \Gamma^{-1}) \cdot C \cdot f(\phi)
+f(\beta \mid \phi, y) f(\phi \mid y) \propto \text{N}(\beta \mid \nu, \Gamma^{-1}) \cdot C \cdot f(\phi)
 \end{align*}
 %
-Then $f(\beta \mid \phi, y) = \text{N}(\beta \mid \mu, \Gamma^{-1})$, which is properly normalized, and $f(\phi \mid y) \propto C \cdot f(\phi)$. Finally, to obtain the expression for $C$,
+Then $f(\beta \mid \phi, y) = \text{N}(\beta \mid \nu, \Gamma^{-1})$, which is properly normalized, and $f(\phi \mid y) \propto C \cdot f(\phi)$. Finally, to obtain the expression for $C$,
 %
 \begin{align*}
 C &= \frac{1}{ (2\pi)^{N/2} \cdot |\Omega^{-1}|^{1/2}}

@@ -86,10 +86,11 @@ model <- function(parm, Data) {
 
 	### Log-Prior and Log-Jacobian
 	lprior <- dgamma(phi, 1, 1, log = TRUE)
-	ljacobian <- log(phi)
+	ltx <- log(phi)
 
 	### Log-Posterior
-	lp <- logC + lprior + ljacobian
+	lp <- logC + lprior + ltx
+	## lp <- logC + lprior
 
 	model.out <- list(LP=lp, Dev=-2*logC, Monitor=lp,
 		yhat = NULL, parm=parm)
