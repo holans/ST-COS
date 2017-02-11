@@ -1,6 +1,6 @@
 metrop.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 	proposal, report.period = R+1, burn = 0, thin = 1,
-	init = NULL, fixed = NULL)
+	init = NULL, fixed = NULL, metrop.grp = c(1,1,1))
 {
 	stopifnot(R > burn)
 
@@ -37,7 +37,7 @@ metrop.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 		# logger("Ginv took %f secs\n", as.numeric(Sys.time() - st, unit = "secs"))
 
 		# st <- Sys.time()
-		Omega <- 1/Data$sig2eps + 1/sig2xi
+		Omega <- 1/(Data$sig2eps + sig2xi)
 		XtOmega <- t(Omega * Data$X)
 		Gamma <- as.matrix(XtOmega %*% Data$X + Ginv)
 		# logger("Gamma took %f secs\n", as.numeric(Sys.time() - st, unit = "secs"))
@@ -54,8 +54,15 @@ metrop.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 		# Use cholesky decomposition and grab the diagonals to get the determinant.
 		# Seems to be much faster than directly using eigen.
 		# See http://stackoverflow.com/questions/18117218/alternative-ways-to-calculate-the-determinant-of-a-matrix-in-r
-		L <- chol(Gamma)
-		logdet.Gamma <- 2 * sum(log(diag(L)))
+		
+		logdet.Gamma <- tryCatch({
+			L <- chol(Gamma)
+			2 * sum(log(diag(L)))
+		}, error = function(e) {
+			logger("chol(Gamma) failed, trying eigen...\n")
+			eig <- eigen(Gamma)$values
+			sum(log(eig[eig > 0]))
+		})
 		# logger("logdet.Gamma took %f secs\n", as.numeric(Sys.time() - st, unit = "secs"))
 
 		# st <- Sys.time()
@@ -68,9 +75,9 @@ metrop.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 			0.5 * t(nu) %*% Gamma %*% nu
 		# logger("logC took %f secs\n", as.numeric(Sys.time() - st, unit = "secs"))
 
-		lprior <- dinvgamma(sig2mu, 1, 1, log = TRUE) +
-			dinvgamma(sig2K, 1, 1, log = TRUE) +
-			dinvgamma(sig2xi, 1, 1, log = TRUE)
+		lprior <- dinvgamma(sig2mu, 2, 1, log = TRUE) +
+			dinvgamma(sig2K, 2, 1e-2, log = TRUE) +
+			dinvgamma(sig2xi, 2, 1e8, log = TRUE)
 		ltx <- log(sig2mu) + log(sig2K) + log(sig2xi)
 		ret <- as.numeric(logC + lprior + ltx)
 		printf("sig2mu=%e, sig2K=%e, sig2xi=%e, logpost=%e\n", sig2mu, sig2K, sig2xi, ret)
@@ -92,7 +99,7 @@ metrop.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 			Ginv[cbind(1:Data$n_mu, 1:Data$n_mu)] <- 1/sig2mu
 			Ginv[1:Data$r + Data$n_mu, 1:Data$r + Data$n_mu] <- 1/sig2K * Data$C.inv
 
-			Omega <- 1/Data$sig2eps + 1/sig2xi
+			Omega <- 1/(Data$sig2eps + sig2xi)
 			XtOmega <- t(Omega * Data$X)
 			Gamma <- as.matrix(XtOmega %*% Data$X + Ginv)
 			Gamma.inv <- solve(Gamma)
@@ -108,9 +115,11 @@ metrop.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 
 	# A workaround, since some of the eigvals in C.inv are negative
 	# Perhaps because they were transferred from Matlab via CSV.
-	eigvals <- eigen(C.inv)$values
-	logdet.Cinv <- sum(log(eigvals[eigvals > 0]))
-	Data <- list(y = Z, X = cbind(H, S), sig2eps = sig2eps, C.inv = C.inv,
+	eig <- eigen(C.inv)
+	eigvals <- eig$values
+	idx <- which(eigvals > 0)
+	logdet.Cinv <- sum(log(eigvals[idx]))
+	Data <- list(y = Z, X = cbind(H, S), sig2eps = sig2eps, C.inv = eig$vectors[,idx] %*% (eigvals[idx] * t(eig$vectors[,idx])),
 		logdet.Cinv = logdet.Cinv, n = n, r = r, n_mu = n_mu)
 	par.init <- log(c(init$sig2mu, init$sig2K, init$sig2xi))
 
@@ -123,7 +132,7 @@ metrop.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 
 	rw.out <- rwmetrop(par.init = par.init, logpost = logpost, R = R,
 		burn = burn, thin = thin, report.period = report.period, Data = Data,
-		proposal = proposal, grp = c(1,2,3))
+		proposal = proposal, grp = metrop.grp)
 	timer$phi <- as.numeric(Sys.time() - st, unit = "secs")
 	par.hist <- rw.out$par
 	phi.hist <- exp(par.hist)

@@ -1,6 +1,6 @@
 gibbs.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 	report.period = R+1, burn = 0, thin = 1,
-	init = NULL, fixed = NULL)
+	init = NULL, fixed = NULL, hyper = NULL)
 {
 	stopifnot(R > burn)
 
@@ -52,6 +52,15 @@ gibbs.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 	if (is.null(fixed$sig2xi)) { fixed$sig2xi <- FALSE }
 	if (is.null(fixed$sig2K)) { fixed$sig2K <- FALSE }
 
+	# Hyperparameters
+	if (is.null(hyper)) { hyper <- list() }
+	if (is.null(hyper$a.sig2mu)) { hyper$a.sig2mu <- 2 }
+	if (is.null(hyper$a.sig2K)) { hyper$a.sig2K <- 2 }
+	if (is.null(hyper$a.sig2xi)) { hyper$a.sig2xi <- 2 }
+	if (is.null(hyper$b.sig2mu)) { hyper$b.sig2mu <- 2 }
+	if (is.null(hyper$b.sig2K)) { hyper$b.sig2K <- 2 }
+	if (is.null(hyper$b.sig2xi)) { hyper$b.sig2xi <- 2 }
+
 	logger("Begin computing SpinvV\n")
 	SpinvV <- matrix(NA, r, n)
 	for (j in 1:r) {
@@ -69,32 +78,26 @@ gibbs.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 			logger("Begin iteration %d, using %0.2f GB RAM\n", tt, mem_used() / 2^30)
 		}
 
-		# Full Conditional for mu_B, using sparse matrix inverse
+		# Full Conditional sig2xi
 		st <- Sys.time()
-		PostLam <- 1 / (eig.HpinvVH$values + 1/sig2mu)
-		V.mu_B <- eig.HpinvVH$vectors %*% (PostLam * t(eig.HpinvVH$vectors))
-		mean.mu_B <- V.mu_B %*% (HpVinv %*% (Z - S %*% eta - xi))
-		mu_B.new <- mean.mu_B + (eig.HpinvVH$vectors %*% (sqrt(PostLam) * rnorm(n_mu)))
-		idx <- setdiff(1:n_mu, fixed$mu_B)
-		mu_B[idx] <- mu_B.new[idx]
-		timer$mu_B <- timer$mu_B + as.numeric(Sys.time() - st, units = "secs")
+		scale <- as.numeric(0.5 * t(xi) %*% xi)
+		sig2xi.new <- 1 / rgamma(1, n/2 + hyper$a.sig2xi, hyper$b.sig2xi + scale)
+		if (!fixed$sig2xi) { sig2xi <- sig2xi.new }
+		timer$sig2xi <- timer$sig2xi + as.numeric(Sys.time() - st, units = "secs")
+
+		# Full Conditional for sig2K
+		st <- Sys.time()
+		scale <- as.numeric(0.5 * t(eta) %*% C.inv %*% eta)
+		sig2K.new <- 1 / rgamma(1, r/2 + hyper$a.sig2xi, hyper$b.sig2K + scale)
+		if (!fixed$sig2K) { sig2K <- sig2K.new }
+		timer$sig2K <- timer$sig2K + as.numeric(Sys.time() - st, units = "secs")
 
 		# Full Conditional for sig2mu
 		st <- Sys.time()
 		scale <- as.numeric(0.5 * t(mu_B) %*% mu_B)
-		sig2mu.new <- 1 / rgamma(1, n_mu/2 + 1, 0.000001 + scale)
+		sig2mu.new <- 1 / rgamma(1, n_mu/2 + hyper$a.sig2mu, hyper$b.sig2mu + scale)
 		if (!fixed$sig2mu) { sig2mu <- sig2mu.new }
 		timer$sig2mu <- timer$sig2mu + as.numeric(Sys.time() - st, units = "secs")
-
-		# Full Conditional for eta
-		st <- Sys.time()
-		zresid <- Z - H %*% mu_B - xi
-		V.eta <- solve(as.matrix((1/sig2K * C.inv) + SpinvVS))
-		mean.eta <- V.eta %*% (SpinvV %*% zresid)
-		eta.new <- mean.eta + chol(V.eta) %*% rnorm(r)
-		idx <- setdiff(1:r, fixed$eta)
-		eta[idx] <- eta.new[idx]
-		timer$eta <- timer$eta + as.numeric(Sys.time() - st, units = "secs")
 
 		# Full Conditional for xi, using sparse matrix inverse
 		st <- Sys.time()
@@ -106,19 +109,25 @@ gibbs.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 		xi[idx] <- xi.new[idx]
 		timer$xi <- timer$xi + as.numeric(Sys.time() - st, units = "secs")
 
-		# Full Conditional sig2xi
+		# Full Conditional for eta
 		st <- Sys.time()
-		scale <- as.numeric(0.5 * t(xi) %*% xi)
-		sig2xi.new <- 1 / rgamma(1, n/2 + 1, 0.000001 + scale)
-		if (!fixed$sig2xi) { sig2xi <- sig2xi.new }
-		timer$sig2xi <- timer$sig2xi + as.numeric(Sys.time() - st, units = "secs")
+		zresid <- Z - H %*% mu_B - xi
+		V.eta <- solve(as.matrix((1/sig2K * C.inv) + SpinvVS))
+		mean.eta <- V.eta %*% (SpinvV %*% zresid)
+		eta.new <- mean.eta + chol(V.eta) %*% rnorm(r)
+		idx <- setdiff(1:r, fixed$eta)
+		eta[idx] <- eta.new[idx]
+		timer$eta <- timer$eta + as.numeric(Sys.time() - st, units = "secs")
 
-		# Full Conditional for sig2K
+		# Full Conditional for mu_B, using sparse matrix inverse
 		st <- Sys.time()
-		scale <- as.numeric(0.5 * t(eta) %*% C.inv %*% eta)
-		sig2K.new <- 1 / rgamma(1, r/2 + 1, 0.000001 + scale)
-		if (!fixed$sig2K) { sig2K <- sig2K.new }
-		timer$sig2K <- timer$sig2K + as.numeric(Sys.time() - st, units = "secs")
+		PostLam <- 1 / (eig.HpinvVH$values + 1/sig2mu)
+		V.mu_B <- eig.HpinvVH$vectors %*% (PostLam * t(eig.HpinvVH$vectors))
+		mean.mu_B <- V.mu_B %*% (HpVinv %*% (Z - S %*% eta - xi))
+		mu_B.new <- mean.mu_B + (eig.HpinvVH$vectors %*% (sqrt(PostLam) * rnorm(n_mu)))
+		idx <- setdiff(1:n_mu, fixed$mu_B)
+		mu_B[idx] <- mu_B.new[idx]
+		timer$mu_B <- timer$mu_B + as.numeric(Sys.time() - st, units = "secs")
 
 		# Update Y
 		st <- Sys.time()

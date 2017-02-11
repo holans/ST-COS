@@ -10,7 +10,7 @@ mle.stcos <- function(Z, S, sig2eps, H, init = NULL,
 
 	loglik <- function(theta, Data) {
 		sig2xi <- exp(theta)
-		Omega <- 1/Data$sig2eps + 1/sig2xi
+		Omega <- 1/(Data$sig2eps + sig2xi)
 		XtOmega <- t(Omega * Data$X)
 		Beta <- solve(XtOmega %*% Data$X, XtOmega %*% Data$y)
 		mean <- as.numeric(Data$X %*% Beta)
@@ -21,6 +21,7 @@ mle.stcos <- function(Z, S, sig2eps, H, init = NULL,
 	optim.control$fnscale <- -1
 	st <- Sys.time()
 	res <- optim(par = log(init$sig2xi), loglik, method = "L-BFGS-B", control = optim.control, Data = Data)
+	# res <- optim(par = log(init$sig2xi), loglik, method = "BFGS", control = optim.control, Data = Data)
 	elapsed.sec <- as.numeric(Sys.time() - st, unit = "secs")
 
 	sig2xi.hat <- exp(res$par)

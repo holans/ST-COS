@@ -17,8 +17,8 @@ S.el <- read.csv("dat/S1_sparse.txt.gz", header = FALSE)
 S <- sparseMatrix(i = S.el[,1], j = S.el[,2], x = S.el[,3])
 rm(S.el)
 
-init <- list(sig2mu = 1e8, sig2K = 0.1, sig2xi = 1e8)
-proposal <- list(scale = 0.1, var = diag(c(1,4,2)))
+init <- list(sig2mu = 1, sig2K = 1e-2, sig2xi = 1e8)
+proposal <- list(scale = 0.3, var = diag(c(1,4,2)))
 metrop.out <- metrop.stcos(Z, S, sig2eps, C.inv, H, R = 100,
 	proposal = proposal, report.period = 1, burn = 0,
 	thin = 1, init = init)
