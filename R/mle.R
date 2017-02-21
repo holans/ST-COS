@@ -20,17 +20,18 @@ mle.stcos <- function(Z, S, sig2eps, H, init = NULL,
 	Data <- list(y=Z, X=cbind(H,S), sig2eps=sig2eps)
 	optim.control$fnscale <- -1
 	st <- Sys.time()
-	res <- optim(par = log(init$sig2xi), loglik, method = "L-BFGS-B", control = optim.control, Data = Data)
-	# res <- optim(par = log(init$sig2xi), loglik, method = "BFGS", control = optim.control, Data = Data)
+	res <- optim(par = log(init$sig2xi), loglik, method = "L-BFGS-B",
+		control = optim.control, Data = Data)
 	elapsed.sec <- as.numeric(Sys.time() - st, unit = "secs")
 
 	sig2xi.hat <- exp(res$par)
-	Omega.hat <- 1/Data$sig2eps + 1/sig2xi.hat
+	Omega.hat <- 1/(Data$sig2eps + sig2xi.hat)
 	XtOmega <- t(Omega.hat * Data$X)
 	Beta.hat <- solve(XtOmega %*% Data$X, XtOmega %*% Data$y)
 	mu.hat <- Beta.hat[1:n]
 	eta.hat <- Beta.hat[1:r + n]
 
-	list(sig2xi.hat = sig2xi.hat, mu.hat = mu.hat, eta.hat = eta.hat, res = res,
-		elapsed.sec = elapsed.sec)
+	list(sig2xi.hat = sig2xi.hat, mu.hat = mu.hat, eta.hat = eta.hat,
+		res = res, elapsed.sec = elapsed.sec)
 }
+
