@@ -33,7 +33,7 @@ B = [PQ'*ones(3109,1),eye(3109)];
 M = real(M);
 
 % Target Covariance
-Kinv=make_full_model_sptcovar_9(Q,M,Sconnectorf,3109);
+Kinv = make_full_model_sptcovar_9(Q,M,Sconnectorf,3109);
 [P,D] = eig(Kinv);
 D = real(diag(D));
 D(D<0) = 0;
@@ -43,7 +43,10 @@ K = real(P)*diag(Dinv)*real(P');
 Kinv = real(P)*diag(D)*real(P');
 \end{lstlisting}
 %
-I think \code{M} should instead be based on the eigenvectors of $I - X(X^T X)^{-1} X^T$, where $X = (H \; I)$. But it looks like $P$ is not computable. In general, for a block matrix, we have
+The code above leads to a Gibbs sampler that exhibits poor mixing; some alternative MCMC strategies have also failed, leading me to suspect that \code{M} may have been computed incorrectly for the ACS example. (I am also wondering about the computation of $S$, the design matrix of basis functions). The appendix in \citet{BradleyEtAl2016-STAT} specifies that \code{M} should instead be based on the eigenvectors of $I - X(X^T X)^{-1} X^T$, where $X = (H \; I)$. 
+
+
+But it looks like $X(X^T X)^{-1} X^T$ is not computable. In general, for a block matrix, we have
 %
 \begin{align*}
 \begin{bmatrix}
