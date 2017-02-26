@@ -1,0 +1,90 @@
+\documentclass[10pt]{article}
+
+\usepackage{araim-common}
+\usepackage{araim-tex}
+
+\makeatletter
+\def\blfootnote{\xdef\@thefnmark{}\@footnotetext}
+\makeatother
+
+\title{Computation of the Moran's I Propagator}
+%\date{}
+\author{Andrew M. Raim
+\vspace{0.5em} \\
+Center for Statistical Research and Methodology, U.S. Census Bureau
+}
+
+\begin{document}
+
+\maketitle
+
+% ---------------------------------------------------
+\section{Introduction}
+\label{sec:intro}
+I noticed that in Jon's Matlab code, he didn't seem to be computing the Moran's I propagator as in the \citet{BradleyEtAl2016-STAT}. The relevant part of the code is as follows.
+
+\begin{lstlisting}
+Q = eye(3109) - 0.9*countAdj;
+[PQ,LQ] = eig(Q);
+
+% Moran's I Propagator
+B = [PQ'*ones(3109,1),eye(3109)];
+[M,LM] = eig(B*pinv(B'*B)*B');
+M = real(M);
+
+% Target Covariance
+Kinv=make_full_model_sptcovar_9(Q,M,Sconnectorf,3109);
+[P,D] = eig(Kinv);
+D = real(diag(D));
+D(D<0) = 0;
+Dinv = D;
+Dinv(D>0) = (1./D(D>0));
+K = real(P)*diag(Dinv)*real(P');
+Kinv = real(P)*diag(D)*real(P');
+\end{lstlisting}
+%
+I think \code{M} should instead be based on the eigenvectors of $I - X(X^T X)^{-1} X^T$, where $X = (H \; I)$. But it looks like $P$ is not computable. In general, for a block matrix, we have
+%
+\begin{align*}
+\begin{bmatrix}
+A & B \\
+C & D
+\end{bmatrix}^{-1}
+=
+\begin{bmatrix}
+E^{-1} & -E^{-1} B D^{-1} \\
+-D^{-1} C E^{-1} & D^{-1} + D^{-1} C E^{-1} B D^{-1}
+\end{bmatrix}
+\end{align*}
+%
+where $E = A - B D^{-1} C$. For our problem, we have
+%
+\begin{align*}
+X^T X =
+\begin{bmatrix}
+H^T \\
+I
+\end{bmatrix}
+\begin{bmatrix}
+H & I
+\end{bmatrix}
+=
+\begin{bmatrix}
+H^T H & H^T \\
+H & I
+\end{bmatrix}.
+\end{align*}
+%
+The inverse of $X^T X$ depends on inverting
+%
+\begin{align*}
+E = H^T H - H^T I^{-1} H = 0.
+\end{align*}
+%
+which is singular.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+%\input{references.bbl}
+
+\end{document}
