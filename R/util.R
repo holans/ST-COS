@@ -9,7 +9,19 @@ logger <- function(msg, ...)
 	cat(sys.time, "-", sprintf(msg, ...))
 }
 
-normalize <- function(x) { x / sum(x) }
+normalize <- function(x)
+{
+	if (sum(x < 0) > 0) {
+		stop("Cannot normalize a vector with negative elements")
+	}
+
+	s <- sum(x)
+	if (s > 0) {
+		return(x / sum(x))
+	}
+
+	return(x)
+}
 
 # Copied from invgamma package
 dinvgamma <- function (x, shape, rate, scale = 1/rate, log = FALSE) 

@@ -1,3 +1,4 @@
+library(stcos)
 #library(rgdal)
 #library(rgeos)
 #library(raster)
