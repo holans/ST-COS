@@ -78,6 +78,10 @@ compute.overlap <- function(D, G, denomflag = 1, report.period = nrow(D@data) + 
 				DGoverlap <- gArea(int)
 			}
 
+			# We have to be vigilant about cleaning up after gIntersection,
+			# or memory use will accumulate quickly.
+			# rm(int); gc()
+
 			if (denomflag == 1) {
 				H[k,j] <- DGoverlap
 			} else if (denomflag == 2) {
