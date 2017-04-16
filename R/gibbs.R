@@ -2,6 +2,9 @@ gibbs.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 	report.period = R+1, burn = 0, thin = 1,
 	init = NULL, fixed = NULL, hyper = NULL)
 {
+	timer <- list(mu_B = 0, sig2mu = 0, eta = 0, xi = 0, sig2xi = 0, sig2K = 0, Y = 0, pre = 0, post = 0)
+
+	st <- Sys.time()
 	stopifnot(R > burn)
 
 	Vinv <- 1 / sig2eps
@@ -68,9 +71,8 @@ gibbs.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 	}
 	SpinvVS <- SpinvV %*% S
 	logger("Finished computing SpinvV\n")
-
-	timer <- list(mu_B = 0, sig2mu = 0, eta = 0, xi = 0, sig2xi = 0, sig2K = 0, Y = 0)
-
+	timer$pre <- timer$pre + as.numeric(Sys.time() - st, units = "secs")
+	
 	logger("Begin Gibbs sampler\n")
 
 	for (tt in 1:R) {
@@ -78,28 +80,28 @@ gibbs.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 			logger("Begin iteration %d, using %0.2f GB RAM\n", tt, mem_used() / 2^30)
 		}
 
-		# Full Conditional sig2xi
+		# Draw from [sig2xi | ---]
 		st <- Sys.time()
 		scale <- as.numeric(0.5 * t(xi) %*% xi)
 		sig2xi.new <- 1 / rgamma(1, n/2 + hyper$a.sig2xi, hyper$b.sig2xi + scale)
 		if (!fixed$sig2xi) { sig2xi <- sig2xi.new }
 		timer$sig2xi <- timer$sig2xi + as.numeric(Sys.time() - st, units = "secs")
 
-		# Full Conditional for sig2K
+		# Draw from [sig2K | ---]
 		st <- Sys.time()
 		scale <- as.numeric(0.5 * t(eta) %*% C.inv %*% eta)
 		sig2K.new <- 1 / rgamma(1, r/2 + hyper$a.sig2K, hyper$b.sig2K + scale)
 		if (!fixed$sig2K) { sig2K <- sig2K.new }
 		timer$sig2K <- timer$sig2K + as.numeric(Sys.time() - st, units = "secs")
 
-		# Full Conditional for sig2mu
+		# Draw from [sig2mu | ---]
 		st <- Sys.time()
 		scale <- as.numeric(0.5 * t(mu_B) %*% mu_B)
 		sig2mu.new <- 1 / rgamma(1, n_mu/2 + hyper$a.sig2mu, hyper$b.sig2mu + scale)
 		if (!fixed$sig2mu) { sig2mu <- sig2mu.new }
 		timer$sig2mu <- timer$sig2mu + as.numeric(Sys.time() - st, units = "secs")
 
-		# Full Conditional for xi, using sparse matrix inverse
+		# Draw from [xi | ---] using sparse matrix inverse
 		st <- Sys.time()
 		Sigma.xi.inv <- Vinv + 1/sig2xi
 		Sigma.xi <- 1 / Sigma.xi.inv
@@ -109,7 +111,7 @@ gibbs.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 		xi[idx] <- xi.new[idx]
 		timer$xi <- timer$xi + as.numeric(Sys.time() - st, units = "secs")
 
-		# Full Conditional for eta
+		# Draw from [eta | ---]
 		st <- Sys.time()
 		zresid <- Z - H %*% mu_B - xi
 		V.eta <- solve(as.matrix((1/sig2K * C.inv) + SpinvVS))
@@ -119,7 +121,7 @@ gibbs.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 		eta[idx] <- eta.new[idx]
 		timer$eta <- timer$eta + as.numeric(Sys.time() - st, units = "secs")
 
-		# Full Conditional for mu_B, using sparse matrix inverse
+		# Draw from [mu_B | ---] using sparse matrix inverse
 		st <- Sys.time()
 		PostLam <- 1 / (eig.HpinvVH$values + 1/sig2mu)
 		V.mu_B <- eig.HpinvVH$vectors %*% (PostLam * t(eig.HpinvVH$vectors))
@@ -151,14 +153,71 @@ gibbs.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 
 	logger("Finished Gibbs sampler\n")
 
-	list(mu_B.hist = mu_B.hist,
+	ret <- list(mu_B.hist = mu_B.hist,
 		xi.hist = xi.hist,
 		eta.hist = eta.hist,
 		sig2mu.hist = sig2mu.hist,
 		sig2xi.hist = sig2xi.hist,
 		sig2K.hist = sig2K.hist,
 		Y.hist = Y.hist,
+		Z = Z, H = H, S = S, sig2eps = sig2eps, R.keep = R.keep,
 		elapsed.sec = timer
 	)
+	class(ret) <- "stcos"
+
+	st <- Sys.time()
+	ret$loglik <- logLik(ret)
+	ret$dic <- DIC.stcos(ret)
+	timer$post <- timer$post + as.numeric(Sys.time() - st, units = "secs")
+
+	return(ret)
 }
 
+logLik.stcos <- function(object, ...)
+{
+	R.keep <- object$R.keep
+	loglik.mcmc <- mcmc(numeric(R.keep))
+	for (r in 1:R.keep) {
+		mu_B <- object$mu_B.hist[r,]
+		eta <- object$eta.hist[r,]
+		sig2xi <- object$sig2xi.hist[r]
+		loglik.mcmc[r] <- sum(
+			dnorm(object$Z, as.numeric(object$H %*% mu_B + object$S %*% eta),
+			sqrt(object$sig2eps + sig2xi),
+			log = TRUE))
+	}
+	return(loglik.mcmc)
+}
+
+DIC.stcos <- function(object, ...)
+{
+	loglik.mcmc <- logLik.stcos(object)
+	mu_B.bar <- colMeans(object$mu_B.hist)
+	eta.bar <- colMeans(object$eta.hist)
+	sig2xi.bar <- mean(object$sig2xi.hist)
+	D.thetabar <- -2 * sum(
+		dnorm(object$Z, as.numeric(object$H %*% mu_B.bar + object$S %*% eta.bar),
+		sqrt(object$sig2eps + sig2xi.bar),
+		log = TRUE))
+	D.bar <- mean(-2*loglik.mcmc)
+	D.thetabar + 2*(D.bar - D.thetabar)
+}
+
+print.stcos <- function (x, ...)
+{
+	variances.mcmc <- mcmc(cbind(x$sig2mu.hist, x$sig2K.hist, x$sig2xi.hist))
+	colnames(variances.mcmc) <- c("sig2mu", "sig2K", "sig2xi")
+
+	total.sec <- sum(unlist(x$elapsed.sec))
+	hh <- floor(total.sec / 60^2)
+	mm <- floor((total.sec - hh*60^2) / 60)
+	ss <- round(total.sec - hh*60^2 - mm*60)
+
+	printf("Fit for STCOS model\n")
+	printf("--\n")
+	print(summary(variances.mcmc)$statistics)
+	printf("--\n")
+	printf("Saved %d draws\n", x$R.keep)
+	printf("DIC: %f\n", x$dic)
+	printf("Elapsed time: %02d:%02d:%02d\n", hh, mm, ss)
+}

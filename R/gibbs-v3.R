@@ -111,7 +111,6 @@ gibbs.stcos.v3 <- function(Z, S, sig2eps, C.inv, H, R,
 		# idx <- setdiff(1:r, fixed$eta)
 		# eta[idx] <- eta.new[idx]
 		# timer$eta <- timer$eta + as.numeric(Sys.time() - st, units = "secs")
-browser()
 		st <- Sys.time()
 		Z.resid <- Z - H %*% mu_B
 		V.eta.inv <- t(S) %*% (V.inv * S) + (1/sig2K * C.inv)
@@ -146,9 +145,9 @@ browser()
 		mu_B[idx] <- mu_B.new[idx]
 		timer$mu_B <- timer$mu_B + as.numeric(Sys.time() - st, units = "secs")
 		
-		st <- Sys.time()
-		Z.resid <- Z - S %*% eta
-		system.time(eig <- eigen(t(H) %*% (V.inv * H)))
+		# st <- Sys.time()
+		# Z.resid <- Z - S %*% eta
+		# system.time(eig <- eigen(t(H) %*% (V.inv * H)))
 
 		# Save history
 		# TBD: This is very expensive to keep in memory. We should be able to
