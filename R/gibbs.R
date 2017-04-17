@@ -31,12 +31,20 @@ gibbs.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 
 	# Initial values
 	if (is.null(init)) { init <- list() }
-	if (is.null(init$mu_B)) { init$mu_B <- rnorm(n_mu) }
-	if (is.null(init$eta)) { init$eta <- rnorm(r) }
-	if (is.null(init$xi)) { init$xi <- numeric(n) }
 	if (is.null(init$sig2mu)) { init$sig2mu <- 1 }
 	if (is.null(init$sig2xi)) { init$sig2xi <- 1 }
 	if (is.null(init$sig2K)) { init$sig2K <- 1 }
+	if (is.null(init$mu_B)) { init$mu_B <- rnorm(n_mu, 0, sqrt(init$sig2mu)) }
+	if (is.null(init$eta)) {
+		eig <- eigen(C.inv)
+		ee <- eig$values
+		ee[ee <= 0] <- min(ee[ee > 0])
+		ee[ee > 0] <- 1 / ee[ee > 0]
+		C <- eig$vectors %*% (ee * t(eig$vectors))
+		K.half <- chol(init$sig2K * C)
+		init$eta <- K.half %*% rnorm(r)
+	}
+	if (is.null(init$xi)) { init$xi <- rnorm(n, 0, sqrt(init$sig2xi)) }
 	mu_B <- init$mu_B
 	eta <- init$eta
 	xi <- init$xi
@@ -80,10 +88,46 @@ gibbs.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 			logger("Begin iteration %d, using %0.2f GB RAM\n", tt, mem_used() / 2^30)
 		}
 
+		# Draw from [xi | ---] using sparse matrix inverse
+		st <- Sys.time()
+		Sigma.xi.inv <- Vinv + 1/sig2xi
+		Sigma.xi <- 1 / Sigma.xi.inv
+		mean.xi <- Sigma.xi * Vinv * (Z - S %*% eta - H %*% mu_B)
+		xi.new <- mean.xi + sqrt(Sigma.xi) * rnorm(n)
+		idx <- setdiff(1:n, fixed$xi)
+		xi[idx] <- xi.new[idx]
+		timer$xi <- timer$xi + as.numeric(Sys.time() - st, units = "secs")
+
+		# Draw from [eta | ---]
+		st <- Sys.time()
+		V.eta <- solve(as.matrix((1/sig2K * C.inv) + SpinvVS))
+		mean.eta <- V.eta %*% (SpinvV %*% (Z - H %*% mu_B - xi))
+		eta.new <- mean.eta + chol(V.eta) %*% rnorm(r)
+		idx <- setdiff(1:r, fixed$eta)
+		eta[idx] <- eta.new[idx]
+		timer$eta <- timer$eta + as.numeric(Sys.time() - st, units = "secs")
+
+		# Draw from [mu_B | ---] using sparse matrix inverse
+		st <- Sys.time()
+		PostLam <- 1 / (eig.HpinvVH$values + 1/sig2mu)
+		V.mu_B <- eig.HpinvVH$vectors %*% (PostLam * t(eig.HpinvVH$vectors))
+		mean.mu_B <- V.mu_B %*% (HpVinv %*% (Z - S %*% eta - xi))
+		mu_B.new <- mean.mu_B + (eig.HpinvVH$vectors %*% (sqrt(PostLam) * rnorm(n_mu)))
+		
+		# browser()
+		# Gamma <- t(H) %*% (Vinv * H) + Diagonal(n_mu, 1/sig2mu)
+		# theta <- solve(Gamma, t(H) %*% (Vinv * (Z - S %*% eta - xi)))
+		# Gamma.inv <- solve(Gamma)
+
+		idx <- setdiff(1:n_mu, fixed$mu_B)
+		mu_B[idx] <- mu_B.new[idx]
+		timer$mu_B <- timer$mu_B + as.numeric(Sys.time() - st, units = "secs")
+
 		# Draw from [sig2xi | ---]
 		st <- Sys.time()
 		scale <- as.numeric(0.5 * t(xi) %*% xi)
 		sig2xi.new <- 1 / rgamma(1, n/2 + hyper$a.sig2xi, hyper$b.sig2xi + scale)
+		printf("sig2xi ~ IG(%f, %f) => %f\n", n/2 + hyper$a.sig2xi, hyper$b.sig2xi + scale, sig2xi.new)
 		if (!fixed$sig2xi) { sig2xi <- sig2xi.new }
 		timer$sig2xi <- timer$sig2xi + as.numeric(Sys.time() - st, units = "secs")
 
@@ -100,36 +144,6 @@ gibbs.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 		sig2mu.new <- 1 / rgamma(1, n_mu/2 + hyper$a.sig2mu, hyper$b.sig2mu + scale)
 		if (!fixed$sig2mu) { sig2mu <- sig2mu.new }
 		timer$sig2mu <- timer$sig2mu + as.numeric(Sys.time() - st, units = "secs")
-
-		# Draw from [xi | ---] using sparse matrix inverse
-		st <- Sys.time()
-		Sigma.xi.inv <- Vinv + 1/sig2xi
-		Sigma.xi <- 1 / Sigma.xi.inv
-		mean.xi <- Sigma.xi * Vinv * (Z - S %*% eta - H %*% mu_B)
-		xi.new <- mean.xi + sqrt(Sigma.xi) * rnorm(n)
-		idx <- setdiff(1:n, fixed$xi)
-		xi[idx] <- xi.new[idx]
-		timer$xi <- timer$xi + as.numeric(Sys.time() - st, units = "secs")
-
-		# Draw from [eta | ---]
-		st <- Sys.time()
-		zresid <- Z - H %*% mu_B - xi
-		V.eta <- solve(as.matrix((1/sig2K * C.inv) + SpinvVS))
-		mean.eta <- V.eta %*% (SpinvV %*% zresid)
-		eta.new <- mean.eta + chol(V.eta) %*% rnorm(r)
-		idx <- setdiff(1:r, fixed$eta)
-		eta[idx] <- eta.new[idx]
-		timer$eta <- timer$eta + as.numeric(Sys.time() - st, units = "secs")
-
-		# Draw from [mu_B | ---] using sparse matrix inverse
-		st <- Sys.time()
-		PostLam <- 1 / (eig.HpinvVH$values + 1/sig2mu)
-		V.mu_B <- eig.HpinvVH$vectors %*% (PostLam * t(eig.HpinvVH$vectors))
-		mean.mu_B <- V.mu_B %*% (HpVinv %*% (Z - S %*% eta - xi))
-		mu_B.new <- mean.mu_B + (eig.HpinvVH$vectors %*% (sqrt(PostLam) * rnorm(n_mu)))
-		idx <- setdiff(1:n_mu, fixed$mu_B)
-		mu_B[idx] <- mu_B.new[idx]
-		timer$mu_B <- timer$mu_B + as.numeric(Sys.time() - st, units = "secs")
 
 		# Update Y
 		st <- Sys.time()
