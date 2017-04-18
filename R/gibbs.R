@@ -98,6 +98,28 @@ gibbs.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 		xi[idx] <- xi.new[idx]
 		timer$xi <- timer$xi + as.numeric(Sys.time() - st, units = "secs")
 
+		# Draw from [sig2xi | ---]
+		st <- Sys.time()
+		scale <- as.numeric(0.5 * t(xi) %*% xi)
+		sig2xi.new <- 1 / rgamma(1, n/2 + hyper$a.sig2xi, hyper$b.sig2xi + scale)
+		printf("sig2xi ~ IG(%f, %f) => %f\n", n/2 + hyper$a.sig2xi, hyper$b.sig2xi + scale, sig2xi.new)
+		if (!fixed$sig2xi) { sig2xi <- sig2xi.new }
+		timer$sig2xi <- timer$sig2xi + as.numeric(Sys.time() - st, units = "secs")
+
+		# Draw from [sig2mu | ---]
+		st <- Sys.time()
+		scale <- as.numeric(0.5 * t(mu_B) %*% mu_B)
+		sig2mu.new <- 1 / rgamma(1, n_mu/2 + hyper$a.sig2mu, hyper$b.sig2mu + scale)
+		if (!fixed$sig2mu) { sig2mu <- sig2mu.new }
+		timer$sig2mu <- timer$sig2mu + as.numeric(Sys.time() - st, units = "secs")
+
+		# Draw from [sig2K | ---]
+		st <- Sys.time()
+		scale <- as.numeric(0.5 * t(eta) %*% C.inv %*% eta)
+		sig2K.new <- 1 / rgamma(1, r/2 + hyper$a.sig2K, hyper$b.sig2K + scale)
+		if (!fixed$sig2K) { sig2K <- sig2K.new }
+		timer$sig2K <- timer$sig2K + as.numeric(Sys.time() - st, units = "secs")
+
 		# Draw from [eta | ---]
 		st <- Sys.time()
 		V.eta <- solve(as.matrix((1/sig2K * C.inv) + SpinvVS))
@@ -113,37 +135,13 @@ gibbs.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 		V.mu_B <- eig.HpinvVH$vectors %*% (PostLam * t(eig.HpinvVH$vectors))
 		mean.mu_B <- V.mu_B %*% (HpVinv %*% (Z - S %*% eta - xi))
 		mu_B.new <- mean.mu_B + (eig.HpinvVH$vectors %*% (sqrt(PostLam) * rnorm(n_mu)))
-		
 		# browser()
 		# Gamma <- t(H) %*% (Vinv * H) + Diagonal(n_mu, 1/sig2mu)
 		# theta <- solve(Gamma, t(H) %*% (Vinv * (Z - S %*% eta - xi)))
 		# Gamma.inv <- solve(Gamma)
-
 		idx <- setdiff(1:n_mu, fixed$mu_B)
 		mu_B[idx] <- mu_B.new[idx]
 		timer$mu_B <- timer$mu_B + as.numeric(Sys.time() - st, units = "secs")
-
-		# Draw from [sig2xi | ---]
-		st <- Sys.time()
-		scale <- as.numeric(0.5 * t(xi) %*% xi)
-		sig2xi.new <- 1 / rgamma(1, n/2 + hyper$a.sig2xi, hyper$b.sig2xi + scale)
-		printf("sig2xi ~ IG(%f, %f) => %f\n", n/2 + hyper$a.sig2xi, hyper$b.sig2xi + scale, sig2xi.new)
-		if (!fixed$sig2xi) { sig2xi <- sig2xi.new }
-		timer$sig2xi <- timer$sig2xi + as.numeric(Sys.time() - st, units = "secs")
-
-		# Draw from [sig2K | ---]
-		st <- Sys.time()
-		scale <- as.numeric(0.5 * t(eta) %*% C.inv %*% eta)
-		sig2K.new <- 1 / rgamma(1, r/2 + hyper$a.sig2K, hyper$b.sig2K + scale)
-		if (!fixed$sig2K) { sig2K <- sig2K.new }
-		timer$sig2K <- timer$sig2K + as.numeric(Sys.time() - st, units = "secs")
-
-		# Draw from [sig2mu | ---]
-		st <- Sys.time()
-		scale <- as.numeric(0.5 * t(mu_B) %*% mu_B)
-		sig2mu.new <- 1 / rgamma(1, n_mu/2 + hyper$a.sig2mu, hyper$b.sig2mu + scale)
-		if (!fixed$sig2mu) { sig2mu <- sig2mu.new }
-		timer$sig2mu <- timer$sig2mu + as.numeric(Sys.time() - st, units = "secs")
 
 		# Update Y
 		st <- Sys.time()
