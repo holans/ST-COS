@@ -1,8 +1,0 @@
-*** Current issues ***
-o Some of the shape files don't have their CRS coding set.
-o My Q matrix seems to be different than Jon's (check the order of areal units).
-o My M matrix is different than Jon's, even though the matrix GBI is the same.
-o My sptcovar9 output is different than Jon's.
-o licols in R and Matlab give very different results; QR decomposition estimates
-  rank as 3500 in R and 1250 in Matlab. Maybe we should try a different reduction
-  of S?
