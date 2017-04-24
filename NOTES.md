@@ -133,38 +133,15 @@ function getH()
 end
 ```
 
-What if we tried to do this without OOP in plain R? Then the user would have
-to pass everything (like fg, all the basis function arguments, etc) each time
-anything was called.
+We might want a simple class hierarchy for the basis functions. the user will
+construct one of these and pass it to the `STCOSPrep` object before adding
+observed domains. `BisquareBasis` for example might be set up with cut points,
+`w_s` and `w_t` parameters, a number of MC draws or gridpoints, etc. The
+implementation of `BisquareBasis` could be in Rcpp, if it helps to speed things up.
+Maybe the default choice for cutpoints should be called something like
+`space_filling`, which takes a domain and a number of spatial points.
 
-
-Let's see if we can use R's `R6` classes to implement this OOP idea...
-
-```
-library(R6)
-STCOSPrep <- R6Class("STCOSPrep",
-public = list(
-	initialize = function(name = NA, hair = NA) {
-		private$H_list <- list()
-		private$S_list <- list()
-		private$Z_list <- list()
-		private$sig2var_list <- list()
-	},
-	add_obs = function(val) {
-		...
-	},
-	get_H = function() {
-		...
-	}
-),
-private = list(
-	H_list = NULL,
-	S_list = NULL,
-	Z_list = NULL,
-	sig2var_list = NULL,
-),
-lock_class = TRUE
-)
-```
-
-TBD: Where to pass all the stuff we need to compute Cinv?
+The time cutpoints would just be computed from the period. If `period` is
+length 1, take cutpoint to be `mean(period-1, period)`. Otherwise take it
+to be `mean(period)`. This at least matches Jon's numbers. Or even better,
+we can let the user provide a function based on the period.

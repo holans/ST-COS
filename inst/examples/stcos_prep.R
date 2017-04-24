@@ -1,4 +1,3 @@
-library(R6)
 library(stcos)
 library(sf)
 
@@ -34,19 +33,39 @@ load.domain <- function(shpfile, datfile, layername, crs.tx = NULL, crs.orig = N
 	sigmavar <- esigmavar * (1 / eZagg)^2
 
 	area$EST <- eZagg
-	area$VAR <- sigmavar
+	area$VAR <- esigmavar
 	return(area)
 }
 
-res3 <- load.domain("shp/period3.shp", "shp/period3.csv", "period3")
-sp <- STCOSPrep$new(res3)
+# Fine-level domain comes from ACS 5-year estimates for 2013
+acs5.2013 <- load.domain("shp/period3.shp", "shp/period3.csv", "period3")
+
+# Set up knots for bisquare basis
+knots.sp <- read.csv("dat/knots250_ACS_amr.csv", head = FALSE)
+knots.t <- c(2012.5, 2011, 2011.5, 2011, 2010, 2010.5, 2010, 2009, 2009.5, 2009,
+	2008, 2008.5, 2008, 2007, 2007.5, 2007, 2006.5, 2006, 2005.5)
+knots <- merge(knots.sp, knots.t)
+names(knots) <- c("x", "y", "t")
+basis <- BisquareBasis$new(knots[,1], knots[,2], knots[,3], w.s = 0.5, w.t = 0.5)
+
+# Construct a STCOSPrep object, then add space-time domains with observations
+sp <- STCOSPrep$new(fine_domain = acs5.2013, basis = basis)
 
 # ACS 1-year estimates for 2013
-res1 <- load.domain("shp/period1.shp", "shp/period1.csv", "period1", crs.tx = st_crs(res3$area))
-sp$add_obs(res1, time = 2013, period = 2013, estimate_name = "EST", variance_name = "VAR")
+acs1.2013 <- load.domain("shp/period1.shp", "shp/period1.csv", "period1", crs.tx = st_crs(acs5.2013))
+sp$add_obs(acs1.2013, time = 2013, period = 2013, estimate_name = "EST", variance_name = "VAR")
 
 # ACS 5-year estimates for 2012
-res3.2012 <- load.domain("shp/period3_2012.shp", "shp/period3_2012.csv", "period3_2012", crs.tx = st_crs(res3$area))
-sp$add_obs(res3.2012, time = 2012, period = 2009:2013, estimate_name = "EST", variance_name = "VAR")
+acs5.2012 <- load.domain("shp/period3_2012.shp", "shp/period3_2012.csv", "period3_2012", crs.tx = st_crs(acs5.2013))
+sp$add_obs(acs5.2012, time = 2012, period = 2009:2013, estimate_name = "EST", variance_name = "VAR")
 
+
+Z <- sp$get_Z()
+V <- sp$get_V()
+H <- sp$get_H()
+
+# Here's where we would think about a reduction for S
+S <- sp$get_S()
+sp$set_basis_reduction(identity)
+S.reduced <- sp$get_reduced_S()
 
