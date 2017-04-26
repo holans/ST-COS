@@ -145,3 +145,9 @@ The time cutpoints would just be computed from the period. If `period` is
 length 1, take cutpoint to be `mean(period-1, period)`. Otherwise take it
 to be `mean(period)`. This at least matches Jon's numbers. Or even better,
 we can let the user provide a function based on the period.
+
+
+# Scott Meeting
+* We should support/discuss reading shapefile and areal data separately, and joining them.
+* We could auto-project all the observed domains to the fine-level one.
+* We'll want to make some maps. Either by example or by making some helper functions.

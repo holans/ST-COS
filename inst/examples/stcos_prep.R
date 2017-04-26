@@ -57,7 +57,7 @@ sp$add_obs(acs1.2013, time = 2013, period = 2013, estimate_name = "EST", varianc
 
 # ACS 5-year estimates for 2012
 acs5.2012 <- load.domain("shp/period3_2012.shp", "shp/period3_2012.csv", "period3_2012", crs.tx = st_crs(acs5.2013))
-sp$add_obs(acs5.2012, time = 2012, period = 2009:2013, estimate_name = "EST", variance_name = "VAR")
+sp$add_obs(acs5.2012, time = 2012, period = 2008:2012, estimate_name = "EST", variance_name = "VAR")
 
 
 Z <- sp$get_Z()
