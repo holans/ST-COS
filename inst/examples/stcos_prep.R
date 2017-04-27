@@ -1,7 +1,7 @@
 library(stcos)
 library(sf)
 
-setwd("/home/araim/Documents/simulations/ST-COS/run-20170324-checkoverlaps-sf")
+setwd("/home/araim/Documents/simulations/ST-COS")
 
 load.domain <- function(shpfile, datfile, layername, crs.tx = NULL, crs.orig = NULL)
 {

@@ -1,6 +1,6 @@
 STCOSPrep <- R6Class("STCOSPrep",
 	public = list(
-		initialize = function(fine_domain, basis) {
+		initialize = function(fine_domain, basis, basis_mc_reps = 500) {
 			stopifnot("sf" %in% class(fine_domain))
 			stopifnot("BisquareBasis" %in% class(basis))
 
@@ -11,6 +11,7 @@ STCOSPrep <- R6Class("STCOSPrep",
 			private$V_list <- list()
 			private$N <- 0
 			private$L <- 0
+			private$basis_mc_reps <- basis_mc_reps
 			private$basis <- basis
 			private$basis_reduction <- identity
 		}
@@ -23,6 +24,7 @@ STCOSPrep <- R6Class("STCOSPrep",
 		V_list = NULL,
 		N = NULL,
 		L = NULL,
+		basis_mc_reps = NULL,
 		basis = NULL,
 		basis_reduction = NULL
 	)
@@ -43,6 +45,9 @@ add_obs <- function(domain, time, period, estimate_name, variance_name)
 
 	L <- private$L
 	N <- private$N
+	B <- private$basis_mc_reps
+	n <- nrow(domain)
+	r <- basis$get_dim()
 
 	logger("Extracting survey estimates from field '%s'", estimate_name)
 	printf(" and variance estimates from field '%s'\n", variance_name)
@@ -56,6 +61,29 @@ add_obs <- function(domain, time, period, estimate_name, variance_name)
 
 	logger("Computing basis functions\n")
 	message("Write me")
+
+	S <- matrix(0, n, r)
+	T <- length(times)
+
+	s1 <- array(NA, dim = c(T, n, B))
+	s2 <- array(NA, dim = c(T, n, B))
+	
+	for (t in 1:T) {
+		for (l in 1:L) {
+			P <- randomly_generate_Ds(LU(j), B)
+			s2[t,l,] <- P[,1]
+			s1[t,l,] <- P[,2]
+		}
+	}
+
+	for (t in 1:T) {
+		for (i in 1:B) {
+			logger("Iteration %d, time %d\n", i, t)
+			S <- S + basis$compute(s1[t,,i], s2[t,,i], period[t])
+		}
+	}
+	S <- S / (B*T)
+	
 	# for each area in the domain,
 	#	Generate either a grid or a random draw of points
 	# for b = 1:B
@@ -64,7 +92,6 @@ add_obs <- function(domain, time, period, estimate_name, variance_name)
 	#	end
 	# end
 	# S <- S / (B*length(periods))
-	r <- basis$get_dim()
 	S <- Matrix(0, N, r)
 	private$S_list[[L]] <- S
 

@@ -1,3 +1,18 @@
+# Notes
+* Needed to install udunits library as a prereq for `sf` package. In Ubuntu, I
+did this.
+``` bash
+S sudo apt-get install libudunits2-dev
+```
+* Needed to install an up-to-date GDAL library as a prereq for `sf` package.
+In Ubuntu, I did this.
+``` bash
+$ sudo add-apt-repository ppa:ubuntugis/ppa
+$ sudo apt-get update
+$ sudo apt-get upgrade
+$ sudo apt-get install libgdal-dev
+```
+
 # Current issues
 * Some of the shape files don't have their CRS coding set.
 * My `Q` matrix seems to be different than Jon's (check the order of areal units).
@@ -151,3 +166,5 @@ we can let the user provide a function based on the period.
 * We should support/discuss reading shapefile and areal data separately, and joining them.
 * We could auto-project all the observed domains to the fine-level one.
 * We'll want to make some maps. Either by example or by making some helper functions.
+* We should make a function to predict on a target geography after the MCMC
+  is complete. This is one of the major uses of the methodology.
