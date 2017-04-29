@@ -1,6 +1,6 @@
 STCOSPrep <- R6Class("STCOSPrep",
 	public = list(
-		initialize = function(fine_domain, basis, basis_mc_reps = 500) {
+		initialize = function(fine_domain, basis, basis_mc_reps = 500, report_period = 100) {
 			stopifnot("sf" %in% class(fine_domain))
 			stopifnot("BisquareBasis" %in% class(basis))
 
@@ -14,6 +14,7 @@ STCOSPrep <- R6Class("STCOSPrep",
 			private$basis_mc_reps <- basis_mc_reps
 			private$basis <- basis
 			private$basis_reduction <- identity
+			private$report_period <- report_period
 		}
 	),
 	private = list(
@@ -26,7 +27,8 @@ STCOSPrep <- R6Class("STCOSPrep",
 		L = NULL,
 		basis_mc_reps = NULL,
 		basis = NULL,
-		basis_reduction = NULL
+		basis_reduction = NULL,
+		report_period = NULL
 	)
 )
 
@@ -45,7 +47,7 @@ add_obs <- function(domain, time, period, estimate_name, variance_name)
 
 	L <- private$L
 	N <- private$N
-	B <- private$basis_mc_reps
+	R <- private$basis_mc_reps
 	n <- nrow(domain)
 	r <- basis$get_dim()
 
@@ -60,39 +62,33 @@ add_obs <- function(domain, time, period, estimate_name, variance_name)
 	private$H_list[[L]] <- H
 
 	logger("Computing basis functions\n")
-	message("Write me")
 
-	S <- matrix(0, n, r)
-	T <- length(times)
+	S <- Matrix(0, n, r)
+	T <- length(period)
 
-	s1 <- array(NA, dim = c(T, n, B))
-	s2 <- array(NA, dim = c(T, n, B))
-	
-	for (t in 1:T) {
-		for (l in 1:L) {
-			P <- randomly_generate_Ds(LU(j), B)
-			s2[t,l,] <- P[,1]
-			s1[t,l,] <- P[,2]
+	s1 <- array(NA, dim = c(T, n, R))
+	s2 <- array(NA, dim = c(T, n, R))
+
+	for (j in 1:n) {
+		if (j %% private$report_period == 0) {
+			logger("Drawing points for area %d of %d\n", j, n)
+		}
+		for (t in 1:T) {
+			P <- rArea(R, domain[j,])
+			s2[t,j,] <- P[,1]
+			s1[t,j,] <- P[,2]
 		}
 	}
 
-	for (t in 1:T) {
-		for (i in 1:B) {
-			logger("Iteration %d, time %d\n", i, t)
-			S <- S + basis$compute(s1[t,,i], s2[t,,i], period[t])
+	for (r in 1:R) {
+		if (r %% private$report_period == 0) {
+			logger("Computing basis for rep %d of %d\n", r, R)
+		}
+		for (t in 1:T) {
+			S <- S + basis$compute(s1[t,,r], s2[t,,r], period[t])
 		}
 	}
-	S <- S / (B*T)
-	
-	# for each area in the domain,
-	#	Generate either a grid or a random draw of points
-	# for b = 1:B
-	#	for time = 1:periods
-	#		S <- S + basis$compute(domain)
-	#	end
-	# end
-	# S <- S / (B*length(periods))
-	S <- Matrix(0, N, r)
+	S <- S / (R*T)
 	private$S_list[[L]] <- S
 
 	logger("Finished adding observed space-time domain\n")
