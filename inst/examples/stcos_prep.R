@@ -39,9 +39,21 @@ load.domain <- function(shpfile, datfile, layername, crs.tx = NULL, crs.orig = N
 
 # Fine-level domain comes from ACS 5-year estimates for 2013
 acs5.2013 <- load.domain("shp/period3.shp", "shp/period3.csv", "period3")
+acs5.2013 <- st_transform(acs5.2013, "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 
 # Set up knots for bisquare basis
-knots.sp <- read.csv("dat/knots250_ACS_amr.csv", head = FALSE)
+# Make sure knots are transformed to the same projection as fine-level geography
+knots.sp.raw <- read.csv("dat/knots250_ACS_amr.csv", head = FALSE)
+pp <- list()
+for (i in 1:nrow(knots.sp.raw)) {
+	pp[[i]] <- st_point(as.numeric(knots.sp.raw[i,]))
+}
+sfc <- st_sfc(pp, crs = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+plot(sfc)
+sfc.tx <- st_transform(sfc, st_crs(acs5.2013))
+plot(sfc.tx)
+knots.sp <- matrix(unlist(sfc.tx), length(sfc.tx), 2, byrow = TRUE)
+
 knots.t <- c(2012.5, 2011, 2011.5, 2011, 2010, 2010.5, 2010, 2009, 2009.5, 2009,
 	2008, 2008.5, 2008, 2007, 2007.5, 2007, 2006.5, 2006, 2005.5)
 knots <- merge(knots.sp, knots.t)
@@ -53,7 +65,7 @@ sp <- STCOSPrep$new(fine_domain = acs5.2013, basis = basis)
 
 # ACS 1-year estimates for 2013
 acs1.2013 <- load.domain("shp/period1.shp", "shp/period1.csv", "period1", crs.tx = st_crs(acs5.2013))
-sp$add_obs(acs1.2013, time = 2013, period = 2013, estimate_name = "EST", variance_name = "VAR")
+sp$add_obs(acs1.2013[1:3,], time = 2013, period = 2013, estimate_name = "EST", variance_name = "VAR")
 
 # ACS 5-year estimates for 2012
 acs5.2012 <- load.domain("shp/period3_2012.shp", "shp/period3_2012.csv", "period3_2012", crs.tx = st_crs(acs5.2013))

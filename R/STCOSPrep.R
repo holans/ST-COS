@@ -75,8 +75,8 @@ add_obs <- function(domain, time, period, estimate_name, variance_name)
 		}
 		for (t in 1:T) {
 			P <- rArea(R, domain[j,])
-			s2[t,j,] <- P[,1]
-			s1[t,j,] <- P[,2]
+			s1[t,j,] <- P[,1]
+			s2[t,j,] <- P[,2]
 		}
 	}
 

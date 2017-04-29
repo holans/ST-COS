@@ -25,31 +25,8 @@ compute <- function(x, y, time)
 {
 	X <- cbind(x, y, time)
 	cc <- private$cutpoints
-	w <- c(private$w.s, private$w.s, private$w.t)
-	S <- compute_basis(X, cc, w)
-	return(S)
-}
-
-compute.old <- function(x, y, time)
-{
-	X <- cbind(x, y, time)
-	N <- nrow(X)
-
-	cc <- private$cutpoints
-	w2 <- c(private$w.s, private$w.s, private$w.t)^2
-	r <- private$r
-	S <- Matrix(0, N, r)
-
-	for (i in 1:N) {
-		for (j in 1:r) {
-			h2 <- (X[i,] - cc[j,])^2
-			d2 <- 1 - sum(h2 / w2)
-			if (d2 > 0) {
-				S[i,j] <- sqrt(d2)
-			}
-		}
-	}
-
+browser()
+	S <- compute_basis(X, cc, private$w.s, private$w.t)
 	return(S)
 }
 
