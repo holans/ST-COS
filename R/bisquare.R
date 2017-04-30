@@ -25,7 +25,6 @@ compute <- function(x, y, time)
 {
 	X <- cbind(x, y, time)
 	cc <- private$cutpoints
-browser()
 	S <- compute_basis(X, cc, private$w.s, private$w.t)
 	return(S)
 }
