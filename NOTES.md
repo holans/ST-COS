@@ -27,7 +27,14 @@ $ sudo apt-get install libgdal-dev
 - [ ] Gelman-Rubin test for convergence
 - [ ] Work out package design
 - [x] Get Scott's feedback on using thinning.
-- [ ] Write a `compute.overlaps` function in the package using `sf` code.
+- [x] Write a `compute.overlaps` function in the package using `sf` code.
+- [x] Compute basis functions in the code.
+- [ ] Finish porting the `licols` function to R.
+- [ ] Add support to reduce the `S` matrix.
+- [ ] Add code to compute `Kinv`.
+
+# To Check
+- [ ] Correctness of basis calculation vs Matlab
 
 # Preprocessing Steps
 #### Compute the matrix `H` of overlaps.
@@ -51,6 +58,11 @@ $ sudo apt-get install libgdal-dev
 3. Compute the Cov matrix of the target VAR process and combine with
   `Sconnector` matrices.
 4. Apply Higham approximation.
+
+# Some questions for Scott
+* 0.05 quantile of pairwise distances used for basis computation
+* Issues with projections using latlon
+* Interface to provide reduction of `S`
 
 # Some Design Notes
 
@@ -76,18 +88,7 @@ $ sudo apt-get install libgdal-dev
 * Posterior predictive draws
 
 #### Some design questions
-* Can we add some top-level "time" and "period" attributes to a shape object?
-* Will we blow up the memory usage if we require the user to load all the geographies at once?
-* Are all the geographies even needed at once? I think technically not:
-    a. Load the fine-level geography
-    b. For each obs'd geography, compute its portion of `H`, `S`, `Z` and
-       `sig2var`. (It's like we want to build up a persistent state, using
-       given choices for basis functions, cut points, etc. Then unload the
-       shape file as soon as we can, or at least let the user do it. At the
-       end, we should be able to grab all the stuff we need for the MCMC).
-    c. 
-    
-    
+
 ```
 fg = ... fine-level geography
 sp = new STCOSPrep(fg)
@@ -161,6 +162,13 @@ length 1, take cutpoint to be `mean(period-1, period)`. Otherwise take it
 to be `mean(period)`. This at least matches Jon's numbers. Or even better,
 we can let the user provide a function based on the period.
 
+To predict a new target geography, we could have the user put together a new
+`STCOSPrep` object. Except here they should not need to provide `Z` or `V`.
+(Perhaps they would use the original object and call a different function
+than `add_obs`?). This will allow them to extract the necessary `H` and `S`
+matrices. They should then be able to get predictions with a call like
+`predict(gibbs.out, H.new, S.new)`. Or they can get the raw MCMC draws
+and compute prediction quantities themselves.
 
 # Scott Meeting
 * We should support/discuss reading shapefile and areal data separately, and joining them.

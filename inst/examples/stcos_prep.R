@@ -84,3 +84,7 @@ S <- sp$get_S()
 sp$set_basis_reduction(identity)
 S.reduced <- sp$get_reduced_S()
 
+li.out <- licols(as.matrix(S), tol = 0.285)
+f <- function(S) { S[,li.out$idx] }
+sp$set_basis_reduction(f)
+S.reduced <- sp$get_reduced_S()
