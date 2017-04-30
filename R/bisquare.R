@@ -8,6 +8,11 @@ BisquareBasis <- R6Class("BisquareBasis",
 			private$w.s <- w.s
 			private$w.t <- w.t
 			private$r <- r
+
+			# Jon's code computes basis with rl instead of w.s
+			G <- dist(private$cutpoints)
+			private$rl <- w.s * quantile(G[G > 0], prob = 0.05)
+			printf("rl = %f\n", private$rl)
 		},
 		get_dim = function() {
 			private$r
@@ -17,7 +22,8 @@ BisquareBasis <- R6Class("BisquareBasis",
 		r = NULL,
 		cutpoints = NULL,
 		w.s = NULL,
-		w.t = NULL
+		w.t = NULL,
+		rl = NULL
 	)
 )
 
@@ -25,7 +31,7 @@ compute <- function(x, y, time)
 {
 	X <- cbind(x, y, time)
 	cc <- private$cutpoints
-	S <- compute_basis(X, cc, private$w.s, private$w.t)
+	S <- compute_basis(X, cc, private$rl, private$w.t)
 	return(S)
 }
 

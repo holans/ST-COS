@@ -61,7 +61,7 @@ knots.t <- c(2012.5, 2011, 2011.5, 2011, 2010, 2010.5, 2010, 2009, 2009.5, 2009,
 knots <- merge(knots.sp, knots.t)
 names(knots) <- c("x", "y", "t")
 # basis <- BisquareBasis$new(knots[,1], knots[,2], knots[,3], w.s = 0.5, w.t = 0.5)
-basis <- BisquareBasis$new(knots[,1], knots[,2], knots[,3], w.s = 1000000, w.t = 1000000)
+basis <- BisquareBasis$new(knots[,1], knots[,2], knots[,3], w.s = 1, w.t = 1)
 
 # Construct a STCOSPrep object, then add space-time domains with observations
 sp <- STCOSPrep$new(fine_domain = acs5.2013, basis = basis)
