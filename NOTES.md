@@ -170,6 +170,13 @@ matrices. They should then be able to get predictions with a call like
 `predict(gibbs.out, H.new, S.new)`. Or they can get the raw MCMC draws
 and compute prediction quantities themselves.
 
+Should we somehow add the MCMC draws or summaries to a spatial data frame
+for users?? If we wanted, we could copy the given spatial data frame `R.keep`
+times, and put the `r`th set of predictions and SDs into the `r`th data frame.
+But most users will probably just want to see the summary statistics. Users
+might also want to see summaries of `H.new %*% mu_B` or `S.new %*% eta`, which
+could also be mapped.
+
 # Scott Meeting
 * We should support/discuss reading shapefile and areal data separately, and joining them.
 * We could auto-project all the observed domains to the fine-level one.
