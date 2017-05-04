@@ -16,23 +16,33 @@
 # to give different results than the dense or sparse QR in Matlab.
 # Running non-sparse QR on the 32836 x 4750 S matrix takes about 15
 # minutes in R; maybe not much less in Matlab.
-licols <- function(X, tol = 1e-10)
+#
+# Another note: The sparse QR algorithm in the matrix package doesn't
+# return the same kind of pivot. It may be a "non-rank-revealing
+# decomposition".
+licols <- function(X, tol = 1e-10, quiet = FALSE)
 {
 	stopifnot(class(X) == "matrix")
-	
+	m <- nrow(X)
+	n <- ncol(X)
+	if (m*n > 1e6 && !quiet) {
+		msg <- sprintf("QR for %d x %d matrix might take a while...", m, n)
+		message(msg)
+	}
+
 	if (norm(X, type = "F") == 0) {
 		# X has no non-zeros and hence no independent columns
 		return(list(Xsub = matrix(NA,0,0), idx = numeric(0)))
 	}
 
-	system.time(qr.out <- qr(X, LAPACK = TRUE, tol = 1e-10))
-	# diagr <- abs(diag(qr.R(qr.out)))
+	st <- Sys.time()
+	qr.out <- qr(X, LAPACK = TRUE, tol = tol)
 	diagr <- abs(diag(qr.R(qr.out)))
 	mm <- max(diagr)
-	# diagr <- diagr[diagr > 0]
 	r <- sum(diagr >= tol*mm)
-
-	r <- 1250
 	idx <- qr.out$pivot[1:r]
-	list(Xsub = X[,idx], idx = idx)
+
+	elapsed.sec <- as.numeric(Sys.time() - st, units = "secs")
+	list(Xsub = X[,idx], idx = idx, elapsed.sec = elapsed.sec)
 }
+

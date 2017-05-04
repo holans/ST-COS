@@ -39,7 +39,7 @@ load.domain <- function(shpfile, datfile, layername, crs.tx = NULL, crs.orig = N
 
 # Fine-level domain comes from ACS 5-year estimates for 2013
 # Note: Projecting everything to latlon coordinates leads to a weird error in sf_area.
-#       For some reason it's programmed differently for latlon projections.
+#	For some reason it's programmed differently for latlon projections.
 acs5.2013 <- load.domain("shp/period3.shp", "shp/period3.csv", "period3")
 # acs5.2013 <- st_transform(acs5.2013, "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 
@@ -63,28 +63,36 @@ names(knots) <- c("x", "y", "t")
 # basis <- BisquareBasis$new(knots[,1], knots[,2], knots[,3], w.s = 0.5, w.t = 0.5)
 basis <- BisquareBasis$new(knots[,1], knots[,2], knots[,3], w.s = 1, w.t = 1)
 
+# Load the domains with observations.
+# If necessary, each one can be loaded at a time and added to "sp".
+acs1.2013  <- load.domain("shp/period1.shp", "shp/period1.csv", "period1", crs.tx = st_crs(acs5.2013)) # ACS 1-year estimates for 2013
+acs5.2012 <- load.domain("shp/period3_2012.shp", "shp/period3_2012.csv", "period3_2012", crs.tx = st_crs(acs5.2013)) # ACS 5-year estimates for 2012
+
 # Construct a STCOSPrep object, then add space-time domains with observations
 sp <- STCOSPrep$new(fine_domain = acs5.2013, basis = basis)
-
-# ACS 1-year estimates for 2013
-acs1.2013 <- load.domain("shp/period1.shp", "shp/period1.csv", "period1", crs.tx = st_crs(acs5.2013))
-sp$add_obs(acs1.2013[1:10,], time = 2013, period = 2013, estimate_name = "EST", variance_name = "VAR")
-
-# ACS 5-year estimates for 2012
-acs5.2012 <- load.domain("shp/period3_2012.shp", "shp/period3_2012.csv", "period3_2012", crs.tx = st_crs(acs5.2013))
+sp$add_obs(acs1.2013, time = 2013, period = 2013, estimate_name = "EST", variance_name = "VAR")
 sp$add_obs(acs5.2012, time = 2012, period = 2008:2012, estimate_name = "EST", variance_name = "VAR")
-
+# [1:100,]
 
 Z <- sp$get_Z()
 V <- sp$get_V()
 H <- sp$get_H()
 
-# Here's where we would think about a reduction for S
+# Here's where we would think about a reduction for S.
 S <- sp$get_S()
-sp$set_basis_reduction(identity)
-S.reduced <- sp$get_reduced_S()
 
+# Identity transformation as reduction (no reduction).
+sp$set_basis_reduction(identity)
+
+# Rank-revealing QR decomposition to pick out LI columns.
+# The same set of columns should be used every time the reduction is needed.
 li.out <- licols(as.matrix(S), tol = 0.285)
 f <- function(S) { S[,li.out$idx] }
 sp$set_basis_reduction(f)
+
 S.reduced <- sp$get_reduced_S()
+
+# ----- Apply Gibbs sampler using MLE as initial value -----
+mle.out <- mle.stcos(Z, S.reduced, V, H)
+
+gibbs.out <- gibbs.stcos(Z, S.reduced, V, C.inv, H, R = 100, report.period = 1, burn = 0, thin = 1)

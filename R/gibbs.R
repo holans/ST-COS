@@ -1,4 +1,4 @@
-gibbs.stcos <- function(Z, S, sig2eps, C.inv, H, R,
+gibbs.stcos <- function(Z, S, V, C.inv, H, R,
 	report.period = R+1, burn = 0, thin = 1,
 	init = NULL, fixed = NULL, hyper = NULL)
 {
@@ -7,7 +7,7 @@ gibbs.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 	st <- Sys.time()
 	stopifnot(R > burn)
 
-	Vinv <- 1 / sig2eps
+	Vinv <- 1 / V
 	HpVinv <- t(H) %*% Diagonal(n = length(Vinv), x = Vinv)
 	HpinvVH <- HpVinv %*% H
 
@@ -75,7 +75,7 @@ gibbs.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 	logger("Begin computing SpinvV\n")
 	SpinvV <- matrix(NA, r, n)
 	for (j in 1:r) {
-		SpinvV[j,] <- S[,j] / sig2eps
+		SpinvV[j,] <- S[,j] / V
 	}
 	SpinvVS <- SpinvV %*% S
 	logger("Finished computing SpinvV\n")
@@ -172,7 +172,7 @@ gibbs.stcos <- function(Z, S, sig2eps, C.inv, H, R,
 		sig2xi.hist = sig2xi.hist,
 		sig2K.hist = sig2K.hist,
 		Y.hist = Y.hist,
-		Z = Z, H = H, S = S, sig2eps = sig2eps, R.keep = R.keep,
+		Z = Z, H = H, S = S, V = V, R.keep = R.keep,
 		elapsed.sec = timer
 	)
 	class(ret) <- "stcos"
@@ -195,7 +195,7 @@ logLik.stcos <- function(object, ...)
 		sig2xi <- object$sig2xi.hist[r]
 		loglik.mcmc[r] <- sum(
 			dnorm(object$Z, as.numeric(object$H %*% mu_B + object$S %*% eta),
-			sqrt(object$sig2eps + sig2xi),
+			sqrt(object$V + sig2xi),
 			log = TRUE))
 	}
 	return(loglik.mcmc)
@@ -209,7 +209,7 @@ DIC.stcos <- function(object, ...)
 	sig2xi.bar <- mean(object$sig2xi.hist)
 	D.thetabar <- -2 * sum(
 		dnorm(object$Z, as.numeric(object$H %*% mu_B.bar + object$S %*% eta.bar),
-		sqrt(object$sig2eps + sig2xi.bar),
+		sqrt(object$V + sig2xi.bar),
 		log = TRUE))
 	D.bar <- mean(-2*loglik.mcmc)
 	D.thetabar + 2*(D.bar - D.thetabar)

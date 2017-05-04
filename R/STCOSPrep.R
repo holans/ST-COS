@@ -42,30 +42,24 @@ add_obs <- function(domain, time, period, estimate_name, variance_name)
 	stopifnot(length(period) >= 1)
 
 	logger("Begin adding observed space-time domain\n")
-	private$N <- private$N + nrow(domain)
-	private$L <- private$L + 1
 
-	L <- private$L
-	N <- private$N
 	R <- private$basis_mc_reps
 	n <- nrow(domain)
 	r <- basis$get_dim()
 
 	logger("Extracting survey estimates from field '%s'", estimate_name)
 	printf(" and variance estimates from field '%s'\n", variance_name)
-	private$Z_list[[L]] <- domain[[estimate_name]]
-	private$V_list[[L]] <- domain[[variance_name]]
+	Z <- domain[[estimate_name]]
+	V <- domain[[variance_name]]
 	
 	logger("Computing overlap matrix\n")
-	H.prime <- compute.overlap.v3(private$fine_domain, domain)
+	H.prime <- compute.overlap(private$fine_domain, domain)
 	H <- Matrix(apply(H.prime, 2, normalize))
-	private$H_list[[L]] <- H
 
 	logger("Computing basis functions\n")
 
 	S <- Matrix(0, n, r)
 	T <- length(period)
-
 	s1 <- array(NA, dim = c(T, n, R))
 	s2 <- array(NA, dim = c(T, n, R))
 
@@ -89,6 +83,15 @@ add_obs <- function(domain, time, period, estimate_name, variance_name)
 		}
 	}
 	S <- S / (R*T)
+
+	private$N <- private$N + nrow(domain)
+	private$L <- private$L + 1
+
+	L <- private$L
+	N <- private$N
+	private$Z_list[[L]] <- Z
+	private$V_list[[L]] <- V
+	private$H_list[[L]] <- H
 	private$S_list[[L]] <- S
 
 	logger("Finished adding observed space-time domain\n")
@@ -125,7 +128,6 @@ get_V <- function()
 
 	return(V)
 }
-
 
 get_H <- function()
 {
