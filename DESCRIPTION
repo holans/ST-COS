@@ -8,7 +8,7 @@ Maintainer: Scott Holan <holans@missouri.edu>
 Description: TBD
 License: GPL (>= 2)
 # Depends: Matrix, pryr, rgeos, raster
-Depends: R6, Rcpp, Matrix, sf
+Depends: R6, Rcpp, Matrix, sf, coda
 LinkingTo: Rcpp, RcppArmadillo
 RoxygenNote: 5.0.1
 

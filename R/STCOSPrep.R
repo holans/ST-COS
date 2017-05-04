@@ -196,19 +196,23 @@ get_Cinv <- function(target.periods)
 {
 	T <- length(target.periods)
 	n <- nrow(private$fine_domain)
+	r <- private$basis$get_dim()
 
-	Sconnector <- matrix(NA, T*n, n)
+	Sconnector <- Matrix(0, T*n, r)
 	draws.out <- private$draws_basis_mc(private$fine_domain, 1)
 	for (t in 1:T) {
 		idx <- 1:n + (t-1)*n
-		logger("Constructing S matrix for fine-scale time %f\n", t)
-		browser()
-		Sconnector[idx,] <- private$compute_basis_mc(private$fine_domain,
+		logger("Constructing S matrix for fine-scale at time %d of %d\n", t, T)
+		SS <- private$compute_basis_mc(private$fine_domain,
 			target.periods[t], draws.out$s1, draws.out$s2)
+		printf("dim(SS) = %d\n", dim(SS))
+		printf("dim(Sconnector[idx,]) = %d\n", dim(Sconnector[idx,]))
+		print(idx)
+		Sconnector[idx,] <- SS
 	}
 
 	# Reduction should be same as the one used on S matrix for the observations
-	Sconnectorf <- basis_reduction(Sconnector)
+	Sconnectorf <- private$basis_reduction(Sconnector)
 
 	# Compute adjacency matrix
 	out <- st_touches(private$fine_domain, private$fine_domain)
@@ -231,17 +235,17 @@ get_Cinv <- function(target.periods)
 	Q <- Diagonal(n,1) - 0.9*countAdj
 
 	# Target Covariance
-	stop("Need to implement make_full_model_sptcovar_9 function!")
-	Kinv <- make_full_model_sptcovar_9(Q, M, Sconnectorf, n)
-	eig <- eigen(Kinv)
+	warning("Generalize sptcovar9 to use the given number of time values")
+	Cinv <- sptcovar9(Q, M, Sconnectorf, n)
+	eig <- eigen(Cinv)
 	P <- Re(eig$vectors)
 	D <- Re(eig$values)
 	D[D < 0] <- 0
 	Dinv <- D
 	Dinv[D > 0] <- 1 / D[D > 0]
-	Kinv <- P %*% (D * t(P))
+	Cinv.higham <- P %*% (D * t(P))
 
-	return(Kinv)
+	return(Cinv.higham)
 }
 
 STCOSPrep$set("private", "draws_basis_mc", draws_basis_mc)

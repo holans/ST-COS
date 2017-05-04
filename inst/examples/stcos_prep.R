@@ -1,5 +1,6 @@
 library(stcos)
 library(sf)
+library(coda)
 
 setwd("/home/araim/Documents/simulations/ST-COS")
 
@@ -69,7 +70,7 @@ acs1.2013  <- load.domain("shp/period1.shp", "shp/period1.csv", "period1", crs.t
 acs5.2012 <- load.domain("shp/period3_2012.shp", "shp/period3_2012.csv", "period3_2012", crs.tx = st_crs(acs5.2013)) # ACS 5-year estimates for 2012
 
 # Construct a STCOSPrep object, then add space-time domains with observations
-sp <- STCOSPrep$new(fine_domain = acs5.2013, basis = basis)
+sp <- STCOSPrep$new(fine_domain = acs5.2013[1:100,], basis = basis)
 sp$add_obs(acs1.2013[1:10,], time = 2013, period = 2013, estimate_name = "EST", variance_name = "VAR")
 sp$add_obs(acs5.2012[1:10,], time = 2012, period = 2008:2012, estimate_name = "EST", variance_name = "VAR")
 
@@ -91,11 +92,26 @@ sp$set_basis_reduction(f)
 
 S.reduced <- sp$get_reduced_S()
 
-out <- sp$get_Cinv(2005:2013)
+C.inv <- sp$get_Cinv(2005:2013)
 
 
 
 # ----- Apply Gibbs sampler using MLE as initial value -----
 mle.out <- mle.stcos(Z, S.reduced, V, H)
 
-gibbs.out <- gibbs.stcos(Z, S.reduced, V, C.inv, H, R = 100, report.period = 1, burn = 0, thin = 1)
+# init <- list(
+#	sig2xi = mle.out$sig2xi.hat,
+#	mu_B = mle.out$mu.hat,
+#	eta = mle.out$eta.hat
+# )
+init <- list()
+gibbs.out <- gibbs.stcos.raw(Z, S.reduced, V, C.inv, H, R = 1000,
+	report.period = 100, burn = 0, thin = 1, init = init)
+
+mu_B.mcmc <- mcmc(gibbs.out$mu_B.hist)
+xi.mcmc <- mcmc(gibbs.out$xi.hist)
+eta.mcmc <- mcmc(gibbs.out$eta.hist)
+sig2mu.mcmc <- mcmc(gibbs.out$sig2mu.hist)
+sig2xi.mcmc <- mcmc(gibbs.out$sig2xi.hist)
+sig2K.mcmc <- mcmc(gibbs.out$sig2K.hist)
+

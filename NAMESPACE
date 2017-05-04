@@ -2,7 +2,7 @@ useDynLib(stcos)
 
 import(Rcpp)
 import(Matrix)
-# import(pryr)
+import(coda)
 
 # Export specific functions when we're further along
 exportPattern("*")

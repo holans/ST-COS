@@ -1,8 +1,29 @@
-gibbs.stcos <- function(Z, S, V, C.inv, H, R,
+gibbs.stcos <- function(prep, report.period = R+1, burn = 0, thin = 1,
+	hyper = NULL, sig2xi.init = NULL)
+{
+	Z <- prep$get_Z()
+	V <- prep$get_V()
+	H <- prep$get_H()
+	S <- prep$get_reduced_S()
+	C.inv <- prep$get_Cinv()
+	mle.out <- mle.stcos(Z, S, V, H, init = list(sig2xi.init))
+
+	init <- list(
+		sig2xi = mle.out$sig2xi.hat,
+		mu_B = mle.out$mu.hat,
+		eta = mle.out$eta.hat
+	)
+	gibbs.out <- gibbs.stcos.raw(Z = Z, S = S, V = V, C.inv = C.inv, H = H,
+		R = R, report.period = report.period, burn = burn, thin = thin,
+		init = init, hyper = hyper)
+}
+
+gibbs.stcos.raw <- function(Z, S, V, C.inv, H, R,
 	report.period = R+1, burn = 0, thin = 1,
 	init = NULL, fixed = NULL, hyper = NULL)
 {
-	timer <- list(mu_B = 0, sig2mu = 0, eta = 0, xi = 0, sig2xi = 0, sig2K = 0, Y = 0, pre = 0, post = 0)
+	timer <- list(mu_B = 0, sig2mu = 0, eta = 0, xi = 0, sig2xi = 0, sig2K = 0,
+		Y = 0, pre = 0, post = 0)
 
 	st <- Sys.time()
 	stopifnot(R > burn)
@@ -85,7 +106,7 @@ gibbs.stcos <- function(Z, S, V, C.inv, H, R,
 
 	for (tt in 1:R) {
 		if (tt %% report.period == 0) {
-			logger("Begin iteration %d, using %0.2f GB RAM\n", tt, mem_used() / 2^30)
+			logger("Begin iteration %d\n", tt)
 		}
 
 		# Draw from [xi | ---] using sparse matrix inverse
@@ -188,7 +209,7 @@ gibbs.stcos <- function(Z, S, V, C.inv, H, R,
 logLik.stcos <- function(object, ...)
 {
 	R.keep <- object$R.keep
-	loglik.mcmc <- mcmc(numeric(R.keep))
+	loglik.mcmc <- numeric(R.keep)
 	for (r in 1:R.keep) {
 		mu_B <- object$mu_B.hist[r,]
 		eta <- object$eta.hist[r,]
@@ -215,6 +236,7 @@ DIC.stcos <- function(object, ...)
 	D.thetabar + 2*(D.bar - D.thetabar)
 }
 
+# TBD: We can compute summaries ourselves and remove dependency on coda
 print.stcos <- function (x, ...)
 {
 	variances.mcmc <- mcmc(cbind(x$sig2mu.hist, x$sig2K.hist, x$sig2xi.hist))
