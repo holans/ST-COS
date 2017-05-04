@@ -42,26 +42,43 @@ add_obs <- function(domain, time, period, estimate_name, variance_name)
 	stopifnot(length(period) >= 1)
 
 	logger("Begin adding observed space-time domain\n")
-
-	R <- private$basis_mc_reps
 	n <- nrow(domain)
-	r <- basis$get_dim()
 
 	logger("Extracting survey estimates from field '%s'", estimate_name)
 	printf(" and variance estimates from field '%s'\n", variance_name)
 	Z <- domain[[estimate_name]]
 	V <- domain[[variance_name]]
-	
+
 	logger("Computing overlap matrix\n")
 	H.prime <- compute.overlap(private$fine_domain, domain)
 	H <- Matrix(apply(H.prime, 2, normalize))
 
 	logger("Computing basis functions\n")
+	draws.out <- private$draws_basis_mc(domain, length(period))
+	S <- private$compute_basis_mc(domain, period, draws.out$s1, draws.out$s2)
 
-	S <- Matrix(0, n, r)
-	T <- length(period)
+	private$N <- private$N + n
+	private$L <- private$L + 1
+
+	L <- private$L
+	N <- private$N
+	private$Z_list[[L]] <- Z
+	private$V_list[[L]] <- V
+	private$H_list[[L]] <- H
+	private$S_list[[L]] <- S
+
+	logger("Finished adding observed space-time domain\n")
+}
+
+draws_basis_mc <- function(domain, period_len)
+{
+	basis <- private$basis
+	n <- nrow(domain)
+	r <- basis$get_dim()
+	R <- private$basis_mc_reps
+	T <- period_len
 	s1 <- array(NA, dim = c(T, n, R))
-	s2 <- array(NA, dim = c(T, n, R))
+	s2 <- array(NA, dim = c(T, n, R))	
 
 	for (j in 1:n) {
 		if (j %% private$report_period == 0) {
@@ -74,6 +91,18 @@ add_obs <- function(domain, time, period, estimate_name, variance_name)
 		}
 	}
 
+	list(s1 = s1, s2 = s2)
+}
+
+compute_basis_mc <- function(domain, period, s1, s2)
+{
+	basis <- private$basis
+	n <- nrow(domain)
+	r <- basis$get_dim()
+	R <- private$basis_mc_reps
+	S <- Matrix(0, n, r)
+	T <- length(period)
+
 	for (r in 1:R) {
 		if (r %% private$report_period == 0) {
 			logger("Computing basis for rep %d of %d\n", r, R)
@@ -82,19 +111,8 @@ add_obs <- function(domain, time, period, estimate_name, variance_name)
 			S <- S + basis$compute(s1[t,,r], s2[t,,r], period[t])
 		}
 	}
-	S <- S / (R*T)
 
-	private$N <- private$N + nrow(domain)
-	private$L <- private$L + 1
-
-	L <- private$L
-	N <- private$N
-	private$Z_list[[L]] <- Z
-	private$V_list[[L]] <- V
-	private$H_list[[L]] <- H
-	private$S_list[[L]] <- S
-
-	logger("Finished adding observed space-time domain\n")
+	return( S / (R*T) )
 }
 
 get_Z <- function()
@@ -172,11 +190,68 @@ set_basis_reduction <- function(f = identity)
 	private$basis_reduction <- f
 }
 
+# TBD: Should we take target *times* or target *periods*???
+# Should Cinv ever be based on 5-year ACS means, for example?
+get_Cinv <- function(target.periods)
+{
+	T <- length(target.periods)
+	n <- nrow(private$fine_domain)
+
+	Sconnector <- matrix(NA, T*n, n)
+	draws.out <- private$draws_basis_mc(private$fine_domain, 1)
+	for (t in 1:T) {
+		idx <- 1:n + (t-1)*n
+		logger("Constructing S matrix for fine-scale time %f\n", t)
+		browser()
+		Sconnector[idx,] <- private$compute_basis_mc(private$fine_domain,
+			target.periods[t], draws.out$s1, draws.out$s2)
+	}
+
+	# Reduction should be same as the one used on S matrix for the observations
+	Sconnectorf <- basis_reduction(Sconnector)
+
+	# Compute adjacency matrix
+	out <- st_touches(private$fine_domain, private$fine_domain)
+	A <- adjList2Matrix(out)
+	countAdj <- Matrix(0, nrow(A), ncol(A))
+	s <- rowSums(A)
+	for (j in 1:n) {
+		if (s[j] > 0) {
+			countAdj[j,] = A[j,] / s[j]
+		}
+	}
+
+	# Moran's I Propagator
+	# With this choice of B, M just is the identity matrix
+	# B = [eye(3109), eye(3109)];
+	# P_perp = eye(size(P_perp,1)) - B*pinv(B'*B)*B';
+	# [M,LM] = eig(P_perp);
+	# M = real(M);
+	M <- Diagonal(n,1)
+	Q <- Diagonal(n,1) - 0.9*countAdj
+
+	# Target Covariance
+	stop("Need to implement make_full_model_sptcovar_9 function!")
+	Kinv <- make_full_model_sptcovar_9(Q, M, Sconnectorf, n)
+	eig <- eigen(Kinv)
+	P <- Re(eig$vectors)
+	D <- Re(eig$values)
+	D[D < 0] <- 0
+	Dinv <- D
+	Dinv[D > 0] <- 1 / D[D > 0]
+	Kinv <- P %*% (D * t(P))
+
+	return(Kinv)
+}
+
+STCOSPrep$set("private", "draws_basis_mc", draws_basis_mc)
+STCOSPrep$set("private", "compute_basis_mc", compute_basis_mc)
 STCOSPrep$set("public", "get_Z", get_Z)
 STCOSPrep$set("public", "get_V", get_V)
 STCOSPrep$set("public", "get_H", get_H)
 STCOSPrep$set("public", "get_S", get_S)
 STCOSPrep$set("public", "get_reduced_S", get_reduced_S)
+STCOSPrep$set("public", "get_Cinv", get_Cinv)
 STCOSPrep$set("public", "add_obs", add_obs)
 STCOSPrep$set("public", "set_basis_reduction", set_basis_reduction)
 STCOSPrep$lock()

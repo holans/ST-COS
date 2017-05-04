@@ -70,9 +70,8 @@ acs5.2012 <- load.domain("shp/period3_2012.shp", "shp/period3_2012.csv", "period
 
 # Construct a STCOSPrep object, then add space-time domains with observations
 sp <- STCOSPrep$new(fine_domain = acs5.2013, basis = basis)
-sp$add_obs(acs1.2013, time = 2013, period = 2013, estimate_name = "EST", variance_name = "VAR")
-sp$add_obs(acs5.2012, time = 2012, period = 2008:2012, estimate_name = "EST", variance_name = "VAR")
-# [1:100,]
+sp$add_obs(acs1.2013[1:10,], time = 2013, period = 2013, estimate_name = "EST", variance_name = "VAR")
+sp$add_obs(acs5.2012[1:10,], time = 2012, period = 2008:2012, estimate_name = "EST", variance_name = "VAR")
 
 Z <- sp$get_Z()
 V <- sp$get_V()
@@ -91,6 +90,10 @@ f <- function(S) { S[,li.out$idx] }
 sp$set_basis_reduction(f)
 
 S.reduced <- sp$get_reduced_S()
+
+out <- sp$get_Cinv(2005:2013)
+
+
 
 # ----- Apply Gibbs sampler using MLE as initial value -----
 mle.out <- mle.stcos(Z, S.reduced, V, H)

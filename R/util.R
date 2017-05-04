@@ -33,3 +33,20 @@ dinvgamma <- function (x, shape, rate, scale = 1/rate, log = FALSE)
 		return(log_f)
 	exp(log_f)
 }
+
+adjList2Matrix <- function(a)
+{
+	n.tuples <- sum(unlist(Map(length, a)))
+	i <- integer(n.tuples)
+	j <- integer(n.tuples)
+	x <- rep(1, n.tuples)
+	idx.last <- 0
+	L <- length(a)
+	for (h in 1:L) {
+		idx.new <- seq_len(length(a[[h]])) + idx.last
+		i[idx.new] <- h
+		j[idx.new] <- a[[h]]
+		idx.last <- idx.last + length(a[[h]])
+	}
+	sparseMatrix(i = i, j = j, x = 1, dims = c(L, L))
+}
