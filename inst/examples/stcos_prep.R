@@ -1,5 +1,6 @@
 library(stcos)
 library(sf)
+library(fields)
 library(coda)
 
 setwd("/home/araim/Documents/simulations/ST-COS")
@@ -45,18 +46,15 @@ load.domain <- function(shpfile, datfile, layername, crs.tx = NULL, crs.orig = N
 acs5.2013 <- load.domain("shp/period3.shp", "shp/period3.csv", "period3")
 # acs5.2013 <- st_transform(acs5.2013, "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 
-# Set up knots for bisquare basis
-# Make sure knots are transformed to the same projection as fine-level geography
-knots.sp.raw <- read.csv("dat/knots250_ACS_amr.csv", head = FALSE)
-pp <- list()
-for (i in 1:nrow(knots.sp.raw)) {
-	pp[[i]] <- st_point(as.numeric(knots.sp.raw[i,]))
-}
-sfc <- st_sfc(pp, crs = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
-plot(sfc)
-sfc.tx <- st_transform(sfc, st_crs(acs5.2013))
-plot(sfc.tx)
-knots.sp <- matrix(unlist(sfc.tx), length(sfc.tx), 2, byrow = TRUE)
+# ----- Set up knots for bisquare basis -----
+# Knots must be compatible (same projection) with fine-level geography
+u <- st_sample(acs5.2013, size = 1000)
+M <- matrix(unlist(u), length(u), 2, byrow = TRUE)
+out <- cover.design(M, 250)
+knots.sp <- out$design
+
+plot(acs5.2013[,1])
+points(knots.sp, pch = 2)
 
 knots.t <- c(2012.5, 2011, 2011.5, 2011, 2010, 2010.5, 2010, 2009, 2009.5, 2009,
 	2008, 2008.5, 2008, 2007, 2007.5, 2007, 2006.5, 2006, 2005.5)
@@ -67,7 +65,7 @@ basis <- BisquareBasis$new(knots[,1], knots[,2], knots[,3], w.s = 1, w.t = 1)
 
 # Load the domains with observations.
 # If necessary, each one can be loaded at a time and added to "sp".
-acs1.2013  <- load.domain("shp/period1.shp", "shp/period1.csv", "period1", crs.tx = st_crs(acs5.2013)) # ACS 1-year estimates for 2013
+acs1.2013 <- load.domain("shp/period1.shp", "shp/period1.csv", "period1", crs.tx = st_crs(acs5.2013)) # ACS 1-year estimates for 2013
 acs5.2012 <- load.domain("shp/period3_2012.shp", "shp/period3_2012.csv", "period3_2012", crs.tx = st_crs(acs5.2013)) # ACS 5-year estimates for 2012
 
 # Construct a STCOSPrep object, then add space-time domains with observations
@@ -94,7 +92,6 @@ sp$set_basis_reduction(f)
 S.reduced <- sp$get_reduced_S()
 
 C.inv <- sp$get_Cinv(2005:2013)
-
 
 
 # ----- Apply Gibbs sampler using MLE as initial value -----

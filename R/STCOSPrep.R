@@ -54,7 +54,7 @@ add_obs <- function(domain, time, period, estimate_name, variance_name)
 	H <- Matrix(apply(H.prime, 2, normalize))
 
 	logger("Computing basis functions\n")
-	draws.out <- private$draws_basis_mc(domain, length(period))
+	draws.out <- private$draw_basis_mc(domain, length(period))
 	S <- private$compute_basis_mc(domain, period, draws.out$s1, draws.out$s2)
 
 	private$N <- private$N + n
@@ -70,7 +70,7 @@ add_obs <- function(domain, time, period, estimate_name, variance_name)
 	logger("Finished adding observed space-time domain\n")
 }
 
-draws_basis_mc <- function(domain, period_len)
+draw_basis_mc <- function(domain, period_len)
 {
 	basis <- private$basis
 	n <- nrow(domain)
@@ -199,7 +199,7 @@ get_Cinv <- function(target.periods)
 	r <- private$basis$get_dim()
 
 	Sconnector <- Matrix(0, T*n, r)
-	draws.out <- private$draws_basis_mc(private$fine_domain, 1)
+	draws.out <- private$draw_basis_mc(private$fine_domain, 1)
 	for (t in 1:T) {
 		idx <- 1:n + (t-1)*n
 		logger("Constructing S matrix for fine-scale at time %d of %d\n", t, T)
@@ -245,7 +245,7 @@ get_Cinv <- function(target.periods)
 	return(Cinv.higham)
 }
 
-STCOSPrep$set("private", "draws_basis_mc", draws_basis_mc)
+STCOSPrep$set("private", "draw_basis_mc", draw_basis_mc)
 STCOSPrep$set("private", "compute_basis_mc", compute_basis_mc)
 STCOSPrep$set("public", "get_Z", get_Z)
 STCOSPrep$set("public", "get_V", get_V)
