@@ -22,7 +22,8 @@ load.domain <- function(shpfile, datfile, layername, crs.tx = NULL, crs.orig = N
 	idx.HI <- which(states == '02')
 	idx.AK <- which(states == '15')
 	idx.PR <- which(states == '72')
-	idx.keep <- setdiff(1:nrow(area), c(idx.HI, idx.AK, idx.PR))
+	# idx.keep <- setdiff(1:nrow(area), c(idx.HI, idx.AK, idx.PR))
+	idx.keep <- which(states == '51')
 
 	area <- area[idx.keep,]
 	# plot(area)
@@ -70,9 +71,9 @@ acs1.2013  <- load.domain("shp/period1.shp", "shp/period1.csv", "period1", crs.t
 acs5.2012 <- load.domain("shp/period3_2012.shp", "shp/period3_2012.csv", "period3_2012", crs.tx = st_crs(acs5.2013)) # ACS 5-year estimates for 2012
 
 # Construct a STCOSPrep object, then add space-time domains with observations
-sp <- STCOSPrep$new(fine_domain = acs5.2013[1:100,], basis = basis)
-sp$add_obs(acs1.2013[1:10,], time = 2013, period = 2013, estimate_name = "EST", variance_name = "VAR")
-sp$add_obs(acs5.2012[1:10,], time = 2012, period = 2008:2012, estimate_name = "EST", variance_name = "VAR")
+sp <- STCOSPrep$new(fine_domain = acs5.2013, basis = basis)
+sp$add_obs(acs1.2013, time = 2013, period = 2013, estimate_name = "EST", variance_name = "VAR")
+sp$add_obs(acs5.2012, time = 2012, period = 2008:2012, estimate_name = "EST", variance_name = "VAR")
 
 Z <- sp$get_Z()
 V <- sp$get_V()
@@ -97,15 +98,15 @@ C.inv <- sp$get_Cinv(2005:2013)
 
 
 # ----- Apply Gibbs sampler using MLE as initial value -----
-mle.out <- mle.stcos(Z, S.reduced, V, H)
+mle.out <- mle.stcos(Z, S.reduced, V, H, init = list(sig2xi = 100))
 
-# init <- list(
-#	sig2xi = mle.out$sig2xi.hat,
-#	mu_B = mle.out$mu.hat,
-#	eta = mle.out$eta.hat
-# )
-init <- list()
-gibbs.out <- gibbs.stcos.raw(Z, S.reduced, V, C.inv, H, R = 1000,
+init <- list(
+	sig2xi = mle.out$sig2xi.hat,
+	mu_B = mle.out$mu.hat,
+	eta = mle.out$eta.hat
+)
+# init <- list()
+gibbs.out <- gibbs.stcos.raw(Z, S.reduced, V, C.inv, H, R = 10000,
 	report.period = 100, burn = 0, thin = 1, init = init)
 
 mu_B.mcmc <- mcmc(gibbs.out$mu_B.hist)

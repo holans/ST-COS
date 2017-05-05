@@ -123,7 +123,7 @@ gibbs.stcos.raw <- function(Z, S, V, C.inv, H, R,
 		st <- Sys.time()
 		scale <- as.numeric(0.5 * t(xi) %*% xi)
 		sig2xi.new <- 1 / rgamma(1, n/2 + hyper$a.sig2xi, hyper$b.sig2xi + scale)
-		printf("sig2xi ~ IG(%f, %f) => %f\n", n/2 + hyper$a.sig2xi, hyper$b.sig2xi + scale, sig2xi.new)
+		# printf("sig2xi ~ IG(%f, %f) => %f\n", n/2 + hyper$a.sig2xi, hyper$b.sig2xi + scale, sig2xi.new)
 		if (!fixed$sig2xi) { sig2xi <- sig2xi.new }
 		timer$sig2xi <- timer$sig2xi + as.numeric(Sys.time() - st, units = "secs")
 

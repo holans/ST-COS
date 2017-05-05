@@ -205,9 +205,6 @@ get_Cinv <- function(target.periods)
 		logger("Constructing S matrix for fine-scale at time %d of %d\n", t, T)
 		SS <- private$compute_basis_mc(private$fine_domain,
 			target.periods[t], draws.out$s1, draws.out$s2)
-		printf("dim(SS) = %d\n", dim(SS))
-		printf("dim(Sconnector[idx,]) = %d\n", dim(Sconnector[idx,]))
-		print(idx)
 		Sconnector[idx,] <- SS
 	}
 
