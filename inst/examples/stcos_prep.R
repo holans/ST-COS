@@ -24,7 +24,7 @@ load.domain <- function(shpfile, datfile, layername, crs.tx = NULL, crs.orig = N
 	idx.AK <- which(states == '15')
 	idx.PR <- which(states == '72')
 	# idx.keep <- setdiff(1:nrow(area), c(idx.HI, idx.AK, idx.PR))
-	idx.keep <- which(states == '51')
+	idx.keep <- which(states == '24')
 
 	area <- area[idx.keep,]
 	# plot(area)

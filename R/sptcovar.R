@@ -1,5 +1,12 @@
-# I'm not sure what's going on here; just ported Jon's code
-sptcovar9 <- function(Q, M, S, n)
+# Computes 
+#   K <- SpSinvSp %*% FullCovar %*% t(SpSinvSp)
+# where
+#   SpSinvSp <- solve(t(S) %*% S) %*% t(S)
+#   FullCovar is the autocovariance of VAR(1), the first lag_max blocks
+# We don't need to construct FullCovar in its entirety to do this operation.
+#
+# K minimizes || FullCovar - S X S^T ||_Frob over symmetric psd matrices X
+sptcovar <- function(Q, M, S, n, lag_max)
 {
 	# d <- nrow(S)
 	# FullCovar <- Matrix(0, d, d)
@@ -27,19 +34,14 @@ sptcovar9 <- function(Q, M, S, n)
 	# SpSinvSp <- SpSinv %*% t(S)
 	# K <- (SpSinvSp %*% FullCovar) %*% t(SpSinvSp)
 
-
-
 	d <- nrow(S)
 	r <- ncol(S)
 	SpS <- t(S) %*% S
 	SpSinv <- solve(SpS)
 
-	# We don't need to construct the FullCovar in its entirety to do this operation:
-	# SpSinvSp <- SpSinv %*% t(S)
-	# K <- SpSinvSp %*% FullCovar %*% t(SpSinvSp)
 	K <- matrix(0, r, r)
 	C <- as.matrix(Q)
-	for (i in 1:9) {
+	for (i in 1:lag_max) {
 		logger("Working on block (%d, %d) with lag %d\n", i, i, 0)
 		idx <- seq(n*(i-1)+1, n*i)
 		logger("\tidx = [%d,%d]\n", min(idx), max(idx))
@@ -48,11 +50,11 @@ sptcovar9 <- function(Q, M, S, n)
 	}
 
 	M.h <- diag(1,n)
-	for (h in 1:8) {
+	for (h in 1:(lag_max-1)) {
 		M.h <- M %*% M.h
 		C <- as.matrix(M.h %*% (Q %*% t(M.h)))
 
-		for (i in seq(1, 9-h)) {
+		for (i in seq(1, lag_max-h)) {
 			j <- i + h
 			logger("Working on block (%d, %d) with lag %d\n", i, j, h)
 			idx.i <- seq(n*(i-1)+1, n*i)

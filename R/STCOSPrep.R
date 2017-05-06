@@ -203,9 +203,8 @@ get_Cinv <- function(target.periods)
 	for (t in 1:T) {
 		idx <- 1:n + (t-1)*n
 		logger("Constructing S matrix for fine-scale at time %d of %d\n", t, T)
-		SS <- private$compute_basis_mc(private$fine_domain,
+		Sconnector[idx,] <- private$compute_basis_mc(private$fine_domain,
 			target.periods[t], draws.out$s1, draws.out$s2)
-		Sconnector[idx,] <- SS
 	}
 
 	# Reduction should be same as the one used on S matrix for the observations
@@ -221,6 +220,7 @@ get_Cinv <- function(target.periods)
 			countAdj[j,] = A[j,] / s[j]
 		}
 	}
+	Q <- Diagonal(n,1) - 0.9*countAdj
 
 	# Moran's I Propagator
 	# With this choice of B, M just is the identity matrix
@@ -229,18 +229,16 @@ get_Cinv <- function(target.periods)
 	# [M,LM] = eig(P_perp);
 	# M = real(M);
 	M <- Diagonal(n,1)
-	Q <- Diagonal(n,1) - 0.9*countAdj
 
 	# Target Covariance
-	warning("Generalize sptcovar9 to use the given number of time values")
-	Cinv <- sptcovar9(Q, M, Sconnectorf, n)
-	eig <- eigen(Cinv)
+	C <- sptcovar(Q, M, Sconnectorf, n, lag_max = T)
+	eig <- eigen(C)
 	P <- Re(eig$vectors)
 	D <- Re(eig$values)
 	D[D < 0] <- 0
 	Dinv <- D
 	Dinv[D > 0] <- 1 / D[D > 0]
-	Cinv.higham <- P %*% (D * t(P))
+	Cinv.higham <- P %*% (Dinv * t(P))
 
 	return(Cinv.higham)
 }
