@@ -10,8 +10,9 @@ BisquareBasis <- R6Class("BisquareBasis",
 			private$r <- r
 
 			# Jon's code computes basis with rl instead of w.s
+			# Use type 1 quantile algorithm to match Matlab 
 			G <- dist(private$cutpoints)
-			private$rl <- w.s * quantile(G[G > 0], prob = 0.05)
+			private$rl <- w.s * quantile(G[G > 0], prob = 0.05, type = 1)
 			printf("rl = %f\n", private$rl)
 		},
 		get_dim = function() {
