@@ -104,7 +104,7 @@ init <- list(
 )
 # init <- list()
 gibbs.out <- gibbs.stcos.raw(Z, S.reduced, V, C.inv, H, R = 10000,
-	report.period = 100, burn = 0, thin = 1, init = init)
+	report.period = 1000, burn = 1000, thin = 10, init = init)
 
 mu_B.mcmc <- mcmc(gibbs.out$mu_B.hist)
 xi.mcmc <- mcmc(gibbs.out$xi.hist)

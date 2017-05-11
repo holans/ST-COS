@@ -221,6 +221,7 @@ get_Cinv <- function(target.periods)
 		}
 	}
 	Q <- Diagonal(n,1) - 0.9*countAdj
+	Qinv <- solve(Q)
 
 	# Moran's I Propagator
 	# With this choice of B, M just is the identity matrix
@@ -231,7 +232,7 @@ get_Cinv <- function(target.periods)
 	M <- Diagonal(n,1)
 
 	# Target Covariance
-	C <- sptcovar(Q, M, Sconnectorf, n, lag_max = T)
+	C <- sptcovar(Qinv, M, Sconnectorf, lag_max = T)
 	eig <- eigen(C)
 	P <- Re(eig$vectors)
 	D <- Re(eig$values)

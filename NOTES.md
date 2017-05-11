@@ -99,7 +99,9 @@ But most users will probably just want to see the summary statistics. Users
 might also want to see summaries of `H.new %*% mu_B` or `S.new %*% eta`, which
 could also be mapped.
 
-# Scott Meeting
+# Scott Meetings
 * We should support/discuss reading shapefile and areal data separately, and joining them.
 * We could auto-project all the observed domains to the fine-level one.
 * We'll want to make some maps. Either by example or by making some helper functions.
+* Make sure we give an error if projections aren't compatible
+* We should indicate how long some of the longer steps will take
