@@ -2,13 +2,11 @@ Package: stcos
 Type: Package
 Title: Space-Time Change of Support
 Version: 0.0.1
-Date: 2016-10-12
+Date: 2017-05-13
 Author: Scott Holan, Andrew M. Raim
 Maintainer: Scott Holan <holans@missouri.edu>
 Description: TBD
 License: GPL (>= 2)
-# Depends: Matrix, pryr, rgeos, raster
 Depends: R6, Rcpp, Matrix, sf, coda
 LinkingTo: Rcpp, RcppArmadillo
-RoxygenNote: 5.0.1
-
+RoxygenNote: 6.0.1
