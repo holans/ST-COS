@@ -46,6 +46,7 @@ $ sudo apt-get install libgdal-dev
 - [ ] Was Matlab code switching `Kinv` and `K` incorrectly?
 - [ ] 0.05 quantile of pairwise distances used for basis computation
 - [ ] Interface to provide reduction of `S`
+- [ ] The target VAR(1) process seems like it could become unstable if `M` isn't constrained?
 
 # Preprocessing Steps
 #### Compute the matrix `H` of overlaps.

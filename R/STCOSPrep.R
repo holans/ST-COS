@@ -2,7 +2,7 @@ STCOSPrep <- R6Class("STCOSPrep",
 	public = list(
 		initialize = function(fine_domain, basis, basis_mc_reps = 500, report_period = 100) {
 			stopifnot("sf" %in% class(fine_domain))
-			stopifnot("BisquareBasis" %in% class(basis))
+			stopifnot("SpaceTimeBisquareBasis" %in% class(basis))
 
 			private$fine_domain <- fine_domain
 			private$H_list <- list()
@@ -55,7 +55,7 @@ add_obs <- function(domain, time, period, estimate_name, variance_name)
 
 	logger("Computing basis functions\n")
 	draws.out <- private$draw_basis_mc(domain, length(period))
-	S <- private$compute_basis_mc(domain, period, draws.out$s1, draws.out$s2)
+	S <- private$compute_spt_basis_mc(domain, period, draws.out$s1, draws.out$s2)
 
 	private$N <- private$N + n
 	private$L <- private$L + 1
@@ -94,12 +94,13 @@ draw_basis_mc <- function(domain, period_len)
 	list(s1 = s1, s2 = s2)
 }
 
-compute_basis_mc <- function(domain, period, s1, s2)
+compute_spt_basis_mc <- function(domain, period, s1, s2)
 {
 	basis <- private$basis
 	n <- nrow(domain)
 	r <- basis$get_dim()
-	R <- private$basis_mc_reps
+	R <- dim(s1)[3]
+	stopifnot(R == dim(s2)[3])
 	S <- Matrix(0, n, r)
 	T <- length(period)
 
@@ -113,6 +114,24 @@ compute_basis_mc <- function(domain, period, s1, s2)
 	}
 
 	return( S / (R*T) )
+}
+
+compute_sp_basis_mc <- function(basis, domain, s1, s2)
+{
+	n <- nrow(domain)
+	r <- basis$get_dim()
+	R <- dim(s1)[2]
+	stopifnot(R == dim(s2)[2])
+	S <- Matrix(0, n, r)
+
+	for (r in 1:R) {
+		if (r %% private$report_period == 0) {
+			logger("Computing basis for rep %d of %d\n", r, R)
+		}
+		S <- S + basis$compute(s1[,r], s2[,r])
+	}
+
+	return(S / R)
 }
 
 get_Z <- function()
@@ -203,7 +222,7 @@ get_Cinv <- function(target.periods)
 	for (t in 1:T) {
 		idx <- 1:n + (t-1)*n
 		logger("Constructing S matrix for fine-scale at time %d of %d\n", t, T)
-		Sconnector[idx,] <- private$compute_basis_mc(private$fine_domain,
+		Sconnector[idx,] <- private$compute_spt_basis_mc(private$fine_domain,
 			target.periods[t], draws.out$s1, draws.out$s2)
 	}
 
@@ -225,13 +244,28 @@ get_Cinv <- function(target.periods)
 
 	# Moran's I Propagator
 	# With this choice of B, M just is the identity matrix
-	# B = [eye(3109), eye(3109)];
-	# P_perp = eye(size(P_perp,1)) - B*pinv(B'*B)*B';
-	# [M,LM] = eig(P_perp);
-	# M = real(M);
-	M <- Diagonal(n,1)
+	# B <- cbind(diag(N), diag(N))
+	# P_perp = diag(nrow(B)) - B %*% MASS::ginv(t(B) %*% B) %*% t(B)
+	# eig = eigen(P_perp)
+	# M = Re(eig$vectors)
+	#### M <- Diagonal(n,1)
+	
+	# Moran's I Propagator (Experimental)
+	# Do a spatial-only basis expansion of fine-domain, and use this as the
+	# design matrix to project away from
+	warning("We're trying to use variable knots from outside environment. Pass this correctly!")
+	sp.basis <- SpatialBisquareBasis$new(knots[1:250,1], knots[1:250,2], w = 1)
+	X <- private$compute_sp_basis_mc(sp.basis, private$fine_domain, draws.out$s1[1,,], draws.out$s2[1,,])
+	licols.out <- licols(as.matrix(X))
+	B <- Matrix(licols.out$Xsub)
+	P_perp <- Diagonal(nrow(B),1) - B %*% solve(t(B) %*% B) %*% t(B)
+	eig <- eigen(P_perp)
+	M <- Re(eig$vectors)
+
+	# M[abs(M) < 1e-4] <- 0
 
 	# Target Covariance
+	# TBD: Should we multiply by a constant to make the elements' magnitude less extreme?
 	C <- sptcovar(Qinv, M, Sconnectorf, lag_max = T)
 	eig <- eigen(C)
 	P <- Re(eig$vectors)
@@ -245,7 +279,8 @@ get_Cinv <- function(target.periods)
 }
 
 STCOSPrep$set("private", "draw_basis_mc", draw_basis_mc)
-STCOSPrep$set("private", "compute_basis_mc", compute_basis_mc)
+STCOSPrep$set("private", "compute_sp_basis_mc", compute_sp_basis_mc)
+STCOSPrep$set("private", "compute_spt_basis_mc", compute_spt_basis_mc)
 STCOSPrep$set("public", "get_Z", get_Z)
 STCOSPrep$set("public", "get_V", get_V)
 STCOSPrep$set("public", "get_H", get_H)

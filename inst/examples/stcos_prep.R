@@ -3,6 +3,7 @@ library(sf)
 library(fields)
 library(coda)
 
+set.seed(1234)
 setwd("/home/araim/Documents/simulations/ST-COS")
 
 load.domain <- function(shpfile, datfile, layername, crs.tx = NULL, crs.orig = NULL)
@@ -61,7 +62,7 @@ knots.t <- c(2012.5, 2011, 2011.5, 2011, 2010, 2010.5, 2010, 2009, 2009.5, 2009,
 knots <- merge(knots.sp, knots.t)
 names(knots) <- c("x", "y", "t")
 # basis <- BisquareBasis$new(knots[,1], knots[,2], knots[,3], w.s = 0.5, w.t = 0.5)
-basis <- BisquareBasis$new(knots[,1], knots[,2], knots[,3], w.s = 1, w.t = 1)
+basis <- SpaceTimeBisquareBasis$new(knots[,1], knots[,2], knots[,3], w.s = 1, w.t = 1)
 
 # Load the domains with observations.
 # If necessary, each one can be loaded at a time and added to "sp".
@@ -92,6 +93,10 @@ sp$set_basis_reduction(f)
 S.reduced <- sp$get_reduced_S()
 
 C.inv <- sp$get_Cinv(2005:2013)
+
+## It should be okay to multiply by a constant. This will affect the sig2K draws
+C.inv.orig <- C.inv
+C.inv <- 1/min(abs(C.inv.orig)) * C.inv.orig
 
 
 # ----- Apply Gibbs sampler using MLE as initial value -----
