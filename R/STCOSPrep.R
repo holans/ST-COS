@@ -253,7 +253,7 @@ get_Cinv <- function(target.periods)
 	# Moran's I Propagator (Experimental)
 	# Do a spatial-only basis expansion of fine-domain, and use this as the
 	# design matrix to project away from
-	warning("We're trying to use variable knots from outside environment. Pass this correctly!")
+	warning("We're trying to use variable knots from outside environment. Pass this correctly if we keep it!")
 	sp.basis <- SpatialBisquareBasis$new(knots[1:250,1], knots[1:250,2], w = 1)
 	X <- private$compute_sp_basis_mc(sp.basis, private$fine_domain, draws.out$s1[1,,], draws.out$s2[1,,])
 	licols.out <- licols(as.matrix(X))
@@ -262,11 +262,11 @@ get_Cinv <- function(target.periods)
 	eig <- eigen(P_perp)
 	M <- Re(eig$vectors)
 
-	# M[abs(M) < 1e-4] <- 0
-
 	# Target Covariance
 	# TBD: Should we multiply by a constant to make the elements' magnitude less extreme?
-	C <- sptcovar(Qinv, M, Sconnectorf, lag_max = T)
+	C.unscaled <- sptcovar(Qinv, M, Sconnectorf, lag_max = T)
+	C <- C.unscaled / max(abs(as.matrix(C.unscaled)))
+	warning("We're scaling C by a constant. Make sure this is okay!")
 	eig <- eigen(C)
 	P <- Re(eig$vectors)
 	D <- Re(eig$values)

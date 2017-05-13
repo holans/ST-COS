@@ -95,8 +95,8 @@ S.reduced <- sp$get_reduced_S()
 C.inv <- sp$get_Cinv(2005:2013)
 
 ## It should be okay to multiply by a constant. This will affect the sig2K draws
-C.inv.orig <- C.inv
-C.inv <- 1/min(abs(C.inv.orig)) * C.inv.orig
+# C.inv.orig <- C.inv
+# C.inv <- 1/min(abs(C.inv.orig)) * C.inv.orig
 
 
 # ----- Apply Gibbs sampler using MLE as initial value -----
