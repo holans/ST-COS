@@ -3,6 +3,10 @@ compute.overlap <- function(D, G)
 	nd <- nrow(D)
 	ng <- nrow(G)
 
+	# Suppress unhelpful warnings when calling st_intersection
+	st_agr(D) <- "constant"
+	st_agr(G) <- "constant"
+
 	# Compute the overlaps
 	INT <- st_intersection(D, G)
 	DF <- data.frame(
