@@ -68,11 +68,13 @@ basis <- SpaceTimeBisquareBasis$new(knots[,1], knots[,2], knots[,3], w.s = 1, w.
 # If necessary, each one can be loaded at a time and added to "sp".
 acs1.2013 <- load.domain("shp/period1.shp", "shp/period1.csv", "period1", crs.tx = st_crs(acs5.2013)) # ACS 1-year estimates for 2013
 acs5.2012 <- load.domain("shp/period3_2012.shp", "shp/period3_2012.csv", "period3_2012", crs.tx = st_crs(acs5.2013)) # ACS 5-year estimates for 2012
+acs3.2010 <- load.domain("shp/period2_2010.shp", "shp/period2_2010.csv", "period2_2010", crs.tx = st_crs(acs5.2013))
 
 # Construct a STCOSPrep object, then add space-time domains with observations
 sp <- STCOSPrep$new(fine_domain = acs5.2013, basis = basis)
 sp$add_obs(acs1.2013, time = 2013, period = 2013, estimate_name = "EST", variance_name = "VAR")
 sp$add_obs(acs5.2012, time = 2012, period = 2008:2012, estimate_name = "EST", variance_name = "VAR")
+sp$add_obs(acs3.2010, time = 2010, period = 2008:2010, estimate_name = "EST", variance_name = "VAR")
 
 Z <- sp$get_Z()
 V <- sp$get_V()
