@@ -185,13 +185,13 @@ get_H <- function()
 get_S <- function()
 {
 	r <- basis$get_dim()
-	S <- Matrix(0, private$N, r)
+	S <- Matrix(0, 0, r)
 	L <- private$L
 	cnt <- 0
 
 	for (l in 1:L) {
 		idx <- 1:nrow(private$S_list[[l]]) + cnt
-		S[idx,] <- private$S_list[[l]]
+		S <- rbind(S, private$S_list[[l]])
 		cnt <- cnt + length(idx)
 	}
 
