@@ -217,21 +217,25 @@ get_Cinv <- function(target.periods)
 	n <- nrow(private$fine_domain)
 	r <- private$basis$get_dim()
 
-	Sconnector <- Matrix(0, T*n, r)
+	Sconnector <- Matrix(0, 0, r)
 	draws.out <- private$draw_basis_mc(private$fine_domain, 1)
 	for (t in 1:T) {
 		idx <- 1:n + (t-1)*n
 		logger("Constructing S matrix for fine-scale at time %d of %d\n", t, T)
-		Sconnector[idx,] <- private$compute_spt_basis_mc(private$fine_domain,
+		S <- private$compute_spt_basis_mc(private$fine_domain,
 			target.periods[t], draws.out$s1, draws.out$s2)
+		# Sconnector[idx,] <- S
+
+		# rbind usually slows performance, but here it's a lot faster
+		# than doing Sconnector[idx,] <- S
+		Sconnector <- rbind(Sconnector, S)
 	}
 
 	# Reduction should be same as the one used on S matrix for the observations
 	Sconnectorf <- private$basis_reduction(Sconnector)
 
-	browser()
-
 	# Compute adjacency matrix
+	logger("Computing adjacency matrix\n")
 	out <- st_touches(private$fine_domain, private$fine_domain)
 	A <- adjList2Matrix(out)
 	countAdj <- Matrix(0, nrow(A), ncol(A))
@@ -256,6 +260,7 @@ get_Cinv <- function(target.periods)
 	# Do a spatial-only basis expansion of fine-domain, and use this as the
 	# design matrix to project away from
 	warning("We're trying to use variable knots from outside environment. Pass this correctly if we keep it!")
+	logger("Computing Moran's I Propagator\n")
 	sp.basis <- SpatialBisquareBasis$new(knots[1:250,1], knots[1:250,2], w = 1)
 	X <- private$compute_sp_basis_mc(sp.basis, private$fine_domain, draws.out$s1[1,,], draws.out$s2[1,,])
 	licols.out <- licols(as.matrix(X))
@@ -266,6 +271,7 @@ get_Cinv <- function(target.periods)
 
 	# Target Covariance
 	# TBD: Should we multiply by a constant to make the elements' magnitude less extreme?
+	logger("Computing target covariance\n")
 	C.unscaled <- sptcovar(Qinv, M, Sconnectorf, lag_max = T)
 	C <- C.unscaled / max(abs(as.matrix(C.unscaled)))
 	warning("We're scaling C by a constant. Make sure this is okay!")

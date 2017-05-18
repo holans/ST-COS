@@ -62,6 +62,7 @@ arma::sp_mat compute_basis_spt(const arma::mat& X, const arma::mat& cc, double w
 	double w2_s = w_s * w_s;
 	double w2_t = w_t * w_t;
 
+	// Rprintf("Computing basis entries\n");
 	for (size_t i = 0; i < N; i++) {
 		// Rprintf("compute_basis: i=%d\n", i);
 		for (size_t j = 0; j < r; j++) {
