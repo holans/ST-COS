@@ -33,7 +33,7 @@ compute <- function(x, y, time)
 	X <- cbind(x, y, time)
 	cc <- private$cutpoints
 	S <- compute_basis_spt(X, cc, private$rl, private$w.t)
-	return(Matrix(S))
+	return(S)
 }
 
 SpaceTimeBisquareBasis$set("public", "compute", compute)

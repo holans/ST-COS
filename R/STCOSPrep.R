@@ -229,6 +229,8 @@ get_Cinv <- function(target.periods)
 	# Reduction should be same as the one used on S matrix for the observations
 	Sconnectorf <- private$basis_reduction(Sconnector)
 
+	browser()
+
 	# Compute adjacency matrix
 	out <- st_touches(private$fine_domain, private$fine_domain)
 	A <- adjList2Matrix(out)
@@ -258,7 +260,7 @@ get_Cinv <- function(target.periods)
 	X <- private$compute_sp_basis_mc(sp.basis, private$fine_domain, draws.out$s1[1,,], draws.out$s2[1,,])
 	licols.out <- licols(as.matrix(X))
 	B <- Matrix(licols.out$Xsub)
-	P_perp <- Diagonal(nrow(B),1) - B %*% solve(t(B) %*% B) %*% t(B)
+	P_perp <- Diagonal(nrow(B),1) - B %*% solve(t(B) %*% B, t(B))
 	eig <- eigen(P_perp)
 	M <- Re(eig$vectors)
 

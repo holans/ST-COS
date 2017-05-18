@@ -30,7 +30,7 @@ compute <- function(x, y)
 	X <- cbind(x, y)
 	cc <- private$cutpoints
 	S <- compute_basis_sp(X, cc, private$rl)
-	return(Matrix(S))
+	return(S)
 }
 
 SpatialBisquareBasis$set("public", "compute", compute)
