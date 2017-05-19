@@ -12,7 +12,12 @@ sptcovar <- function(Qinv, M, S, lag_max)
 	d <- nrow(S)
 	r <- ncol(S)
 	SpS <- t(S) %*% S
-	SpSinv <- solve(SpS)
+
+	if (rankMatrix(SpS) < ncol(SpS)) {
+		warning("The matrix (S' S) is rank-deficient. Consider reducing the dimension of S")
+	}
+
+	SpSinv <- ginv(SpS)
 
 	# Get the autocovariance at lag 0
 	# We can compute the other lags as we need them (without storing all of them)
