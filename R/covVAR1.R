@@ -7,7 +7,6 @@ covVAR1 <- function(A, Sigma, lag_max)
 	Gamma <- array(NA, dim = c(m, m, lag_max+1))
 
 	# Gamma0_vec <- solve(Diagonal(m^2,1) - (A %x% A), matrix(Sigma, m^2, 1))
-	browser()
 	out <- solve_Gamma0(as.matrix(A), as.matrix(Sigma))
 	Gamma[,,1] <- matrix(out$x, m, m)
 
