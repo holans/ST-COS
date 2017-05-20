@@ -46,9 +46,7 @@ public:
 
 	// Custom API:
 	MatrixReplacement() : m_M(0) {}
-	void attachMatrix(const Eigen::MatrixXd &M) {
-		m_M = &M;
-	}
+	void attachMatrix(const Eigen::MatrixXd &M) { m_M = &M; }
 	const Eigen::MatrixXd& getM() const { return *m_M; }
 
 private:
@@ -68,11 +66,11 @@ namespace internal {
 		{
 			// This method should implement "dst += alpha * lhs * rhs" inplace,
 			// however, for iterative solvers, alpha is always equal to 1, so let's not bother about it.
-			assert(alpha==Scalar(1) && "scaling is not implemented");
+			assert(alpha == Scalar(1) && "scaling is not implemented");
 
-			time_t rawtime;
-			// time(&rawtime);
-			// Rprintf("%s - Computing matrix-free Ax\n", Rcpp::Datetime(rawtime).format().c_str());
+			time_t now;
+			// time(&now);
+			// Rprintf("%s - Computing matrix-free Ax\n", Rcpp::Datetime(now).format().c_str());
 
 			struct timespec start, end;
 			clock_gettime(CLOCK_MONOTONIC, &start);
@@ -119,10 +117,10 @@ namespace internal {
 				}
 			}
 
-			time(&rawtime);
+			time(&now);
 			clock_gettime(CLOCK_MONOTONIC, &end);
 			double diff = double(end.tv_sec - start.tv_sec) + double(end.tv_nsec - start.tv_nsec) / BILLION;
-			Rprintf("%s - Ax rep took %f sec\n", Rcpp::Datetime(rawtime).format().c_str(), diff);
+			Rprintf("%s - Ax rep took %f sec\n", Rcpp::Datetime(now).format().c_str(), diff);
 		}
 	};
 }

@@ -1,6 +1,6 @@
 library(stcos)
 
-m <- 400
+m <- 500
 
 A <- diag(0.5, m)
 diag(A[-m,-1]) <- 0.25
