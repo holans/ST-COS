@@ -13,6 +13,11 @@ $ sudo apt-get upgrade
 $ sudo apt-get install libgdal-dev
 ```
 
+* An explosive `M` might be a problem if we wanted to predict many steps ahead
+("long-leap") into the future. But that isn't really a concern in this problem,
+so we can leave `M` unconstrained. If we want to discuss this issue, see the
+AOAS paper and possibly also the Cressie and Wilke book.
+
 # Current issues
 * Some of the shape files don't have their CRS coding set.
 * My `Q` matrix seems to be different than Jon's (check the order of areal units).

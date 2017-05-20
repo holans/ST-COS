@@ -8,5 +8,5 @@ Maintainer: Scott Holan <holans@missouri.edu>
 Description: TBD
 License: GPL (>= 2)
 Depends: R6, Rcpp, Matrix, sf, coda, MASS
-LinkingTo: Rcpp, RcppArmadillo
+LinkingTo: Rcpp, RcppArmadillo, RcppEigen
 RoxygenNote: 6.0.1
