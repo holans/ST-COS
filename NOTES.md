@@ -52,6 +52,12 @@ AOAS paper and possibly also the Cressie and Wilke book.
 - [ ] 0.05 quantile of pairwise distances used for basis computation
 - [ ] Interface to provide reduction of `S`
 - [ ] The target VAR(1) process seems like it could become unstable if `M` isn't constrained?
+- [ ] The propagator matrix `M` is currently allowed to be dense, but for the ACS example, this
+	leads to a huge computational problem to get the autocovariance at lag 0. Could we assume
+	some kind of sparsity structure so that not all entries of `Y_t^*` are autocorrelated? For
+	example, maybe only adjacent areal units could be nonzero. That might be too strict, so
+	we could loosen it to be based on degree in the adjacency graph. But then the norm
+	minimization may not be so simple.
 
 # Preprocessing Steps
 #### Compute the matrix `H` of overlaps.
