@@ -1,7 +1,7 @@
 library(stcos)
 library(mvtnorm)
 
-m <- 100
+m <- 20
 
 A <- diag(0.5, m)
 diag(A[-m,-1]) <- 0.25
@@ -19,6 +19,10 @@ cbind(out$x, res)
 sum(abs((out$x - res)))
 
 system.time(res.mc <- sample_Gamma0_VAR1(A, Sigma, R = 1000000, burn = 10000))
+cbind(out$x, as.numeric(res.mc))
+sum(abs((out$x - as.numeric(res.mc))))
+
+system.time(res.mc <- sample_Gamma0_VAR1_v2(A, Sigma, R = 1000000, burn = 10000))
 cbind(out$x, as.numeric(res.mc))
 sum(abs((out$x - as.numeric(res.mc))))
 
