@@ -20,10 +20,12 @@ sptcovar <- function(Qinv, M, S, lag_max)
 
 	# Get the autocovariance at lag 0
 	# We can compute the other lags as we need them (without storing all of them)
+	logger("About to call covVAR1\n")
 	Gamma <- covVAR1(M, Qinv, lag_max = 0)
 	C <- Gamma[,,1]
 	K <- matrix(0, r, r)
 	for (i in 1:lag_max) {
+		logger("Computing block (%d,%d)\n", i, i)
 		idx <- seq(n*(i-1)+1, n*i)
 		A.i <- as.matrix(SpSinv %*% t(S[idx,]))
 		K <- K + A.i %*% (C %*% t(A.i))
@@ -35,6 +37,7 @@ sptcovar <- function(Qinv, M, S, lag_max)
 		C <- as.matrix(M.h %*% (Gamma[,,1] %*% t(M.h)))
 
 		for (i in seq(1, lag_max-h)) {
+			logger("Computing block (%d,%d)\n", i, j)
 			j <- i + h
 			idx.i <- seq(n*(i-1)+1, n*i)
 			idx.j <- seq(n*(j-1)+1, n*j)
@@ -45,5 +48,6 @@ sptcovar <- function(Qinv, M, S, lag_max)
 		}
 	}
 
+	logger("Finished computing K\n")
 	return(K)
 }

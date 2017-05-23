@@ -269,6 +269,22 @@ get_Cinv <- function(target.periods)
 	eig <- eigen(P_perp)
 	M <- Re(eig$vectors)
 
+	# More experimental stuff. Sparsify M by zeroing out entries which are in
+	# far removed areas
+	logger("Sparsifying M matrix: setting M[i,j] to zero where dist(A[i,j]) >= cutoff\n")
+	logger("Before, %0.04f%% of the elements of M (%d of %d entries) are zeroes",
+		sum(M == 0) / length(M), sum(M == 0), length(M))
+	G <- graph_from_adjacency_matrix(A, mode = "undirected")
+	for (i in 1:nrow(A)) {
+		bfs.out <- bfs(G, root = i, dist = TRUE)
+		idx <- which(bfs.out$dist >= 1)
+		M[i,idx] <- 0
+		M[idx,i] <- 0
+	}
+	M <- Matrix(M)
+	logger("Now, %0.04f%% of the elements of M (%d of %d entries) are zeroes",
+		sum(M == 0) / length(M), sum(M == 0), length(M))
+
 	# Target Covariance
 	# TBD: Should we multiply by a constant to make the elements' magnitude less extreme?
 	logger("Computing target covariance\n")

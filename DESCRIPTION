@@ -7,6 +7,6 @@ Author: Scott Holan, Andrew M. Raim
 Maintainer: Scott Holan <holans@missouri.edu>
 Description: TBD
 License: GPL (>= 2)
-Depends: R6, Rcpp, Matrix, sf, coda, MASS
+Depends: R6, Rcpp, Matrix, sf, coda, MASS, igraph
 LinkingTo: Rcpp, RcppArmadillo, RcppEigen
 RoxygenNote: 6.0.1
