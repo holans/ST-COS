@@ -7,9 +7,17 @@ covVAR1 <- function(A, Sigma, lag_max)
 	Gamma <- array(NA, dim = c(m, m, lag_max+1))
 
 	logger("About to compute Gamma0_vec\n")
-	Gamma0_vec <- solve(Diagonal(m^2,1) - (A %x% A), matrix(Sigma, m^2, 1))
+	# Gamma0_vec <- solve(Diagonal(m^2,1) - (A %x% A), matrix(Sigma, m^2, 1))
 	# out <- solve_Gamma0(as.matrix(A), as.matrix(Sigma))
-	Gamma[,,1] <- matrix(out$x, m, m)
+	# Gamma[,,1] <- matrix(out$x, m, m)
+	
+	# Avoid Kronecker product
+	eig <- eigen(A)
+	V <- eig$vectors
+	V.inv <- solve(eig$vectors)
+	C <- V.inv %*% Sigma %*% t(V.inv)
+	e <- 1 / (1 - eig$values %x% eig$values) * as.numeric(C)
+	Gamma[,,1] <- V %*% matrix(e, m, m) %*% t(V)
 
 	logger("About to compute remaining Gamma(h) matrices\n")
 	for (h in seq_len(lag_max)) {

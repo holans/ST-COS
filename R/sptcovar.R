@@ -37,7 +37,7 @@ sptcovar <- function(Qinv, M, S, lag_max)
 		C <- as.matrix(M.h %*% (Gamma[,,1] %*% t(M.h)))
 
 		for (i in seq(1, lag_max-h)) {
-			logger("Computing block (%d,%d)\n", i, j)
+			logger("Computing block (%d,%d)\n", i, h)
 			j <- i + h
 			idx.i <- seq(n*(i-1)+1, n*i)
 			idx.j <- seq(n*(j-1)+1, n*j)
