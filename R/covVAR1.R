@@ -11,13 +11,23 @@ covVAR1 <- function(A, Sigma, lag_max)
 	# out <- solve_Gamma0(as.matrix(A), as.matrix(Sigma))
 	# Gamma[,,1] <- matrix(out$x, m, m)
 	
-	# Avoid Kronecker product
+	# The simple Kronecker product calculation for lag-0 is infeasible for large m,
+	# even if A is fairly sparse.
+	# Gamma[,,1] <- solve(Diagonal(m^2,1) - (A %x% A), matrix(Sigma, m^2, 1))
+	# The following version avoids the Kronecker product.
 	eig <- eigen(A)
 	V <- eig$vectors
-	V.inv <- solve(eig$vectors)
-	C <- V.inv %*% Sigma %*% t(V.inv)
-	e <- 1 / (1 - eig$values %x% eig$values) * as.numeric(C)
-	Gamma[,,1] <- V %*% matrix(e, m, m) %*% t(V)
+	lambda <- eig$values
+	rm(eig)
+	V.inv <- ginv(V)
+	C <- V.inv %*% as.matrix(Sigma) %*% t(V.inv)
+	rm(V.inv)
+	e <- matrix(1 / (1 - lambda %x% lambda), m^2, 1) * matrix(C, m^2, 1)
+	rm(C)
+	E <- matrix(e, m, m)
+	rm(e)
+	Gamma[,,1] <- Re(V %*% E %*% t(V))
+	rm(E, V)
 
 	logger("About to compute remaining Gamma(h) matrices\n")
 	for (h in seq_len(lag_max)) {
