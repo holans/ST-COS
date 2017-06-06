@@ -35,3 +35,4 @@ compute <- function(x, y)
 
 SpatialBisquareBasis$set("public", "compute", compute)
 SpatialBisquareBasis$lock()
+

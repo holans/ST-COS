@@ -38,3 +38,4 @@ compute <- function(x, y, time)
 
 SpaceTimeBisquareBasis$set("public", "compute", compute)
 SpaceTimeBisquareBasis$lock()
+
