@@ -6,11 +6,8 @@ covVAR1 <- function(A, Sigma, lag_max)
 	N <- m * (lag_max+1)
 	Gamma <- array(NA, dim = c(m, m, lag_max+1))
 
-	logger("About to compute Gamma0_vec\n")
-	# Gamma0_vec <- solve(Diagonal(m^2,1) - (A %x% A), matrix(Sigma, m^2, 1))
-	# out <- solve_Gamma0(as.matrix(A), as.matrix(Sigma))
-	# Gamma[,,1] <- matrix(out$x, m, m)
-	
+	logger("Computing Gamma(0)\n")
+
 	# The simple Kronecker product calculation for lag-0 is infeasible for large m,
 	# even if A is fairly sparse.
 	# Gamma[,,1] <- solve(Diagonal(m^2,1) - (A %x% A), matrix(Sigma, m^2, 1))
@@ -29,8 +26,8 @@ covVAR1 <- function(A, Sigma, lag_max)
 	Gamma[,,1] <- Re(V %*% E %*% t(V))
 	rm(E, V)
 
-	logger("About to compute remaining Gamma(h) matrices\n")
 	for (h in seq_len(lag_max)) {
+		logger("Computing Gamma(%d)\n", h)
 		Gamma[,,h+1] <- A %*% Gamma[,,h]
 	}
 

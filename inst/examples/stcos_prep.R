@@ -58,23 +58,54 @@ plot(acs5.2013[,1])
 points(knots.sp, pch = 2)
 
 knots.t <- c(2012.5, 2011, 2011.5, 2011, 2010, 2010.5, 2010, 2009, 2009.5, 2009,
-	2008, 2008.5, 2008, 2007, 2007.5, 2007, 2006.5, 2006, 2005.5)
+			 2008, 2008.5, 2008, 2007, 2007.5, 2007, 2006.5, 2006, 2005.5)
 knots <- merge(knots.sp, knots.t)
 names(knots) <- c("x", "y", "t")
-# basis <- BisquareBasis$new(knots[,1], knots[,2], knots[,3], w.s = 0.5, w.t = 0.5)
 basis <- SpaceTimeBisquareBasis$new(knots[,1], knots[,2], knots[,3], w.s = 1, w.t = 1)
 
 # Load the domains with observations.
 # If necessary, each one can be loaded at a time and added to "sp".
 acs1.2013 <- load.domain("shp/period1.shp", "shp/period1.csv", "period1", crs.tx = st_crs(acs5.2013)) # ACS 1-year estimates for 2013
-acs5.2012 <- load.domain("shp/period3_2012.shp", "shp/period3_2012.csv", "period3_2012", crs.tx = st_crs(acs5.2013)) # ACS 5-year estimates for 2012
+acs3.2013 <- load.domain("shp/period2.shp", "shp/period2.csv", "period2", crs.tx = st_crs(acs5.2013)) # ACS 3-year estimates for 2013
+acs1.2012 <- load.domain("shp/period1_2012.shp", "shp/period1_2012.csv", "period1_2012", crs.tx = st_crs(acs5.2013))
+acs3.2012 <- load.domain("shp/period2_2012.shp", "shp/period2_2012.csv", "period2_2012", crs.tx = st_crs(acs5.2013))
+acs5.2012 <- load.domain("shp/period3_2012.shp", "shp/period3_2012.csv", "period3_2012", crs.tx = st_crs(acs5.2013))
+acs1.2011 <- load.domain("shp/period1_2011.shp", "shp/period1_2011.csv", "period1_2011", crs.tx = st_crs(acs5.2013))
+acs3.2011 <- load.domain("shp/period2_2011.shp", "shp/period2_2011.csv", "period2_2011", crs.tx = st_crs(acs5.2013))
+acs5.2011 <- load.domain("shp/period3_2011.shp", "shp/period3_2011.csv", "period3_2011", crs.tx = st_crs(acs5.2013))
+acs1.2010 <- load.domain("shp/period1_2010.shp", "shp/period1_2010.csv", "period1_2010", crs.tx = st_crs(acs5.2013))
 acs3.2010 <- load.domain("shp/period2_2010.shp", "shp/period2_2010.csv", "period2_2010", crs.tx = st_crs(acs5.2013))
+acs5.2010 <- load.domain("shp/period3_2010.shp", "shp/period3_2010.csv", "period3_2010", crs.tx = st_crs(acs5.2013))
+acs1.2009 <- load.domain("shp/period1_2009.shp", "shp/period1_2009.csv", "period1_2009", crs.tx = st_crs(acs5.2013))
+acs3.2009 <- load.domain("shp/period2_2009.shp", "shp/period2_2009.csv", "period2_2009", crs.tx = st_crs(acs5.2013))
+acs5.2009 <- load.domain("shp/period3_2009.shp", "shp/period3_2009.csv", "period3_2009", crs.tx = st_crs(acs5.2013))
+acs1.2008 <- load.domain("shp/period1_2008.shp", "shp/period1_2008.csv", "period1_2008", crs.tx = st_crs(acs5.2013))
+acs3.2008 <- load.domain("shp/period2_2008.shp", "shp/period2_2008.csv", "period2_2008", crs.tx = st_crs(acs5.2013))
+acs1.2007 <- load.domain("shp/period1_2007.shp", "shp/period1_2007.csv", "period1_2007", crs.tx = st_crs(acs5.2013))
+acs3.2007 <- load.domain("shp/period2_2007.shp", "shp/period2_2007.csv", "period2_2007", crs.tx = st_crs(acs5.2013))
+acs1.2006 <- load.domain("shp/period1_2006.shp", "shp/period1_2006.csv", "period1_2006", crs.tx = st_crs(acs5.2013))
 
 # Construct a STCOSPrep object, then add space-time domains with observations
-sp <- STCOSPrep$new(fine_domain = acs5.2013, basis = basis)
+sp <- STCOSPrep$new(fine_domain = acs5.2013, basis = basis, basis_mc_reps = 500)
 sp$add_obs(acs1.2013, time = 2013, period = 2013, estimate_name = "EST", variance_name = "VAR")
-sp$add_obs(acs5.2012, time = 2012, period = 2008:2012, estimate_name = "EST", variance_name = "VAR")
+sp$add_obs(acs1.2012, time = 2012, period = 2012, estimate_name = "EST", variance_name = "VAR")
+sp$add_obs(acs1.2011, time = 2011, period = 2011, estimate_name = "EST", variance_name = "VAR")
+sp$add_obs(acs1.2010, time = 2010, period = 2010, estimate_name = "EST", variance_name = "VAR")
+sp$add_obs(acs1.2009, time = 2009, period = 2009, estimate_name = "EST", variance_name = "VAR")
+sp$add_obs(acs1.2008, time = 2008, period = 2008, estimate_name = "EST", variance_name = "VAR")
+sp$add_obs(acs1.2007, time = 2007, period = 2007, estimate_name = "EST", variance_name = "VAR")
+sp$add_obs(acs1.2006, time = 2006, period = 2006, estimate_name = "EST", variance_name = "VAR")
+sp$add_obs(acs3.2012, time = 2012, period = 2010:2012, estimate_name = "EST", variance_name = "VAR")
+sp$add_obs(acs3.2011, time = 2011, period = 2009:2011, estimate_name = "EST", variance_name = "VAR")
 sp$add_obs(acs3.2010, time = 2010, period = 2008:2010, estimate_name = "EST", variance_name = "VAR")
+sp$add_obs(acs3.2009, time = 2009, period = 2007:2009, estimate_name = "EST", variance_name = "VAR")
+sp$add_obs(acs3.2008, time = 2008, period = 2006:2008, estimate_name = "EST", variance_name = "VAR")
+sp$add_obs(acs3.2007, time = 2007, period = 2005:2007, estimate_name = "EST", variance_name = "VAR")
+sp$add_obs(acs5.2013, time = 2013, period = 2009:2013, estimate_name = "EST", variance_name = "VAR")
+sp$add_obs(acs5.2012, time = 2012, period = 2008:2012, estimate_name = "EST", variance_name = "VAR")
+sp$add_obs(acs5.2011, time = 2011, period = 2007:2011, estimate_name = "EST", variance_name = "VAR")
+sp$add_obs(acs5.2010, time = 2010, period = 2006:2010, estimate_name = "EST", variance_name = "VAR")
+sp$add_obs(acs5.2009, time = 2009, period = 2005:2009, estimate_name = "EST", variance_name = "VAR")
 
 Z <- sp$get_Z()
 V <- sp$get_V()
@@ -94,12 +125,17 @@ sp$set_basis_reduction(f)
 
 S.reduced <- sp$get_reduced_S()
 
-C.inv <- sp$get_Cinv(2005:2013)
-
-## It should be okay to multiply by a constant. This will affect the sig2K draws
-# C.inv.orig <- C.inv
-# C.inv <- 1/min(abs(C.inv.orig)) * C.inv.orig
-
+if (TRUE) {
+	# Do a spatial-only basis expansion of fine-domain, and use this as the
+	# design matrix to project away from
+	sp.basis <- SpatialBisquareBasis$new(knots.sp[,1], knots.sp[,2], w = 1)
+	draws.out <- draw_sp_basis_mc(R = 500, domain = acs5.2013, report.period = 100)
+	X <- compute_sp_basis_mc(basis = sp.basis, domain = acs5.2013,
+		s1 = draws.out$s1, s2 = draws.out$s2, report.period = 100)
+	C.inv <- sp$get_Cinv(2005:2013, X)
+} else {
+	C.inv <- sp$get_Cinv(2005:2013)
+}
 
 # ----- Apply Gibbs sampler using MLE as initial value -----
 mle.out <- mle.stcos(Z, S.reduced, V, H, init = list(sig2xi = 100))
@@ -109,7 +145,6 @@ init <- list(
 	mu_B = mle.out$mu.hat,
 	eta = mle.out$eta.hat
 )
-# init <- list()
 gibbs.out <- gibbs.stcos.raw(Z, S.reduced, V, C.inv, H, R = 10000,
 	report.period = 1000, burn = 1000, thin = 10, init = init)
 
