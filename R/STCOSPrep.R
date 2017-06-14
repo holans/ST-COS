@@ -169,14 +169,13 @@ get_V <- function()
 get_H <- function()
 {
 	n <- nrow(private$fine_domain)
-	H <- Matrix(0, private$N, n)
+	H <- Matrix(0, 0, n)
 	L <- private$L
 	cnt <- 0
 
 	for (l in 1:L) {
-		idx <- 1:ncol(private$H_list[[l]]) + cnt
-		H[idx,] <- t(private$H_list[[l]])
-		cnt <- cnt + length(idx)
+		H <- rbind(H, t(private$H_list[[l]]))
+		cnt <- cnt + ncol(private$H_list[[l]])
 	}
 
 	return(H)
@@ -190,9 +189,8 @@ get_S <- function()
 	cnt <- 0
 
 	for (l in 1:L) {
-		idx <- 1:nrow(private$S_list[[l]]) + cnt
 		S <- rbind(S, private$S_list[[l]])
-		cnt <- cnt + length(idx)
+		cnt <- cnt + nrow(private$S_list[[l]])
 	}
 
 	return(S)
@@ -224,7 +222,6 @@ get_Cinv <- function(target.periods)
 		logger("Constructing S matrix for fine-scale at time %d of %d\n", t, T)
 		S <- private$compute_spt_basis_mc(private$fine_domain,
 			target.periods[t], draws.out$s1, draws.out$s2)
-		# Sconnector[idx,] <- S
 
 		# rbind usually slows performance, but here it's a lot faster
 		# than doing Sconnector[idx,] <- S
@@ -248,15 +245,15 @@ get_Cinv <- function(target.periods)
 	Q <- Diagonal(n,1) - 0.9*countAdj
 	Qinv <- solve(Q)
 
-	# Moran's I Propagator
+	# Moran's I Propagator: random walk version
 	# With this choice of B, M just is the identity matrix
 	# B <- cbind(diag(N), diag(N))
 	# P_perp = diag(nrow(B)) - B %*% MASS::ginv(t(B) %*% B) %*% t(B)
 	# eig = eigen(P_perp)
 	# M = Re(eig$vectors)
 	#### M <- Diagonal(n,1)
-	
-	# Moran's I Propagator (Experimental)
+
+	# Moran's I Propagator: version based on spatial basis expansion
 	# Do a spatial-only basis expansion of fine-domain, and use this as the
 	# design matrix to project away from
 	warning("We're trying to use variable knots from outside environment. Pass this correctly if we keep it!")
@@ -268,24 +265,6 @@ get_Cinv <- function(target.periods)
 	P_perp <- Diagonal(nrow(B),1) - B %*% solve(t(B) %*% B, t(B))
 	eig <- eigen(P_perp)
 	M <- Re(eig$vectors)
-
-	if (FALSE) {
-		# More experimental stuff. Sparsify M by zeroing out entries which are in
-		# far removed areas
-		logger("Sparsifying M matrix: setting M[i,j] to zero where dist(A[i,j]) >= cutoff\n")
-		logger("Before, %0.04f%% of the elements of M (%d of %d entries) are zeros\n",
-			sum(M == 0) / length(M), sum(M == 0), length(M))
-		G <- graph_from_adjacency_matrix(A, mode = "undirected")
-		for (i in 1:nrow(A)) {
-			bfs.out <- bfs(G, root = i, dist = TRUE)
-			idx <- which(bfs.out$dist >= 1)
-			M[i,idx] <- 0
-			M[idx,i] <- 0
-		}
-		M <- Matrix(M)
-		logger("Now, %0.04f%% of the elements of M (%d of %d entries) are zeroes",
-			sum(M == 0) / length(M), sum(M == 0), length(M))
-	}
 
 	# Target Covariance
 	# TBD: Should we multiply by a constant to make the elements' magnitude less extreme?
