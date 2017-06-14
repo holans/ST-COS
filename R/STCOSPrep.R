@@ -54,8 +54,11 @@ add_obs <- function(domain, time, period, estimate_name, variance_name)
 	H <- Matrix(apply(H.prime, 2, normalize))
 
 	logger("Computing basis functions\n")
-	draws.out <- private$draw_basis_mc(domain, length(period))
-	S <- private$compute_spt_basis_mc(domain, period, draws.out$s1, draws.out$s2)
+	draws.out <- draw_spt_basis_mc(R = private$basis_mc_reps, domain = domain,
+		period_len = length(period), report.period = private$report_period)
+	S <- compute_spt_basis_mc(basis = private$basis, domain = domain,
+		period = period, s1 = draws.out$s1, s2 = draws.out$s2,
+		report.period = private$report_period)
 
 	private$N <- private$N + n
 	private$L <- private$L + 1
@@ -68,70 +71,6 @@ add_obs <- function(domain, time, period, estimate_name, variance_name)
 	private$S_list[[L]] <- S
 
 	logger("Finished adding observed space-time domain\n")
-}
-
-draw_basis_mc <- function(domain, period_len)
-{
-	basis <- private$basis
-	n <- nrow(domain)
-	r <- basis$get_dim()
-	R <- private$basis_mc_reps
-	T <- period_len
-	s1 <- array(NA, dim = c(T, n, R))
-	s2 <- array(NA, dim = c(T, n, R))	
-
-	for (j in 1:n) {
-		if (j %% private$report_period == 0) {
-			logger("Drawing points for area %d of %d\n", j, n)
-		}
-		for (t in 1:T) {
-			P <- rArea(R, domain[j,])
-			s1[t,j,] <- P[,1]
-			s2[t,j,] <- P[,2]
-		}
-	}
-
-	list(s1 = s1, s2 = s2)
-}
-
-compute_spt_basis_mc <- function(domain, period, s1, s2)
-{
-	basis <- private$basis
-	n <- nrow(domain)
-	r <- basis$get_dim()
-	R <- dim(s1)[3]
-	stopifnot(R == dim(s2)[3])
-	S <- Matrix(0, n, r)
-	T <- length(period)
-
-	for (r in 1:R) {
-		if (r %% private$report_period == 0) {
-			logger("Computing basis for rep %d of %d\n", r, R)
-		}
-		for (t in 1:T) {
-			S <- S + basis$compute(s1[t,,r], s2[t,,r], period[t])
-		}
-	}
-
-	return( S / (R*T) )
-}
-
-compute_sp_basis_mc <- function(basis, domain, s1, s2)
-{
-	n <- nrow(domain)
-	r <- basis$get_dim()
-	R <- dim(s1)[2]
-	stopifnot(R == dim(s2)[2])
-	S <- Matrix(0, n, r)
-
-	for (r in 1:R) {
-		if (r %% private$report_period == 0) {
-			logger("Computing basis for rep %d of %d\n", r, R)
-		}
-		S <- S + basis$compute(s1[,r], s2[,r])
-	}
-
-	return(S / R)
 }
 
 get_Z <- function()
@@ -209,19 +148,24 @@ set_basis_reduction <- function(f = identity)
 
 # TBD: Should we take target *times* or target *periods*???
 # Should Cinv ever be based on 5-year ACS means, for example?
-get_Cinv <- function(target.periods)
+get_Cinv <- function(target.periods, X = NULL)
 {
 	T <- length(target.periods)
 	n <- nrow(private$fine_domain)
 	r <- private$basis$get_dim()
 
 	Sconnector <- Matrix(0, 0, r)
-	draws.out <- private$draw_basis_mc(private$fine_domain, 1)
+	draws.out <- draw_spt_basis_mc(R = private$basis_mc_reps,
+		domain = private$fine_domain, period_len = 1,
+		report.period = private$report_period)
+
 	for (t in 1:T) {
 		idx <- 1:n + (t-1)*n
 		logger("Constructing S matrix for fine-scale at time %d of %d\n", t, T)
-		S <- private$compute_spt_basis_mc(private$fine_domain,
-			target.periods[t], draws.out$s1, draws.out$s2)
+		S <- compute_spt_basis_mc(basis = private$basis,
+			domain = private$fine_domain, period = target.periods[t],
+			s1 = draws.out$s1, s2 = draws.out$s2,
+			report.period = private$report_period)
 
 		# rbind usually slows performance, but here it's a lot faster
 		# than doing Sconnector[idx,] <- S
@@ -245,29 +189,27 @@ get_Cinv <- function(target.periods)
 	Q <- Diagonal(n,1) - 0.9*countAdj
 	Qinv <- solve(Q)
 
-	# Moran's I Propagator: random walk version
-	# With this choice of B, M just is the identity matrix
-	# B <- cbind(diag(N), diag(N))
-	# P_perp = diag(nrow(B)) - B %*% MASS::ginv(t(B) %*% B) %*% t(B)
-	# eig = eigen(P_perp)
-	# M = Re(eig$vectors)
-	#### M <- Diagonal(n,1)
-
-	# Moran's I Propagator: version based on spatial basis expansion
-	# Do a spatial-only basis expansion of fine-domain, and use this as the
-	# design matrix to project away from
-	warning("We're trying to use variable knots from outside environment. Pass this correctly if we keep it!")
+	# Moran's I Propagator
 	logger("Computing Moran's I Propagator\n")
-	sp.basis <- SpatialBisquareBasis$new(knots[1:250,1], knots[1:250,2], w = 1)
-	X <- private$compute_sp_basis_mc(sp.basis, private$fine_domain, draws.out$s1[1,,], draws.out$s2[1,,])
-	licols.out <- licols(as.matrix(X))
-	B <- Matrix(licols.out$Xsub)
-	P_perp <- Diagonal(nrow(B),1) - B %*% solve(t(B) %*% B, t(B))
-	eig <- eigen(P_perp)
-	M <- Re(eig$vectors)
+	if (is.null(X)) {
+		# Take X to be an identity matrix, which leads to M being an identity matrix
+		
+		# With this choice of B, M just is the identity matrix
+		# B <- cbind(diag(N), diag(N))
+		# P_perp = diag(nrow(B)) - B %*% MASS::ginv(t(B) %*% B) %*% t(B)
+		# eig = eigen(P_perp)
+		# M = Re(eig$vectors)
+		M <- Diagonal(n,1)
+	} else {
+		# Use the given X to compute M
+		licols.out <- licols(as.matrix(X))
+		B <- Matrix(licols.out$Xsub)
+		P_perp <- Diagonal(nrow(B),1) - B %*% solve(t(B) %*% B, t(B))
+		eig <- eigen(P_perp)
+		M <- Re(eig$vectors)
+	}
 
 	# Target Covariance
-	# TBD: Should we multiply by a constant to make the elements' magnitude less extreme?
 	logger("Computing target covariance\n")
 	C.unscaled <- sptcovar(Qinv, M, Sconnectorf, lag_max = T)
 	C <- C.unscaled / max(abs(as.matrix(C.unscaled)))
@@ -283,9 +225,6 @@ get_Cinv <- function(target.periods)
 	return(Cinv.higham)
 }
 
-STCOSPrep$set("private", "draw_basis_mc", draw_basis_mc)
-STCOSPrep$set("private", "compute_sp_basis_mc", compute_sp_basis_mc)
-STCOSPrep$set("private", "compute_spt_basis_mc", compute_spt_basis_mc)
 STCOSPrep$set("public", "get_Z", get_Z)
 STCOSPrep$set("public", "get_V", get_V)
 STCOSPrep$set("public", "get_H", get_H)
