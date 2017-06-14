@@ -193,14 +193,8 @@ get_Cinv <- function(target.periods, X = NULL)
 	logger("Computing Moran's I Propagator\n")
 	if (is.null(X)) {
 		# Take X to be an identity matrix, which leads to M being an identity matrix
-		
-		# With this choice of B, M just is the identity matrix
-		# B <- cbind(diag(N), diag(N))
-		# P_perp = diag(nrow(B)) - B %*% MASS::ginv(t(B) %*% B) %*% t(B)
-		# eig = eigen(P_perp)
-		# M = Re(eig$vectors)
 		M <- Diagonal(n,1)
-	
+
 		# Target Covariance
 		logger("Computing target covariance\n")
 		C.unscaled <- sptcovar.randwalk(Qinv, M, Sconnectorf, lag_max = T)
@@ -211,7 +205,7 @@ get_Cinv <- function(target.periods, X = NULL)
 		licols.out <- licols(as.matrix(X))
 		B <- Matrix(licols.out$Xsub)
 		P_perp <- Diagonal(nrow(B),1) - B %*% solve(t(B) %*% B, t(B))
-		eig <- eigen(P_perp)
+		eig <- eigen(P_perp, symmetric = TRUE)
 		M <- Re(eig$vectors)
 		M <- (M + t(M)) / 2
 
