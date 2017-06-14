@@ -16,7 +16,11 @@ covVAR1 <- function(A, Sigma, lag_max)
 	V <- eig$vectors
 	lambda <- eig$values
 	rm(eig)
-	V.inv <- ginv(V)
+	if (isSymmetric(V)) {
+		V.inv <- t(V)
+	} else {
+		V.inv <- ginv(V)
+	}
 	C <- V.inv %*% as.matrix(Sigma) %*% t(V.inv)
 	rm(V.inv)
 	e <- matrix(1 / (1 - lambda %x% lambda), m^2, 1) * matrix(C, m^2, 1)

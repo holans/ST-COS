@@ -213,6 +213,7 @@ get_Cinv <- function(target.periods, X = NULL)
 		P_perp <- Diagonal(nrow(B),1) - B %*% solve(t(B) %*% B, t(B))
 		eig <- eigen(P_perp)
 		M <- Re(eig$vectors)
+		M <- (M + t(M)) / 2
 
 		# Target Covariance
 		logger("Computing target covariance\n")

@@ -3,10 +3,10 @@ Type: Package
 Title: Space-Time Change of Support
 Version: 0.0.1
 Date: 2017-05-13
-Author: Scott Holan, Andrew M. Raim
-Maintainer: Scott Holan <holans@missouri.edu>
+Author: Andrew M. Raim, Scott Holan
+Maintainer: Andrew M. Raim <andrew.raim@gmail.com>
 Description: TBD
 License: GPL (>= 2)
-Depends: R6, Rcpp, Matrix, sf, coda, MASS, igraph
-LinkingTo: Rcpp, RcppArmadillo, RcppEigen
+Depends: R6, Rcpp, Matrix, sf, coda, MASS
+LinkingTo: Rcpp, RcppArmadillo
 RoxygenNote: 6.0.1
