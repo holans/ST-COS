@@ -6,7 +6,7 @@
 # We don't need to construct FullCovar in its entirety to do this operation.
 #
 # K minimizes || FullCovar - S X S^T ||_Frob over symmetric psd matrices X
-sptcovar <- function(Qinv, M, S, lag_max)
+sptcovar.vectautoreg <- function(Qinv, M, S, lag_max)
 {
 	n <- nrow(Qinv)
 	d <- nrow(S)
@@ -45,6 +45,35 @@ sptcovar <- function(Qinv, M, S, lag_max)
 			A.j <- as.matrix(SpSinv %*% t(S[idx.j,]))
 			B <- A.i %*% (C %*% t(A.j))
 			K <- K + 2*B
+		}
+	}
+
+	logger("Finished computing K\n")
+	return(K)
+}
+
+sptcovar.randwalk <- function(Qinv, M, S, lag_max)
+{
+	n <- nrow(Qinv)
+	d <- nrow(S)
+	r <- ncol(S)
+	SpS <- t(S) %*% S
+
+	if (rankMatrix(SpS) < ncol(SpS)) {
+		warning("The matrix (S' S) is rank-deficient. Consider reducing the dimension of S")
+	}
+	SpSinv <- ginv(as.matrix(SpS))
+
+	K <- matrix(0, r, r)
+	for (i in 1:lag_max) {
+		for (j in 1:lag_max) {
+			logger("Computing block (%d,%d)\n", i, j)
+			idx.i <- seq(n*(i-1)+1, n*i)
+			idx.j <- seq(n*(j-1)+1, n*j)
+			A.i <- as.matrix(SpSinv %*% t(S[idx.i,]))
+			A.j <- as.matrix(SpSinv %*% t(S[idx.j,]))
+			C <- min(i,j)*Qinv
+			K <- K + A.i %*% (C %*% t(A.i))
 		}
 	}
 

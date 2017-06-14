@@ -200,6 +200,12 @@ get_Cinv <- function(target.periods, X = NULL)
 		# eig = eigen(P_perp)
 		# M = Re(eig$vectors)
 		M <- Diagonal(n,1)
+	
+		# Target Covariance
+		logger("Computing target covariance\n")
+		C.unscaled <- sptcovar.randwalk(Qinv, M, Sconnectorf, lag_max = T)
+		C <- C.unscaled / max(abs(as.matrix(C.unscaled)))
+		warning("We're scaling C by a constant. Make sure this is okay!")
 	} else {
 		# Use the given X to compute M
 		licols.out <- licols(as.matrix(X))
@@ -207,13 +213,14 @@ get_Cinv <- function(target.periods, X = NULL)
 		P_perp <- Diagonal(nrow(B),1) - B %*% solve(t(B) %*% B, t(B))
 		eig <- eigen(P_perp)
 		M <- Re(eig$vectors)
+
+		# Target Covariance
+		logger("Computing target covariance\n")
+		C.unscaled <- sptcovar.vectautoreg(Qinv, M, Sconnectorf, lag_max = T)
+		C <- C.unscaled / max(abs(as.matrix(C.unscaled)))
+		warning("We're scaling C by a constant. Make sure this is okay!")
 	}
 
-	# Target Covariance
-	logger("Computing target covariance\n")
-	C.unscaled <- sptcovar(Qinv, M, Sconnectorf, lag_max = T)
-	C <- C.unscaled / max(abs(as.matrix(C.unscaled)))
-	warning("We're scaling C by a constant. Make sure this is okay!")
 	eig <- eigen(C)
 	P <- Re(eig$vectors)
 	D <- Re(eig$values)
