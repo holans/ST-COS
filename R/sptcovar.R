@@ -18,34 +18,24 @@ sptcovar.vectautoreg <- function(Qinv, M, S, lag_max)
 	}
 	SpSinv <- ginv(as.matrix(SpS))
 
-	# Get the autocovariance at lag 0
-	# We can compute the other lags as we need them (without storing all of them)
-	C <- matrix(0, r, r)
-
+	# Get all the the autocovariances we'll need
 	logger("About to call covVAR1\n")
-	Gamma <- covVAR1(M, Qinv, lag_max = 0)
-
-	B <- Gamma[,,1]
-	for (i in 1:lag_max) {
-		logger("Computing block (%d,%d)\n", i, i)
-		idx <- seq(n*(i-1)+1, n*i)
-		S.i <- S[idx,]
-		C <- C + t(S.i) %*% B %*% S.i
+	G <- covVAR1(M, Qinv, lag_max = lag_max)
+	Gamma <- function(h) {
+		if (h >= 0) {
+			G[,,h+1]
+		} else {
+			t(G[,,-h+1])
+		}
 	}
 
-	M.h <- diag(1,n)
-	for (h in 1:(lag_max-1)) {
-		M.h <- M %*% M.h
-		B <- as.matrix(M.h %*% Gamma[,,1] %*% t(M.h))
-
-		for (i in seq(1, lag_max-h)) {
-			logger("Computing block (%d,%d)\n", i, h)
-			j <- i + h
+	C <- matrix(0, r, r)
+	for (i in 1:lag_max) {
+		for (j in 1:lag_max) {
+			logger("Computing block (%d,%d)\n", i, j)
 			idx.i <- seq(n*(i-1)+1, n*i)
 			idx.j <- seq(n*(j-1)+1, n*j)
-			S.i <- S[idx.i,]
-			S.j <- S[idx.j,]
-			C <- C + 2*(t(S.i) %*% B %*% S.j)
+			C <- C + t(S[idx.i,]) %*% Gamma(i-j) %*% S[idx.j,]
 		}
 	}
 
