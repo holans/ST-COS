@@ -30,11 +30,14 @@ load.domain <- function(shpfile, datfile, layername, crs.tx = NULL, crs.orig = N
 	area <- area[idx.keep,]
 	# plot(area)
 
+	# Direct estimates and their variance estimates from survey
+	# Variance estimates are converted from 90% margins-of-error
 	dat <- read.csv(datfile, header = FALSE)
 	eZagg <- dat[idx.keep, 1]
-	esigmavar <- (dat[idx.keep, 2] / 1.645)^2		# known survey variances
-	Zagg <- log(eZagg)
-	sigmavar <- esigmavar * (1 / eZagg)^2
+	esigmavar <- (dat[idx.keep, 2] / 1.645)^2
+
+	# Zagg <- log(eZagg)
+	# sigmavar <- esigmavar * (1 / eZagg)^2
 
 	area$EST <- eZagg
 	area$VAR <- esigmavar
