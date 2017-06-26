@@ -1,4 +1,4 @@
-compute.overlap <- function(D, G)
+compute.overlap <- function(D, G, geo.name.D, geo.name.G)
 {
 	nd <- nrow(D)
 	ng <- nrow(G)
@@ -10,14 +10,14 @@ compute.overlap <- function(D, G)
 	# Compute the overlaps
 	INT <- st_intersection(D, G)
 	DF <- data.frame(
-		D_GEO_ID = INT$GEO_ID,
-		G_GEO_ID = INT$GEO_ID.1,
+		D_GEO_ID = INT[[geo.name.D]],
+		G_GEO_ID = INT[[geo.name.G]],
 		area.overlap = as.numeric(st_area(INT))
 	)
 
 	# Translate from GEO_IDs to row numbers of D and G
-	ID.D <- data.frame(row_D = 1:nd, D_GEO_ID = D$GEO_ID)
-	ID.G <- data.frame(row_G = 1:ng, G_GEO_ID = G$GEO_ID)
+	ID.D <- data.frame(row_D = 1:nd, D_GEO_ID = D[[geo.name.D]])
+	ID.G <- data.frame(row_G = 1:ng, G_GEO_ID = G[[geo.name.G]])
 
 	# Create a sparse matrix with the overlaps, using the indices
 	DF2 <- merge(ID.D, DF, by = "D_GEO_ID")

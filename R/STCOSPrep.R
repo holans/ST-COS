@@ -1,6 +1,6 @@
 STCOSPrep <- R6Class("STCOSPrep",
 	public = list(
-		initialize = function(fine_domain, basis, basis_mc_reps = 500, report_period = 100) {
+		initialize = function(fine_domain, fine_domain_geo_name, basis, basis_mc_reps = 500, report_period = 100) {
 			stopifnot(inherits(fine_domain, "sf"))
 			stopifnot(inherits(basis, "SpaceTimeBisquareBasis"))
 
@@ -15,10 +15,12 @@ STCOSPrep <- R6Class("STCOSPrep",
 			private$basis <- basis
 			private$basis_reduction <- identity
 			private$report_period <- report_period
+			private$fine_domain_geo_name <- fine_domain_geo_name
 		}
 	),
 	private = list(
 		fine_domain = NULL,
+		fine_domain_geo_name = NULL,
 		H_list = NULL,
 		S_list = NULL,
 		Z_list = NULL,
@@ -32,7 +34,7 @@ STCOSPrep <- R6Class("STCOSPrep",
 	)
 )
 
-add_obs <- function(domain, time, period, estimate_name, variance_name)
+add_obs <- function(domain, time, period, estimate_name, variance_name, geo_name)
 {
 	## Check the argument types
 	stopifnot(inherits(domain, "sf"))
@@ -50,7 +52,8 @@ add_obs <- function(domain, time, period, estimate_name, variance_name)
 	V <- domain[[variance_name]]
 
 	logger("Computing overlap matrix\n")
-	H.prime <- compute.overlap(private$fine_domain, domain)
+	H.prime <- compute.overlap(private$fine_domain, domain,
+		geo.name.D = private$fine_domain_geo_name, geo.name.G = geo_name)
 	H <- Matrix(apply(H.prime, 2, normalize))
 
 	logger("Computing basis functions\n")
@@ -212,8 +215,9 @@ get_Cinv <- function(target.periods, X = NULL)
 		# Target Covariance
 		logger("Computing target covariance\n")
 		C.unscaled <- sptcovar.vectautoreg(Qinv, M, Sconnectorf, lag_max = T)
-		C <- C.unscaled / max(abs(as.matrix(C.unscaled)))
-		warning("We're scaling C by a constant. Make sure this is okay!")
+		C <- C.unscaled
+		# C <- C.unscaled / max(abs(as.matrix(C.unscaled)))
+		# warning("We're scaling C by a constant. Make sure this is okay!")
 	}
 
 	eig <- eigen(C)

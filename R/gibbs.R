@@ -18,15 +18,33 @@ gibbs.stcos <- function(prep, report.period = R+1, burn = 0, thin = 1,
 		init = init, hyper = hyper)
 }
 
-gibbs.stcos.raw <- function(Z, S, V, C.inv, H, R,
-	report.period = R+1, burn = 0, thin = 1,
-	init = NULL, fixed = NULL, hyper = NULL)
+gibbs.stcos.raw <- function(Z, S, V, C.inv, H, R, report.period = R+1,
+	burn = 0, thin = 1, init = NULL, fixed = NULL, hyper = NULL,
+	standardize = NULL)
 {
 	timer <- list(mu_B = 0, sig2mu = 0, eta = 0, xi = 0, sig2xi = 0, sig2K = 0,
 		Y = 0, pre = 0, post = 0)
 
 	st <- Sys.time()
 	stopifnot(R > burn)
+
+	r <- ncol(S)
+	n <- length(Z)
+	n_mu <- ncol(H)
+
+	# Standardize the the model by applying Diag(scale) * (Z - center)
+	# This is only for the purpose of the MCMC; results are returned on the origina scale.
+	if (is.null(standardize)) { standardize <- list() }
+	if (is.null(standardize$scale)) { standardize$scale <- rep(1, n) }
+	if (is.null(standardize$center)) { standardize$center <- numeric(n) }
+	Z.orig <- Z
+	V.orig <- V
+	H.orig <- H
+	S.orig <- S
+	Z <- standardize$scale * (Z.orig - standardize$center)
+	V <- standardize$scale^2 * V.orig
+	H <- Diagonal(x = standardize$scale) %*% H.orig
+	S <- Diagonal(x = standardize$scale) %*% S.orig
 
 	Vinv <- 1 / V
 	HpVinv <- t(H) %*% Diagonal(n = length(Vinv), x = Vinv)
@@ -35,10 +53,6 @@ gibbs.stcos.raw <- function(Z, S, V, C.inv, H, R,
 	logger("Begin computing eigenvalues/vectors of HpinvVH\n")
 	eig.HpinvVH <- eigen(HpinvVH, symmetric = TRUE)
 	logger("Finished computing eigenvalues/vectors of HpinvVH\n")
-
-	r <- ncol(S)
-	n <- length(Z)
-	n_mu <- ncol(H)
 
 	tt.keep <- 0
 	R.keep <- ceiling((R - burn) / thin)
@@ -123,7 +137,6 @@ gibbs.stcos.raw <- function(Z, S, V, C.inv, H, R,
 		st <- Sys.time()
 		scale <- as.numeric(0.5 * t(xi) %*% xi)
 		sig2xi.new <- 1 / rgamma(1, n/2 + hyper$a.sig2xi, hyper$b.sig2xi + scale)
-		# printf("sig2xi ~ IG(%f, %f) => %f\n", n/2 + hyper$a.sig2xi, hyper$b.sig2xi + scale, sig2xi.new)
 		if (!fixed$sig2xi) { sig2xi <- sig2xi.new }
 		timer$sig2xi <- timer$sig2xi + as.numeric(Sys.time() - st, units = "secs")
 
@@ -164,7 +177,7 @@ gibbs.stcos.raw <- function(Z, S, V, C.inv, H, R,
 		mu_B[idx] <- mu_B.new[idx]
 		timer$mu_B <- timer$mu_B + as.numeric(Sys.time() - st, units = "secs")
 
-		# Update Y
+		# Update Y (which is also standardized)
 		st <- Sys.time()
 		Y <- S %*% eta + H %*% mu_B + xi
 		timer$Y <- timer$Y + as.numeric(Sys.time() - st, units = "secs")
@@ -187,13 +200,13 @@ gibbs.stcos.raw <- function(Z, S, V, C.inv, H, R,
 	logger("Finished Gibbs sampler\n")
 
 	ret <- list(mu_B.hist = mu_B.hist,
-		xi.hist = xi.hist,
+		xi.hist = 1/standardize$scale * xi.hist,
 		eta.hist = eta.hist,
 		sig2mu.hist = sig2mu.hist,
 		sig2xi.hist = sig2xi.hist,
 		sig2K.hist = sig2K.hist,
-		Y.hist = Y.hist,
-		Z = Z, H = H, S = S, V = V, R.keep = R.keep,
+		Y.hist = 1/standardize$scale * Y.hist + standardize$center,
+		Z = Z.orig, H = H.orig, S = S.orig, V = V.orig, R.keep = R.keep,
 		elapsed.sec = timer
 	)
 	class(ret) <- "stcos"

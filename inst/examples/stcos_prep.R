@@ -86,26 +86,26 @@ acs3.2007 <- load.domain("shp/period2_2007.shp", "shp/period2_2007.csv", "period
 acs1.2006 <- load.domain("shp/period1_2006.shp", "shp/period1_2006.csv", "period1_2006", crs.tx = st_crs(acs5.2013))
 
 # Construct a STCOSPrep object, then add space-time domains with observations
-sp <- STCOSPrep$new(fine_domain = acs5.2013, basis = basis, basis_mc_reps = 500)
-sp$add_obs(acs1.2013, time = 2013, period = 2013, estimate_name = "EST", variance_name = "VAR")
-sp$add_obs(acs1.2012, time = 2012, period = 2012, estimate_name = "EST", variance_name = "VAR")
-sp$add_obs(acs1.2011, time = 2011, period = 2011, estimate_name = "EST", variance_name = "VAR")
-sp$add_obs(acs1.2010, time = 2010, period = 2010, estimate_name = "EST", variance_name = "VAR")
-sp$add_obs(acs1.2009, time = 2009, period = 2009, estimate_name = "EST", variance_name = "VAR")
-sp$add_obs(acs1.2008, time = 2008, period = 2008, estimate_name = "EST", variance_name = "VAR")
-sp$add_obs(acs1.2007, time = 2007, period = 2007, estimate_name = "EST", variance_name = "VAR")
-sp$add_obs(acs1.2006, time = 2006, period = 2006, estimate_name = "EST", variance_name = "VAR")
-sp$add_obs(acs3.2012, time = 2012, period = 2010:2012, estimate_name = "EST", variance_name = "VAR")
-sp$add_obs(acs3.2011, time = 2011, period = 2009:2011, estimate_name = "EST", variance_name = "VAR")
-sp$add_obs(acs3.2010, time = 2010, period = 2008:2010, estimate_name = "EST", variance_name = "VAR")
-sp$add_obs(acs3.2009, time = 2009, period = 2007:2009, estimate_name = "EST", variance_name = "VAR")
-sp$add_obs(acs3.2008, time = 2008, period = 2006:2008, estimate_name = "EST", variance_name = "VAR")
-sp$add_obs(acs3.2007, time = 2007, period = 2005:2007, estimate_name = "EST", variance_name = "VAR")
-sp$add_obs(acs5.2013, time = 2013, period = 2009:2013, estimate_name = "EST", variance_name = "VAR")
-sp$add_obs(acs5.2012, time = 2012, period = 2008:2012, estimate_name = "EST", variance_name = "VAR")
-sp$add_obs(acs5.2011, time = 2011, period = 2007:2011, estimate_name = "EST", variance_name = "VAR")
-sp$add_obs(acs5.2010, time = 2010, period = 2006:2010, estimate_name = "EST", variance_name = "VAR")
-sp$add_obs(acs5.2009, time = 2009, period = 2005:2009, estimate_name = "EST", variance_name = "VAR")
+sp <- STCOSPrep$new(fine_domain = acs5.2013, fine_domain_geo_name = "GEO_ID", basis = basis, basis_mc_reps = 500)
+sp$add_obs(acs1.2013, time = 2013, period = 2013, estimate_name = "EST", variance_name = "VAR", geo_name = "GEO_ID")
+sp$add_obs(acs1.2012, time = 2012, period = 2012, estimate_name = "EST", variance_name = "VAR", geo_name = "GEO_ID")
+sp$add_obs(acs1.2011, time = 2011, period = 2011, estimate_name = "EST", variance_name = "VAR", geo_name = "GEO_ID")
+sp$add_obs(acs1.2010, time = 2010, period = 2010, estimate_name = "EST", variance_name = "VAR", geo_name = "GEO_ID")
+sp$add_obs(acs1.2009, time = 2009, period = 2009, estimate_name = "EST", variance_name = "VAR", geo_name = "GEO_ID")
+sp$add_obs(acs1.2008, time = 2008, period = 2008, estimate_name = "EST", variance_name = "VAR", geo_name = "GEO_ID")
+sp$add_obs(acs1.2007, time = 2007, period = 2007, estimate_name = "EST", variance_name = "VAR", geo_name = "GEO_ID")
+sp$add_obs(acs1.2006, time = 2006, period = 2006, estimate_name = "EST", variance_name = "VAR", geo_name = "GEO_ID")
+sp$add_obs(acs3.2012, time = 2012, period = 2010:2012, estimate_name = "EST", variance_name = "VAR", geo_name = "GEO_ID")
+sp$add_obs(acs3.2011, time = 2011, period = 2009:2011, estimate_name = "EST", variance_name = "VAR", geo_name = "GEO_ID")
+sp$add_obs(acs3.2010, time = 2010, period = 2008:2010, estimate_name = "EST", variance_name = "VAR", geo_name = "GEO_ID")
+sp$add_obs(acs3.2009, time = 2009, period = 2007:2009, estimate_name = "EST", variance_name = "VAR", geo_name = "GEO_ID")
+sp$add_obs(acs3.2008, time = 2008, period = 2006:2008, estimate_name = "EST", variance_name = "VAR", geo_name = "GEO_ID")
+sp$add_obs(acs3.2007, time = 2007, period = 2005:2007, estimate_name = "EST", variance_name = "VAR", geo_name = "GEO_ID")
+sp$add_obs(acs5.2013, time = 2013, period = 2009:2013, estimate_name = "EST", variance_name = "VAR", geo_name = "GEO_ID")
+sp$add_obs(acs5.2012, time = 2012, period = 2008:2012, estimate_name = "EST", variance_name = "VAR", geo_name = "GEO_ID")
+sp$add_obs(acs5.2011, time = 2011, period = 2007:2011, estimate_name = "EST", variance_name = "VAR", geo_name = "GEO_ID")
+sp$add_obs(acs5.2010, time = 2010, period = 2006:2010, estimate_name = "EST", variance_name = "VAR", geo_name = "GEO_ID")
+sp$add_obs(acs5.2009, time = 2009, period = 2005:2009, estimate_name = "EST", variance_name = "VAR", geo_name = "GEO_ID")
 
 Z <- sp$get_Z()
 V <- sp$get_V()
@@ -138,20 +138,42 @@ if (TRUE) {
 }
 
 # ----- Apply Gibbs sampler using MLE as initial value -----
-mle.out <- mle.stcos(Z, S.reduced, V, H, init = list(sig2xi = 100))
+Z.scaled <- (Z - mean(Z)) / sd(Z)
+V.scaled <- V / var(Z)
+H.scaled <- Diagonal(n = length(Z), x = 1/sd(Z)) %*% H
+S.scaled <- Diagonal(n = length(Z), x = 1/sd(Z)) %*%  S.reduced
 
+# Stdized
+mle.out <- mle.stcos(Z.scaled, S.scaled, V.scaled, H.scaled, init = list(sig2xi = 1))
 init <- list(
 	sig2xi = mle.out$sig2xi.hat,
 	mu_B = mle.out$mu.hat,
 	eta = mle.out$eta.hat
 )
-gibbs.out <- gibbs.stcos.raw(Z, S.reduced, V, C.inv, H, R = 10000,
-	report.period = 1000, burn = 1000, thin = 10, init = init)
+gibbs.out <- gibbs.stcos.raw(Z, S.reduced, V, C.inv, H, R = 2000,
+	report.period = 1000, burn = 1000, thin = 1, init = init,
+	# standardize = list(center = rep(mean(Z),length(Z)), scale = 1/sqrt(V)))
+	standardize = list(center = rep(mean(Z),length(Z)), scale = rep(1/sd(Z),length(Z))))
+
+# Unstdized
+mle.out <- mle.stcos(Z, S.reduced, V, H, init = list(sig2xi = 100))
+init <- list(
+	sig2xi = mle.out$sig2xi.hat,
+	mu_B = mle.out$mu.hat,
+	eta = mle.out$eta.hat
+)
+gibbs.out <- gibbs.stcos.raw(Z, S.reduced, V, C.inv, H, R = 2000,
+	report.period = 1000, burn = 1000, thin = 1, init = init)
 
 mu_B.mcmc <- mcmc(gibbs.out$mu_B.hist)
 xi.mcmc <- mcmc(gibbs.out$xi.hist)
 eta.mcmc <- mcmc(gibbs.out$eta.hist)
-sig2mu.mcmc <- mcmc(gibbs.out$sig2mu.hist)
-sig2xi.mcmc <- mcmc(gibbs.out$sig2xi.hist)
-sig2K.mcmc <- mcmc(gibbs.out$sig2K.hist)
+sig2.mcmc <- mcmc(cbind(gibbs.out$sig2mu.hist, gibbs.out$sig2xi.hist, gibbs.out$sig2K.hist))
+Y.mcmc <- mcmc(gibbs.out$Y.hist)
+
+plot(mu_B.mcmc[,1:3])
+plot(eta.mcmc[,1:3])
+plot(xi.mcmc[,1:3])
+plot(sig2.mcmc)
+plot(Y.mcmc[,1:3])
 
