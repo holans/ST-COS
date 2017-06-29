@@ -4,5 +4,7 @@ import(Rcpp)
 import(Matrix)
 import(coda)
 
+S3method(DIC, stcos)
+
 # Export specific functions when we're further along
 exportPattern("*")

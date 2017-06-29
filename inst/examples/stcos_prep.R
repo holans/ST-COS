@@ -141,42 +141,62 @@ if (TRUE) {
 }
 
 # ----- Apply Gibbs sampler using MLE as initial value -----
-Z.scaled <- (Z - mean(Z)) / sd(Z)
-V.scaled <- V / var(Z)
-H.scaled <- Diagonal(n = length(Z), x = 1/sd(Z)) %*% H
-S.scaled <- Diagonal(n = length(Z), x = 1/sd(Z)) %*%  S.reduced
 
-# Stdized
-mle.out <- mle.stcos(Z.scaled, S.scaled, V.scaled, H.scaled, init = list(sig2xi = 1))
-init <- list(
-	sig2xi = mle.out$sig2xi.hat,
-	mu_B = mle.out$mu.hat,
-	eta = mle.out$eta.hat
-)
-gibbs.out <- gibbs.stcos.raw(Z, S.reduced, V, C.inv, H, R = 2000,
-	report.period = 1000, burn = 1000, thin = 1, init = init,
-	# standardize = list(center = rep(mean(Z),length(Z)), scale = 1/sqrt(V)))
-	standardize = list(center = rep(mean(Z),length(Z)), scale = rep(1/sd(Z),length(Z))))
+if (TRUE) {
+	# Stdize before MCMC
+	D <- Diagonal(n = length(Z), x = 1/sd(Z))
+	Z.scaled <- (Z - mean(Z)) / sd(Z)
+	V.scaled <- V / var(Z)
+	H.scaled <- D %*% H
+	S.scaled <- D %*%  S.reduced
 
-# Unstdized
-mle.out <- mle.stcos(Z, S.reduced, V, H, init = list(sig2xi = 100))
-init <- list(
-	sig2xi = mle.out$sig2xi.hat,
-	mu_B = mle.out$mu.hat,
-	eta = mle.out$eta.hat
-)
-gibbs.out <- gibbs.stcos.raw(Z, S.reduced, V, C.inv, H, R = 2000,
-	report.period = 1000, burn = 1000, thin = 1, init = init)
+	mle.out <- mle.stcos(Z.scaled, S.reduced, V.scaled, H, init = list(sig2xi = 1))
+	init <- list(
+		sig2xi = mle.out$sig2xi.hat,
+		mu_B = mle.out$mu.hat,
+		eta = mle.out$eta.hat
+	)
+	gibbs.out <- gibbs.stcos.raw(Z.scaled, S.reduced, V.scaled, C.inv, H, R = 2000,
+		report.period = 1000, burn = 1000, thin = 1, init = init)
+	print(gibbs.out)
+	DIC(gibbs.out)
+	
+	mu_B.mcmc <- mcmc(gibbs.out$mu_B.hist)
+	xi.mcmc <- mcmc(gibbs.out$xi.hist)
+	eta.mcmc <- mcmc(gibbs.out$eta.hist)
+	sig2.mcmc <- mcmc(cbind(gibbs.out$sig2mu.hist, gibbs.out$sig2xi.hist, gibbs.out$sig2K.hist))
+	Y.mcmc <- mcmc(gibbs.out$Y.hist)
+	Y_scaled.mcmc <- mcmc(as.matrix(gibbs.out$Y.hist %*% solve(D) + mean(Z)))
+	loglik.mcmc <- mcmc(logLik(gibbs.out))
 
-mu_B.mcmc <- mcmc(gibbs.out$mu_B.hist)
-xi.mcmc <- mcmc(gibbs.out$xi.hist)
-eta.mcmc <- mcmc(gibbs.out$eta.hist)
-sig2.mcmc <- mcmc(cbind(gibbs.out$sig2mu.hist, gibbs.out$sig2xi.hist, gibbs.out$sig2K.hist))
-Y.mcmc <- mcmc(gibbs.out$Y.hist)
+	plot(mu_B.mcmc[,1:3])
+	plot(eta.mcmc[,1:3])
+	plot(xi.mcmc[,1:3])
+	plot(sig2.mcmc)
+	plot(Y.mcmc[,1:3])
+	plot(Y_scaled.mcmc[,1:3])
+	plot(loglik.mcmc)
+} else {
+	# Unstdized
+	mle.out <- mle.stcos(Z, S.reduced, V, H, init = list(sig2xi = 100))
+	init <- list(
+		sig2xi = mle.out$sig2xi.hat,
+		mu_B = mle.out$mu.hat,
+		eta = mle.out$eta.hat
+	)
+	gibbs.out <- gibbs.stcos.raw(Z, S.reduced, V, C.inv, H, R = 2000,
+		report.period = 1000, burn = 1000, thin = 1, init = init)
+	mu_B.mcmc <- mcmc(gibbs.out$mu_B.hist)
+	xi.mcmc <- mcmc(gibbs.out$xi.hist)
+	eta.mcmc <- mcmc(gibbs.out$eta.hist)
+	sig2.mcmc <- mcmc(cbind(gibbs.out$sig2mu.hist, gibbs.out$sig2xi.hist, gibbs.out$sig2K.hist))
+	Y.mcmc <- mcmc(gibbs.out$Y.hist)
+	loglik.mcmc <- logLik(gibbs.out)
 
-plot(mu_B.mcmc[,1:3])
-plot(eta.mcmc[,1:3])
-plot(xi.mcmc[,1:3])
-plot(sig2.mcmc)
-plot(Y.mcmc[,1:3])
-
+	plot(mu_B.mcmc[,1:3])
+	plot(eta.mcmc[,1:3])
+	plot(xi.mcmc[,1:3])
+	plot(sig2.mcmc)
+	plot(Y.mcmc[,1:3])
+	plot(loglik.mcmc)
+}
