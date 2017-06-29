@@ -200,3 +200,6 @@ if (TRUE) {
 	plot(Y.mcmc[,1:3])
 	plot(loglik.mcmc)
 }
+
+# Now we want to plot predictions on the map, but we lost GEO_ID! The sp object should be able to keep track of these
+# We should also be able to handle multiple ID columns (e.g. (STATE, COUNTY, TRACT, BLOCK)).
