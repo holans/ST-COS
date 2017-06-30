@@ -257,3 +257,36 @@ print.stcos <- function (x, ...)
 	printf("DIC: %f\n", x$dic)
 	printf("Elapsed time: %02d:%02d:%02d\n", hh, mm, ss)
 }
+
+fitted.stcos <- function (object, H, S, ...)
+{
+	R.keep <- object$R.keep
+	n <- nrow(H)
+	E.mcmc <- matrix(NA, R.keep, n)
+	for (r in 1:R.keep) {
+		mu_B <- object$mu_B.hist[r,]
+		eta <- object$eta.hist[r,]
+		E.mcmc[r,] <- as.numeric(H %*% mu_B + S %*% eta)
+	}
+	return(E.mcmc)
+}
+
+predict.stcos <- function (object, H, S, ...)
+{
+	R.keep <- object$R.keep
+	n <- nrow(H)
+	Y.mcmc <- matrix(NA, R.keep, n)
+	for (r in 1:R.keep) {
+		mu_B <- object$mu_B.hist[r,]
+		eta <- object$eta.hist[r,]
+		xi <- object$xi.hist[r,]
+		sig2xi <- object$sig2xi.hist[r]
+		Y.mcmc[r,] <- rnorm(n, as.numeric(H %*% mu_B + S %*% eta), sqrt(sig2xi))
+	}
+	return(Y.mcmc)
+}
+
+confint.stcos <- function (object, H, S, ...)
+{
+	message("TBD: Implement me")
+}

@@ -9,6 +9,7 @@ STCOSPrep <- R6Class("STCOSPrep",
 			private$S_list <- list()
 			private$Z_list <- list()
 			private$V_list <- list()
+			private$geo_list <- list()
 			private$N <- 0
 			private$L <- 0
 			private$basis_mc_reps <- basis_mc_reps
@@ -25,6 +26,7 @@ STCOSPrep <- R6Class("STCOSPrep",
 		S_list = NULL,
 		Z_list = NULL,
 		V_list = NULL,
+		geo_list = NULL,
 		N = NULL,
 		L = NULL,
 		basis_mc_reps = NULL,
@@ -34,22 +36,38 @@ STCOSPrep <- R6Class("STCOSPrep",
 	)
 )
 
-add_obs <- function(domain, time, period, estimate_name, variance_name, geo_name)
+add_obs <- function(domain, period, estimate_name, variance_name, geo_name)
 {
-	## Check the argument types
-	stopifnot(inherits(domain, "sf"))
 	stopifnot(class(estimate_name) == "character")
 	stopifnot(class(variance_name) == "character")
-	stopifnot(length(time) == 1)
-	stopifnot(length(period) >= 1)
 
 	logger("Begin adding observed space-time domain\n")
-	n <- nrow(domain)
+	out <- self$domain2model(domain, period, geo_name)
 
 	logger("Extracting survey estimates from field '%s'", estimate_name)
 	printf(" and variance estimates from field '%s'\n", variance_name)
 	Z <- domain[[estimate_name]]
 	V <- domain[[variance_name]]
+
+	private$N <- private$N + nrow(domain)
+	private$L <- private$L + 1
+
+	L <- private$L
+	N <- private$N
+	private$Z_list[[L]] <- Z
+	private$V_list[[L]] <- V
+	private$H_list[[L]] <- out$H
+	private$S_list[[L]] <- out$S
+	private$geo_list[[L]] <- out$geo_list
+
+	logger("Finished adding observed space-time domain\n")
+}
+
+domain2model <- function(domain, period, geo_name)
+{
+	## Check the argument types
+	stopifnot(inherits(domain, "sf"))
+	stopifnot(length(period) >= 1)
 
 	logger("Computing overlap matrix\n")
 	H.prime <- compute.overlap(private$fine_domain, domain,
@@ -63,17 +81,8 @@ add_obs <- function(domain, time, period, estimate_name, variance_name, geo_name
 		period = period, s1 = draws.out$s1, s2 = draws.out$s2,
 		report.period = private$report_period)
 
-	private$N <- private$N + n
-	private$L <- private$L + 1
-
-	L <- private$L
-	N <- private$N
-	private$Z_list[[L]] <- Z
-	private$V_list[[L]] <- V
-	private$H_list[[L]] <- H
-	private$S_list[[L]] <- S
-
-	logger("Finished adding observed space-time domain\n")
+	geo <- data.frame(obs = private$L, row = 1:nrow(domain), geo_id = domain[[geo_name]])
+	list(H = H, S = S, S.reduced = private$basis_reduction(S), geo = geo)
 }
 
 get_Z <- function()
@@ -141,6 +150,19 @@ get_S <- function()
 get_reduced_S <- function()
 {
 	private$basis_reduction(self$get_S())
+}
+
+get_geo <- function()
+{
+	G <- private$geo_list[[1]]
+	L <- private$L
+
+	warning("THIS MAY NOT BE COLLAPSEABLE!!")
+	for (l in seq_int_ordered(2, L)) {
+		G <- rbind(G, private$geo_list[[l]])
+	}
+	
+	return(G)
 }
 
 set_basis_reduction <- function(f = identity)
@@ -236,7 +258,9 @@ STCOSPrep$set("public", "get_V", get_V)
 STCOSPrep$set("public", "get_H", get_H)
 STCOSPrep$set("public", "get_S", get_S)
 STCOSPrep$set("public", "get_reduced_S", get_reduced_S)
+STCOSPrep$set("public", "get_geo", get_geo)
 STCOSPrep$set("public", "get_Cinv", get_Cinv)
 STCOSPrep$set("public", "add_obs", add_obs)
+STCOSPrep$set("public", "domain2model", domain2model)
 STCOSPrep$set("public", "set_basis_reduction", set_basis_reduction)
 STCOSPrep$lock()
