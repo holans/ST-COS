@@ -41,6 +41,9 @@ add_obs <- function(domain, period, estimate_name, variance_name, geo_name)
 	stopifnot(class(estimate_name) == "character")
 	stopifnot(class(variance_name) == "character")
 
+	private$N <- private$N + nrow(domain)
+	private$L <- private$L + 1
+
 	logger("Begin adding observed space-time domain\n")
 	out <- self$domain2model(domain, period, geo_name)
 
@@ -49,16 +52,13 @@ add_obs <- function(domain, period, estimate_name, variance_name, geo_name)
 	Z <- domain[[estimate_name]]
 	V <- domain[[variance_name]]
 
-	private$N <- private$N + nrow(domain)
-	private$L <- private$L + 1
-
 	L <- private$L
 	N <- private$N
 	private$Z_list[[L]] <- Z
 	private$V_list[[L]] <- V
 	private$H_list[[L]] <- out$H
 	private$S_list[[L]] <- out$S
-	private$geo_list[[L]] <- out$geo_list
+	private$geo_list[[L]] <- out$geo
 
 	logger("Finished adding observed space-time domain\n")
 }
@@ -72,7 +72,7 @@ domain2model <- function(domain, period, geo_name)
 	logger("Computing overlap matrix\n")
 	H.prime <- compute.overlap(private$fine_domain, domain,
 		geo.name.D = private$fine_domain_geo_name, geo.name.G = geo_name)
-	H <- Matrix(apply(H.prime, 2, normalize))
+	H <- t(Matrix(apply(H.prime, 2, normalize)))
 
 	logger("Computing basis functions\n")
 	draws.out <- draw_spt_basis_mc(R = private$basis_mc_reps, domain = domain,
@@ -82,7 +82,7 @@ domain2model <- function(domain, period, geo_name)
 		report.period = private$report_period)
 
 	geo <- data.frame(obs = private$L, row = 1:nrow(domain), geo_id = domain[[geo_name]])
-	list(H = H, S = S, S.reduced = private$basis_reduction(S), geo = geo)
+	list(H = H, S = S, geo = geo)
 }
 
 get_Z <- function()
@@ -125,7 +125,7 @@ get_H <- function()
 	cnt <- 0
 
 	for (l in 1:L) {
-		H <- rbind(H, t(private$H_list[[l]]))
+		H <- rbind(H, private$H_list[[l]])
 		cnt <- cnt + ncol(private$H_list[[l]])
 	}
 

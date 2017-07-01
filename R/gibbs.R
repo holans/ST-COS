@@ -285,8 +285,3 @@ predict.stcos <- function (object, H, S, ...)
 	}
 	return(Y.mcmc)
 }
-
-confint.stcos <- function (object, H, S, ...)
-{
-	message("TBD: Implement me")
-}
