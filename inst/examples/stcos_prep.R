@@ -30,8 +30,8 @@ load.domain <- function(shpfile, datfile, layername, crs.tx = NULL, crs.orig = N
 	area <- area[idx.keep,]
 	# plot(area)
 
-	# Direct estimates and their variance estimates from survey
-	# Variance estimates are converted from 90% margins-of-error
+	# Direct estimates and their variance estimates from the survey.
+	# Var estimates are converted from 90% margins-of-error.
 	dat <- read.csv(datfile, header = FALSE)
 	eZagg <- dat[idx.keep, 1]
 	esigmavar <- (dat[idx.keep, 2] / 1.645)^2
@@ -39,8 +39,8 @@ load.domain <- function(shpfile, datfile, layername, crs.tx = NULL, crs.orig = N
 	# Zagg <- log(eZagg)
 	# sigmavar <- esigmavar * (1 / eZagg)^2
 
-	area$EST <- eZagg
-	area$VAR <- esigmavar
+	area$DirectEst <- eZagg
+	area$DirectVar <- esigmavar
 	return(area)
 }
 
@@ -90,25 +90,25 @@ acs1.2006 <- load.domain("shp/period1_2006.shp", "shp/period1_2006.csv", "period
 
 # Construct a STCOSPrep object, then add space-time domains with observations
 sp <- STCOSPrep$new(fine_domain = acs5.2013, fine_domain_geo_name = "GEO_ID", basis = basis, basis_mc_reps = 500)
-sp$add_obs(acs1.2013, time = 2013, period = 2013, estimate_name = "EST", variance_name = "VAR", geo_name = "GEO_ID")
-sp$add_obs(acs1.2012, time = 2012, period = 2012, estimate_name = "EST", variance_name = "VAR", geo_name = "GEO_ID")
-sp$add_obs(acs1.2011, time = 2011, period = 2011, estimate_name = "EST", variance_name = "VAR", geo_name = "GEO_ID")
-sp$add_obs(acs1.2010, time = 2010, period = 2010, estimate_name = "EST", variance_name = "VAR", geo_name = "GEO_ID")
-sp$add_obs(acs1.2009, time = 2009, period = 2009, estimate_name = "EST", variance_name = "VAR", geo_name = "GEO_ID")
-sp$add_obs(acs1.2008, time = 2008, period = 2008, estimate_name = "EST", variance_name = "VAR", geo_name = "GEO_ID")
-sp$add_obs(acs1.2007, time = 2007, period = 2007, estimate_name = "EST", variance_name = "VAR", geo_name = "GEO_ID")
-sp$add_obs(acs1.2006, time = 2006, period = 2006, estimate_name = "EST", variance_name = "VAR", geo_name = "GEO_ID")
-sp$add_obs(acs3.2012, time = 2012, period = 2010:2012, estimate_name = "EST", variance_name = "VAR", geo_name = "GEO_ID")
-sp$add_obs(acs3.2011, time = 2011, period = 2009:2011, estimate_name = "EST", variance_name = "VAR", geo_name = "GEO_ID")
-sp$add_obs(acs3.2010, time = 2010, period = 2008:2010, estimate_name = "EST", variance_name = "VAR", geo_name = "GEO_ID")
-sp$add_obs(acs3.2009, time = 2009, period = 2007:2009, estimate_name = "EST", variance_name = "VAR", geo_name = "GEO_ID")
-sp$add_obs(acs3.2008, time = 2008, period = 2006:2008, estimate_name = "EST", variance_name = "VAR", geo_name = "GEO_ID")
-sp$add_obs(acs3.2007, time = 2007, period = 2005:2007, estimate_name = "EST", variance_name = "VAR", geo_name = "GEO_ID")
-sp$add_obs(acs5.2013, time = 2013, period = 2009:2013, estimate_name = "EST", variance_name = "VAR", geo_name = "GEO_ID")
-sp$add_obs(acs5.2012, time = 2012, period = 2008:2012, estimate_name = "EST", variance_name = "VAR", geo_name = "GEO_ID")
-sp$add_obs(acs5.2011, time = 2011, period = 2007:2011, estimate_name = "EST", variance_name = "VAR", geo_name = "GEO_ID")
-sp$add_obs(acs5.2010, time = 2010, period = 2006:2010, estimate_name = "EST", variance_name = "VAR", geo_name = "GEO_ID")
-sp$add_obs(acs5.2009, time = 2009, period = 2005:2009, estimate_name = "EST", variance_name = "VAR", geo_name = "GEO_ID")
+sp$add_obs(acs1.2013, period = 2013, estimate_name = "DirectEst", variance_name = "DirectVar", geo_name = "GEO_ID")
+sp$add_obs(acs1.2012, period = 2012, estimate_name = "DirectEst", variance_name = "DirectVar", geo_name = "GEO_ID")
+sp$add_obs(acs1.2011, period = 2011, estimate_name = "DirectEst", variance_name = "DirectVar", geo_name = "GEO_ID")
+sp$add_obs(acs1.2010, period = 2010, estimate_name = "DirectEst", variance_name = "DirectVar", geo_name = "GEO_ID")
+sp$add_obs(acs1.2009, period = 2009, estimate_name = "DirectEst", variance_name = "DirectVar", geo_name = "GEO_ID")
+sp$add_obs(acs1.2008, period = 2008, estimate_name = "DirectEst", variance_name = "DirectVar", geo_name = "GEO_ID")
+sp$add_obs(acs1.2007, period = 2007, estimate_name = "DirectEst", variance_name = "DirectVar", geo_name = "GEO_ID")
+sp$add_obs(acs1.2006, period = 2006, estimate_name = "DirectEst", variance_name = "DirectVar", geo_name = "GEO_ID")
+sp$add_obs(acs3.2012, period = 2010:2012, estimate_name = "DirectEst", variance_name = "DirectVar", geo_name = "GEO_ID")
+sp$add_obs(acs3.2011, period = 2009:2011, estimate_name = "DirectEst", variance_name = "DirectVar", geo_name = "GEO_ID")
+sp$add_obs(acs3.2010, period = 2008:2010, estimate_name = "DirectEst", variance_name = "DirectVar", geo_name = "GEO_ID")
+sp$add_obs(acs3.2009, period = 2007:2009, estimate_name = "DirectEst", variance_name = "DirectVar", geo_name = "GEO_ID")
+sp$add_obs(acs3.2008, period = 2006:2008, estimate_name = "DirectEst", variance_name = "DirectVar", geo_name = "GEO_ID")
+sp$add_obs(acs3.2007, period = 2005:2007, estimate_name = "DirectEst", variance_name = "DirectVar", geo_name = "GEO_ID")
+sp$add_obs(acs5.2013, period = 2009:2013, estimate_name = "DirectEst", variance_name = "DirectVar", geo_name = "GEO_ID")
+sp$add_obs(acs5.2012, period = 2008:2012, estimate_name = "DirectEst", variance_name = "DirectVar", geo_name = "GEO_ID")
+sp$add_obs(acs5.2011, period = 2007:2011, estimate_name = "DirectEst", variance_name = "DirectVar", geo_name = "GEO_ID")
+sp$add_obs(acs5.2010, period = 2006:2010, estimate_name = "DirectEst", variance_name = "DirectVar", geo_name = "GEO_ID")
+sp$add_obs(acs5.2009, period = 2005:2009, estimate_name = "DirectEst", variance_name = "DirectVar", geo_name = "GEO_ID")
 
 Z <- sp$get_Z()
 V <- sp$get_V()
@@ -141,42 +141,103 @@ if (TRUE) {
 }
 
 # ----- Apply Gibbs sampler using MLE as initial value -----
-Z.scaled <- (Z - mean(Z)) / sd(Z)
-V.scaled <- V / var(Z)
-H.scaled <- Diagonal(n = length(Z), x = 1/sd(Z)) %*% H
-S.scaled <- Diagonal(n = length(Z), x = 1/sd(Z)) %*%  S.reduced
 
-# Stdized
-mle.out <- mle.stcos(Z.scaled, S.scaled, V.scaled, H.scaled, init = list(sig2xi = 1))
-init <- list(
-	sig2xi = mle.out$sig2xi.hat,
-	mu_B = mle.out$mu.hat,
-	eta = mle.out$eta.hat
-)
-gibbs.out <- gibbs.stcos.raw(Z, S.reduced, V, C.inv, H, R = 2000,
-	report.period = 1000, burn = 1000, thin = 1, init = init,
-	# standardize = list(center = rep(mean(Z),length(Z)), scale = 1/sqrt(V)))
-	standardize = list(center = rep(mean(Z),length(Z)), scale = rep(1/sd(Z),length(Z))))
+if (TRUE) {
+	# Stdize before MCMC
+	D <- Diagonal(n = length(Z), x = 1/sd(Z))
+	Z.scaled <- (Z - mean(Z)) / sd(Z)
+	V.scaled <- V / var(Z)
+	H.scaled <- D %*% H
+	S.scaled <- D %*%  S.reduced
 
-# Unstdized
-mle.out <- mle.stcos(Z, S.reduced, V, H, init = list(sig2xi = 100))
-init <- list(
-	sig2xi = mle.out$sig2xi.hat,
-	mu_B = mle.out$mu.hat,
-	eta = mle.out$eta.hat
-)
-gibbs.out <- gibbs.stcos.raw(Z, S.reduced, V, C.inv, H, R = 2000,
-	report.period = 1000, burn = 1000, thin = 1, init = init)
+	mle.out <- mle.stcos(Z.scaled, S.reduced, V.scaled, H, init = list(sig2xi = 1))
+	init <- list(
+		sig2xi = mle.out$sig2xi.hat,
+		mu_B = mle.out$mu.hat,
+		eta = mle.out$eta.hat
+	)
+	gibbs.out <- gibbs.stcos.raw(Z.scaled, S.reduced, V.scaled, C.inv, H, R = 2000,
+		report.period = 1000, burn = 1000, thin = 1, init = init)
+	print(gibbs.out)
+	DIC(gibbs.out)
+	
+	mu_B.mcmc <- mcmc(gibbs.out$mu_B.hist)
+	xi.mcmc <- mcmc(gibbs.out$xi.hist)
+	eta.mcmc <- mcmc(gibbs.out$eta.hist)
+	sig2.mcmc <- mcmc(cbind(gibbs.out$sig2mu.hist, gibbs.out$sig2xi.hist, gibbs.out$sig2K.hist))
+	Y.mcmc <- mcmc(gibbs.out$Y.hist)
+	Y_scaled.mcmc <- mcmc(as.matrix(gibbs.out$Y.hist %*% solve(D) + mean(Z)))
+	loglik.mcmc <- mcmc(logLik(gibbs.out))
 
-mu_B.mcmc <- mcmc(gibbs.out$mu_B.hist)
-xi.mcmc <- mcmc(gibbs.out$xi.hist)
-eta.mcmc <- mcmc(gibbs.out$eta.hist)
-sig2.mcmc <- mcmc(cbind(gibbs.out$sig2mu.hist, gibbs.out$sig2xi.hist, gibbs.out$sig2K.hist))
-Y.mcmc <- mcmc(gibbs.out$Y.hist)
+	plot(mu_B.mcmc[,1:3])
+	plot(eta.mcmc[,1:3])
+	plot(xi.mcmc[,1:3])
+	plot(sig2.mcmc)
+	plot(Y.mcmc[,1:3])
+	plot(Y_scaled.mcmc[,1:3])
+	plot(loglik.mcmc)
+} else {
+	# Unstdized
+	mle.out <- mle.stcos(Z, S.reduced, V, H, init = list(sig2xi = 100))
+	init <- list(
+		sig2xi = mle.out$sig2xi.hat,
+		mu_B = mle.out$mu.hat,
+		eta = mle.out$eta.hat
+	)
+	gibbs.out <- gibbs.stcos.raw(Z, S.reduced, V, C.inv, H, R = 2000,
+		report.period = 1000, burn = 1000, thin = 1, init = init)
+	mu_B.mcmc <- mcmc(gibbs.out$mu_B.hist)
+	xi.mcmc <- mcmc(gibbs.out$xi.hist)
+	eta.mcmc <- mcmc(gibbs.out$eta.hist)
+	sig2.mcmc <- mcmc(cbind(gibbs.out$sig2mu.hist, gibbs.out$sig2xi.hist, gibbs.out$sig2K.hist))
+	Y.mcmc <- mcmc(gibbs.out$Y.hist)
+	loglik.mcmc <- logLik(gibbs.out)
 
-plot(mu_B.mcmc[,1:3])
-plot(eta.mcmc[,1:3])
-plot(xi.mcmc[,1:3])
-plot(sig2.mcmc)
-plot(Y.mcmc[,1:3])
+	plot(mu_B.mcmc[,1:3])
+	plot(eta.mcmc[,1:3])
+	plot(xi.mcmc[,1:3])
+	plot(sig2.mcmc)
+	plot(Y.mcmc[,1:3])
+	plot(loglik.mcmc)
+}
+
+# We want to be able to link design matrices from model back to other data sources
+# TBD: We should also be able to handle multiple ID columns (e.g. (STATE, COUNTY, TRACT, BLOCK)).
+G <- sp$get_geo()
+
+# Predictions for 2013 geography
+# Based on both MCMC draws for the mean and posterior predictive distribution
+# TBD: We could perhaps make this easier if Gibbs output contained sp, or sp contained Gibbs sampler. Revisit later
+# TBD: The reduction on S is also a little awkward for the user here.
+dom <- acs5.2013
+dom$DirectEst <- NULL
+dom$DirectVar <- NULL
+target.out <- sp$domain2model(dom, period = 2013, geo_name = "GEO_ID")
+E.hat.scaled <- fitted(gibbs.out, target.out$H, f(target.out$S))
+Y.pred.scaled <- predict(gibbs.out, target.out$H, f(target.out$S))
+
+# Uncenter and unscale the predictions
+E.hat <- sd(Z) * E.hat.scaled + mean(Z)
+Y.pred <- sd(Z) * Y.pred.scaled + mean(Z)
+
+dom$SD <- sqrt(dom$DirectVar)
+acs1.2013$DirectSD <- sqrt(acs1.2013$DirectVar)
+
+dom$E.mean <- colMeans(E.hat)
+dom$E.sd <- apply(E.hat, 2, sd)
+dom$E.lo <- apply(E.hat, 2, quantile, prob = 0.025)
+dom$E.hi <- apply(E.hat, 2, quantile, prob = 0.975)
+
+dom$PP.mean <- colMeans(Y.pred)
+dom$PP.sd <- apply(Y.pred, 2, sd)
+dom$PP.lo <- apply(Y.pred, 2, quantile, prob = 0.025)
+dom$PP.hi <- apply(Y.pred, 2, quantile, prob = 0.975)
+
+plot(dom[,c("E.mean")])
+plot(dom[,c("E.sd")])
+plot(acs1.2013[,c("DirectEst")])
+plot(acs1.2013[,c("DirectSD")])
+
+plot(dom[,c("PP.mean","PP.sd")])
+plot(acs1.2013[,c("DirectEst","DirectSD")])
 

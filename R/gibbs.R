@@ -19,8 +19,7 @@ gibbs.stcos <- function(prep, report.period = R+1, burn = 0, thin = 1,
 }
 
 gibbs.stcos.raw <- function(Z, S, V, C.inv, H, R, report.period = R+1,
-	burn = 0, thin = 1, init = NULL, fixed = NULL, hyper = NULL,
-	standardize = NULL)
+	burn = 0, thin = 1, init = NULL, fixed = NULL, hyper = NULL)
 {
 	timer <- list(mu_B = 0, sig2mu = 0, eta = 0, xi = 0, sig2xi = 0, sig2K = 0,
 		Y = 0, pre = 0, post = 0)
@@ -31,20 +30,6 @@ gibbs.stcos.raw <- function(Z, S, V, C.inv, H, R, report.period = R+1,
 	r <- ncol(S)
 	n <- length(Z)
 	n_mu <- ncol(H)
-
-	# Standardize the the model by applying Diag(scale) * (Z - center)
-	# This is only for the purpose of the MCMC; results are returned on the origina scale.
-	if (is.null(standardize)) { standardize <- list() }
-	if (is.null(standardize$scale)) { standardize$scale <- rep(1, n) }
-	if (is.null(standardize$center)) { standardize$center <- numeric(n) }
-	Z.orig <- Z
-	V.orig <- V
-	H.orig <- H
-	S.orig <- S
-	Z <- standardize$scale * (Z.orig - standardize$center)
-	V <- standardize$scale^2 * V.orig
-	H <- Diagonal(x = standardize$scale) %*% H.orig
-	S <- Diagonal(x = standardize$scale) %*% S.orig
 
 	Vinv <- 1 / V
 	HpVinv <- t(H) %*% Diagonal(n = length(Vinv), x = Vinv)
@@ -115,7 +100,7 @@ gibbs.stcos.raw <- function(Z, S, V, C.inv, H, R, report.period = R+1,
 	SpinvVS <- SpinvV %*% S
 	logger("Finished computing SpinvV\n")
 	timer$pre <- timer$pre + as.numeric(Sys.time() - st, units = "secs")
-	
+
 	logger("Begin Gibbs sampler\n")
 
 	for (tt in 1:R) {
@@ -169,21 +154,17 @@ gibbs.stcos.raw <- function(Z, S, V, C.inv, H, R, report.period = R+1,
 		V.mu_B <- eig.HpinvVH$vectors %*% (PostLam * t(eig.HpinvVH$vectors))
 		mean.mu_B <- V.mu_B %*% (HpVinv %*% (Z - S %*% eta - xi))
 		mu_B.new <- mean.mu_B + (eig.HpinvVH$vectors %*% (sqrt(PostLam) * rnorm(n_mu)))
-		# browser()
-		# Gamma <- t(H) %*% (Vinv * H) + Diagonal(n_mu, 1/sig2mu)
-		# theta <- solve(Gamma, t(H) %*% (Vinv * (Z - S %*% eta - xi)))
-		# Gamma.inv <- solve(Gamma)
 		idx <- setdiff(1:n_mu, fixed$mu_B)
 		mu_B[idx] <- mu_B.new[idx]
 		timer$mu_B <- timer$mu_B + as.numeric(Sys.time() - st, units = "secs")
 
 		# Update Y (which is also standardized)
 		st <- Sys.time()
-		Y <- S %*% eta + H %*% mu_B + xi
+		Y <- H %*% mu_B + S %*% eta + xi
 		timer$Y <- timer$Y + as.numeric(Sys.time() - st, units = "secs")
 
 		# Save history
-		# TBD: This is very expensive to keep in memory. We should be able to
+		# TBD: This can be very expensive to keep in memory. We should be able to
 		# transparently store it on disk, if the user wishes
 		if ((tt > burn) & (tt %% thin == 0)) {
 			tt.keep <- tt.keep + 1
@@ -200,20 +181,20 @@ gibbs.stcos.raw <- function(Z, S, V, C.inv, H, R, report.period = R+1,
 	logger("Finished Gibbs sampler\n")
 
 	ret <- list(mu_B.hist = mu_B.hist,
-		xi.hist = 1/standardize$scale * xi.hist,
+		xi.hist = xi.hist,
 		eta.hist = eta.hist,
 		sig2mu.hist = sig2mu.hist,
 		sig2xi.hist = sig2xi.hist,
 		sig2K.hist = sig2K.hist,
-		Y.hist = 1/standardize$scale * Y.hist + standardize$center,
-		Z = Z.orig, H = H.orig, S = S.orig, V = V.orig, R.keep = R.keep,
+		Y.hist = Y.hist,
+		Z = Z, H = H, S = S, V = V, R.keep = R.keep,
 		elapsed.sec = timer
 	)
 	class(ret) <- "stcos"
 
 	st <- Sys.time()
 	ret$loglik <- logLik(ret)
-	ret$dic <- DIC.stcos(ret)
+	ret$dic <- DIC(ret)
 	timer$post <- timer$post + as.numeric(Sys.time() - st, units = "secs")
 
 	return(ret)
@@ -221,6 +202,10 @@ gibbs.stcos.raw <- function(Z, S, V, C.inv, H, R, report.period = R+1,
 
 logLik.stcos <- function(object, ...)
 {
+	if (!is.null(object$loglik)) {
+		return(object$loglik)
+	}
+
 	R.keep <- object$R.keep
 	loglik.mcmc <- numeric(R.keep)
 	for (r in 1:R.keep) {
@@ -237,6 +222,10 @@ logLik.stcos <- function(object, ...)
 
 DIC.stcos <- function(object, ...)
 {
+	if (!is.null(object$dic)) {
+		return(object$dic)
+	}
+
 	loglik.mcmc <- logLik.stcos(object)
 	mu_B.bar <- colMeans(object$mu_B.hist)
 	eta.bar <- colMeans(object$eta.hist)
@@ -267,4 +256,32 @@ print.stcos <- function (x, ...)
 	printf("Saved %d draws\n", x$R.keep)
 	printf("DIC: %f\n", x$dic)
 	printf("Elapsed time: %02d:%02d:%02d\n", hh, mm, ss)
+}
+
+fitted.stcos <- function (object, H, S, ...)
+{
+	R.keep <- object$R.keep
+	n <- nrow(H)
+	E.mcmc <- matrix(NA, R.keep, n)
+	for (r in 1:R.keep) {
+		mu_B <- object$mu_B.hist[r,]
+		eta <- object$eta.hist[r,]
+		E.mcmc[r,] <- as.numeric(H %*% mu_B + S %*% eta)
+	}
+	return(E.mcmc)
+}
+
+predict.stcos <- function (object, H, S, ...)
+{
+	R.keep <- object$R.keep
+	n <- nrow(H)
+	Y.mcmc <- matrix(NA, R.keep, n)
+	for (r in 1:R.keep) {
+		mu_B <- object$mu_B.hist[r,]
+		eta <- object$eta.hist[r,]
+		xi <- object$xi.hist[r,]
+		sig2xi <- object$sig2xi.hist[r]
+		Y.mcmc[r,] <- rnorm(n, as.numeric(H %*% mu_B + S %*% eta), sqrt(sig2xi))
+	}
+	return(Y.mcmc)
 }
