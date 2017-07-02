@@ -51,7 +51,7 @@ add_obs <- function(domain, time, period, estimate_name, variance_name, geo_name
 	Z <- domain[[estimate_name]]
 	V <- domain[[variance_name]]
 
-	logger("Computing overlap matrix\n")
+	logger("Computing overlap matrix using field '%s'\n", geo_name)
 	H.prime <- compute.overlap(private$fine_domain, domain,
 		geo.name.D = private$fine_domain_geo_name, geo.name.G = geo_name)
 	H <- Matrix(apply(H.prime, 2, normalize))
