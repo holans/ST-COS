@@ -69,7 +69,7 @@ domain2model <- function(domain, period, geo_name)
 	stopifnot(inherits(domain, "sf"))
 	stopifnot(length(period) >= 1)
 
-	logger("Computing overlap matrix\n")
+	logger("Computing overlap matrix using field '%s'\n", geo_name)
 	H.prime <- compute.overlap(private$fine_domain, domain,
 		geo.name.D = private$fine_domain_geo_name, geo.name.G = geo_name)
 	H <- t(Matrix(apply(H.prime, 2, normalize)))
@@ -222,9 +222,9 @@ get_Cinv <- function(target.periods, X = NULL)
 
 		# Target Covariance
 		logger("Computing target covariance\n")
-		C.unscaled <- sptcovar.randwalk(Qinv, M, Sconnectorf, lag_max = T)
-		C <- C.unscaled / max(abs(as.matrix(C.unscaled)))
-		warning("We're scaling C by a constant. Make sure this is okay!")
+		C <- sptcovar.randwalk(Qinv, M, Sconnectorf, lag_max = T)
+		# C <- C.unscaled / max(abs(as.matrix(C.unscaled)))
+		# warning("We're scaling C by a constant. Make sure this is okay!")
 	} else {
 		# Use the given X to compute M
 		licols.out <- licols(as.matrix(X))
@@ -236,8 +236,7 @@ get_Cinv <- function(target.periods, X = NULL)
 
 		# Target Covariance
 		logger("Computing target covariance\n")
-		C.unscaled <- sptcovar.vectautoreg(Qinv, M, Sconnectorf, lag_max = T)
-		C <- C.unscaled
+		C <- sptcovar.vectautoreg(Qinv, M, Sconnectorf, lag_max = T)
 		# C <- C.unscaled / max(abs(as.matrix(C.unscaled)))
 		# warning("We're scaling C by a constant. Make sure this is okay!")
 	}
