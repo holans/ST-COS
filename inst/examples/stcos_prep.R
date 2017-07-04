@@ -148,7 +148,7 @@ if (TRUE) {
 	Z.scaled <- (Z - mean(Z)) / sd(Z)
 	V.scaled <- V / var(Z)
 	H.scaled <- D %*% H
-	S.scaled <- D %*%  S.reduced
+	S.scaled <- D %*% S.reduced
 
 	mle.out <- mle.stcos(Z.scaled, S.reduced, V.scaled, H, init = list(sig2xi = 1))
 	init <- list(
