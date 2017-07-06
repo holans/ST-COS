@@ -1,4 +1,11 @@
 SpaceTimeBisquareBasis <- R6Class("SpaceTimeBisquareBasis",
+	private = list(
+		r = NULL,
+		cutpoints = NULL,
+		w.s = NULL,
+		w.t = NULL,
+		rl = NULL
+	),
 	public = list(
 		initialize = function(cutpoints.x, cutpoints.y, cutpoints.t, w.s, w.t) {
 			r <- length(cutpoints.x)
@@ -17,25 +24,16 @@ SpaceTimeBisquareBasis <- R6Class("SpaceTimeBisquareBasis",
 		},
 		get_dim = function() {
 			private$r
+		},
+		compute = function(x, y, time)
+		{
+			X <- cbind(x, y, time)
+			cc <- private$cutpoints
+			S <- compute_basis_spt(X, cc, private$rl, private$w.t)
+			return(S)
 		}
-	),
-	private = list(
-		r = NULL,
-		cutpoints = NULL,
-		w.s = NULL,
-		w.t = NULL,
-		rl = NULL
 	)
 )
 
-compute <- function(x, y, time)
-{
-	X <- cbind(x, y, time)
-	cc <- private$cutpoints
-	S <- compute_basis_spt(X, cc, private$rl, private$w.t)
-	return(S)
-}
-
-SpaceTimeBisquareBasis$set("public", "compute", compute)
-SpaceTimeBisquareBasis$lock()
-
+# SpaceTimeBisquareBasis$set("public", "compute", compute)
+# SpaceTimeBisquareBasis$lock()

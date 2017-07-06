@@ -1,4 +1,4 @@
-gibbs.stcos <- function(prep, report.period = R+1, burn = 0, thin = 1,
+gibbs.stcos <- function(prep, R, report.period = R+1, burn = 0, thin = 1,
 	hyper = NULL, sig2xi.init = NULL)
 {
 	Z <- prep$get_Z()

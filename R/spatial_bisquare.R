@@ -1,4 +1,10 @@
 SpatialBisquareBasis <- R6Class("SpatialBisquareBasis",
+	private = list(
+		r = NULL,
+		cutpoints = NULL,
+		w = NULL,
+		rl = NULL
+	),
 	public = list(
 		initialize = function(cutpoints.x, cutpoints.y, w) {
 			r <- length(cutpoints.x)
@@ -15,24 +21,17 @@ SpatialBisquareBasis <- R6Class("SpatialBisquareBasis",
 		},
 		get_dim = function() {
 			private$r
+		},
+		compute = function(x, y)
+		{
+			X <- cbind(x, y)
+			cc <- private$cutpoints
+			S <- compute_basis_sp(X, cc, private$rl)
+			return(S)
 		}
-	),
-	private = list(
-		r = NULL,
-		cutpoints = NULL,
-		w = NULL,
-		rl = NULL
 	)
 )
 
-compute <- function(x, y)
-{
-	X <- cbind(x, y)
-	cc <- private$cutpoints
-	S <- compute_basis_sp(X, cc, private$rl)
-	return(S)
-}
-
-SpatialBisquareBasis$set("public", "compute", compute)
-SpatialBisquareBasis$lock()
+# SpatialBisquareBasis$set("public", "compute", compute)
+# SpatialBisquareBasis$lock()
 

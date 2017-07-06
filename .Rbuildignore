@@ -12,4 +12,4 @@ matlab
 stan
 ^.*\.Rproj$
 ^\.Rproj\.user$
-^inst/note-*$
+^inst/note
