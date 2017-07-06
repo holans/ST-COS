@@ -2,7 +2,8 @@
 #include <RcppArmadillo.h>
 
 // [[Rcpp::export]]
-arma::mat sample_Gamma0_VAR1(const arma::mat& A, const arma::mat& Sigma, size_t R, size_t burn = 10000)
+arma::mat sample_Gamma0_VAR1(const arma::mat& A, const arma::mat& Sigma,
+	long unsigned int R, long unsigned int burn = 10000)
 {
 	size_t m = Sigma.n_rows;
 	arma::mat Sigma_half = arma::chol(Sigma);
