@@ -1,10 +1,18 @@
 useDynLib(stcos, .registration = TRUE)
 
+# Export specific functions when we're further along
+exportPattern("*")
+
 import(Rcpp)
 import(Matrix)
 import(coda)
+import(sf)
+importFrom(R6,R6Class)
+importFrom(MASS, ginv)
+importFrom(stats, dgamma, dnorm, logLik, optim, rgamma, rnorm)
 
 S3method(DIC, stcos)
-
-# Export specific functions when we're further along
-exportPattern("*")
+S3method(fitted, stcos)
+S3method(logLik, stcos)
+S3method(predict, stcos)
+S3method(print, stcos)

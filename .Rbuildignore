@@ -4,9 +4,12 @@
 \.rds$
 doc$
 ^README\.md$
+^NOTES\.md$
 \.gitignore$
 Makefile
 ^stcos$
 matlab
+stan
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^inst/note-*$

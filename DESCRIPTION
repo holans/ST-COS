@@ -5,8 +5,9 @@ Version: 0.0.1
 Date: 2017-05-13
 Author: Andrew M. Raim, Scott Holan
 Maintainer: Andrew M. Raim <andrew.raim@gmail.com>
-Description: TBD
+Description: An R Package for Space-Time Change of Support modeling (TBD). 
 License: GPL (>= 2)
-Depends: R6, Rcpp, Matrix, sf, coda, MASS
+Imports: R6
+Depends: Rcpp, Matrix, sf, coda, MASS
 LinkingTo: Rcpp, RcppArmadillo
 RoxygenNote: 6.0.1
