@@ -47,7 +47,7 @@ load.domain <- function(shpfile, datfile, layername, crs.tx = NULL, crs.orig = N
 # Fine-level domain comes from ACS 5-year estimates for 2013
 # Note: Projecting everything to latlon coordinates leads to a weird error in sf_area.
 #	For some reason it's programmed differently for latlon projections.
-acs5.2013 <- load.domain("shp/period3.shp", "shp/period3.csv", "period3")
+acs5.2013 <- load.domain("jon-acs/shp/period3.shp", "jon-acs/csv/period3.csv", "period3")
 # acs5.2013 <- st_transform(acs5.2013, "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 
 # ----- Set up knots for bisquare basis -----
@@ -68,25 +68,25 @@ basis <- SpaceTimeBisquareBasis$new(knots[,1], knots[,2], knots[,3], w.s = 1, w.
 
 # Load the domains with observations.
 # If necessary, each one can be loaded at a time and added to "sp".
-acs1.2013 <- load.domain("shp/period1.shp", "shp/period1.csv", "period1", crs.tx = st_crs(acs5.2013)) # ACS 1-year estimates for 2013
-acs3.2013 <- load.domain("shp/period2.shp", "shp/period2.csv", "period2", crs.tx = st_crs(acs5.2013)) # ACS 3-year estimates for 2013
-acs1.2012 <- load.domain("shp/period1_2012.shp", "shp/period1_2012.csv", "period1_2012", crs.tx = st_crs(acs5.2013))
-acs3.2012 <- load.domain("shp/period2_2012.shp", "shp/period2_2012.csv", "period2_2012", crs.tx = st_crs(acs5.2013))
-acs5.2012 <- load.domain("shp/period3_2012.shp", "shp/period3_2012.csv", "period3_2012", crs.tx = st_crs(acs5.2013))
-acs1.2011 <- load.domain("shp/period1_2011.shp", "shp/period1_2011.csv", "period1_2011", crs.tx = st_crs(acs5.2013))
-acs3.2011 <- load.domain("shp/period2_2011.shp", "shp/period2_2011.csv", "period2_2011", crs.tx = st_crs(acs5.2013))
-acs5.2011 <- load.domain("shp/period3_2011.shp", "shp/period3_2011.csv", "period3_2011", crs.tx = st_crs(acs5.2013))
-acs1.2010 <- load.domain("shp/period1_2010.shp", "shp/period1_2010.csv", "period1_2010", crs.tx = st_crs(acs5.2013))
-acs3.2010 <- load.domain("shp/period2_2010.shp", "shp/period2_2010.csv", "period2_2010", crs.tx = st_crs(acs5.2013))
-acs5.2010 <- load.domain("shp/period3_2010.shp", "shp/period3_2010.csv", "period3_2010", crs.tx = st_crs(acs5.2013))
-acs1.2009 <- load.domain("shp/period1_2009.shp", "shp/period1_2009.csv", "period1_2009", crs.tx = st_crs(acs5.2013))
-acs3.2009 <- load.domain("shp/period2_2009.shp", "shp/period2_2009.csv", "period2_2009", crs.tx = st_crs(acs5.2013))
-acs5.2009 <- load.domain("shp/period3_2009.shp", "shp/period3_2009.csv", "period3_2009", crs.tx = st_crs(acs5.2013))
-acs1.2008 <- load.domain("shp/period1_2008.shp", "shp/period1_2008.csv", "period1_2008", crs.tx = st_crs(acs5.2013))
-acs3.2008 <- load.domain("shp/period2_2008.shp", "shp/period2_2008.csv", "period2_2008", crs.tx = st_crs(acs5.2013))
-acs1.2007 <- load.domain("shp/period1_2007.shp", "shp/period1_2007.csv", "period1_2007", crs.tx = st_crs(acs5.2013))
-acs3.2007 <- load.domain("shp/period2_2007.shp", "shp/period2_2007.csv", "period2_2007", crs.tx = st_crs(acs5.2013))
-acs1.2006 <- load.domain("shp/period1_2006.shp", "shp/period1_2006.csv", "period1_2006", crs.tx = st_crs(acs5.2013))
+acs1.2013 <- load.domain("jon-acs/shp/period1.shp", "jon-acs/csv/period1.csv", "period1", crs.tx = st_crs(acs5.2013)) # ACS 1-year estimates for 2013
+acs3.2013 <- load.domain("jon-acs/shp/period2.shp", "jon-acs/csv/period2.csv", "period2", crs.tx = st_crs(acs5.2013)) # ACS 3-year estimates for 2013
+acs1.2012 <- load.domain("jon-acs/shp/period1_2012.shp", "jon-acs/csv/period1_2012.csv", "period1_2012", crs.tx = st_crs(acs5.2013))
+acs3.2012 <- load.domain("jon-acs/shp/period2_2012.shp", "jon-acs/csv/period2_2012.csv", "period2_2012", crs.tx = st_crs(acs5.2013))
+acs5.2012 <- load.domain("jon-acs/shp/period3_2012.shp", "jon-acs/csv/period3_2012.csv", "period3_2012", crs.tx = st_crs(acs5.2013))
+acs1.2011 <- load.domain("jon-acs/shp/period1_2011.shp", "jon-acs/csv/period1_2011.csv", "period1_2011", crs.tx = st_crs(acs5.2013))
+acs3.2011 <- load.domain("jon-acs/shp/period2_2011.shp", "jon-acs/csv/period2_2011.csv", "period2_2011", crs.tx = st_crs(acs5.2013))
+acs5.2011 <- load.domain("jon-acs/shp/period3_2011.shp", "jon-acs/csv/period3_2011.csv", "period3_2011", crs.tx = st_crs(acs5.2013))
+acs1.2010 <- load.domain("jon-acs/shp/period1_2010.shp", "jon-acs/csv/period1_2010.csv", "period1_2010", crs.tx = st_crs(acs5.2013))
+acs3.2010 <- load.domain("jon-acs/shp/period2_2010.shp", "jon-acs/csv/period2_2010.csv", "period2_2010", crs.tx = st_crs(acs5.2013))
+acs5.2010 <- load.domain("jon-acs/shp/period3_2010.shp", "jon-acs/csv/period3_2010.csv", "period3_2010", crs.tx = st_crs(acs5.2013))
+acs1.2009 <- load.domain("jon-acs/shp/period1_2009.shp", "jon-acs/csv/period1_2009.csv", "period1_2009", crs.tx = st_crs(acs5.2013))
+acs3.2009 <- load.domain("jon-acs/shp/period2_2009.shp", "jon-acs/csv/period2_2009.csv", "period2_2009", crs.tx = st_crs(acs5.2013))
+acs5.2009 <- load.domain("jon-acs/shp/period3_2009.shp", "jon-acs/csv/period3_2009.csv", "period3_2009", crs.tx = st_crs(acs5.2013))
+acs1.2008 <- load.domain("jon-acs/shp/period1_2008.shp", "jon-acs/csv/period1_2008.csv", "period1_2008", crs.tx = st_crs(acs5.2013))
+acs3.2008 <- load.domain("jon-acs/shp/period2_2008.shp", "jon-acs/csv/period2_2008.csv", "period2_2008", crs.tx = st_crs(acs5.2013))
+acs1.2007 <- load.domain("jon-acs/shp/period1_2007.shp", "jon-acs/csv/period1_2007.csv", "period1_2007", crs.tx = st_crs(acs5.2013))
+acs3.2007 <- load.domain("jon-acs/shp/period2_2007.shp", "jon-acs/csv/period2_2007.csv", "period2_2007", crs.tx = st_crs(acs5.2013))
+acs1.2006 <- load.domain("jon-acs/shp/period1_2006.shp", "jon-acs/csv/period1_2006.csv", "period1_2006", crs.tx = st_crs(acs5.2013))
 
 # Construct a STCOSPrep object, then add space-time domains with observations
 sp <- STCOSPrep$new(fine_domain = acs5.2013, fine_domain_geo_name = "GEO_ID", basis = basis, basis_mc_reps = 500)
@@ -113,10 +113,9 @@ sp$add_obs(acs5.2009, period = 2005:2009, estimate_name = "DirectEst", variance_
 Z <- sp$get_Z()
 V <- sp$get_V()
 H <- sp$get_H()
-
-# Here's where we would think about a reduction for S.
 S <- sp$get_S()
 
+# Here's where we would think about a reduction for S.
 # Identity transformation as reduction (no reduction).
 sp$set_basis_reduction(identity)
 
@@ -128,16 +127,23 @@ sp$set_basis_reduction(f)
 
 S.reduced <- sp$get_reduced_S()
 
-if (TRUE) {
+var.type <- "sp"
+if (var.type == "var") {
 	# Do a spatial-only basis expansion of fine-domain, and use this as the
 	# design matrix to project away from
 	sp.basis <- SpatialBisquareBasis$new(knots.sp[,1], knots.sp[,2], w = 1)
-	draws.out <- draw_sp_basis_mc(R = 500, domain = acs5.2013, report.period = 100)
-	X <- compute_sp_basis_mc(basis = sp.basis, domain = acs5.2013,
+	draws.out <- draw_sp_basis_mc(R = 500, domain = dom.fine, report.period = 100)
+	X <- compute_sp_basis_mc(basis = sp.basis, domain = dom.fine,
 		s1 = draws.out$s1, s2 = draws.out$s2, report.period = 100)
-	C.inv <- sp$get_Cinv(2005:2013, X)
+	C.inv <- sp$get_Cinv(2005:2015, X)
+} else if (var.type == "rw") {
+	C.inv <- sp$get_Cinv(2005:2015)
+} else if (var.type == "sp"){
+	C.inv <- sp$get_Cinv(2005:2015, autoreg = FALSE)
+} else if (var.type == "ind"){
+	C.inv <- diag(x = 1, nrow = ncol(S.reduced))
 } else {
-	C.inv <- sp$get_Cinv(2005:2013)
+	stop("Invalid var.type")
 }
 
 # ----- Apply Gibbs sampler using MLE as initial value -----

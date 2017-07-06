@@ -173,9 +173,14 @@ set_basis_reduction <- function(f = identity)
 
 # TBD: Should we take target *times* or target *periods*???
 # Should Cinv ever be based on 5-year ACS means, for example?
-get_Cinv <- function(target.periods, X = NULL)
+get_Cinv <- function(times, X = NULL, autoreg = TRUE)
 {
-	T <- length(target.periods)
+	ll <- max(times) - min(times) + 1
+	if (length(times) != ll) {
+		stop("times must contain consecutive integers")
+	}
+
+	T <- length(times)
 	n <- nrow(private$fine_domain)
 	r <- private$basis$get_dim()
 
@@ -188,7 +193,7 @@ get_Cinv <- function(target.periods, X = NULL)
 		idx <- 1:n + (t-1)*n
 		logger("Constructing S matrix for fine-scale at time %d of %d\n", t, T)
 		S <- compute_spt_basis_mc(basis = private$basis,
-			domain = private$fine_domain, period = target.periods[t],
+			domain = private$fine_domain, period = times[t],
 			s1 = draws.out$s1, s2 = draws.out$s2,
 			report.period = private$report_period)
 
@@ -214,17 +219,17 @@ get_Cinv <- function(target.periods, X = NULL)
 	Q <- Diagonal(n,1) - 0.9*countAdj
 	Qinv <- solve(Q)
 
-	# Moran's I Propagator
-	logger("Computing Moran's I Propagator\n")
-	if (is.null(X)) {
+	# Target covariance
+	logger("Computing target covariance\n")
+	if (!autoreg) {
+		# Assume no autocovariance between spatial domains
+		C <- kronecker(Qinv, Diagonal(n=T, x=1))
+	} else if (is.null(X)) {
 		# Take X to be an identity matrix, which leads to M being an identity matrix
 		M <- Diagonal(n,1)
 
 		# Target Covariance
-		logger("Computing target covariance\n")
 		C <- sptcovar.randwalk(Qinv, M, Sconnectorf, lag_max = T)
-		# C <- C.unscaled / max(abs(as.matrix(C.unscaled)))
-		# warning("We're scaling C by a constant. Make sure this is okay!")
 	} else {
 		# Use the given X to compute M
 		licols.out <- licols(as.matrix(X))
@@ -237,8 +242,6 @@ get_Cinv <- function(target.periods, X = NULL)
 		# Target Covariance
 		logger("Computing target covariance\n")
 		C <- sptcovar.vectautoreg(Qinv, M, Sconnectorf, lag_max = T)
-		# C <- C.unscaled / max(abs(as.matrix(C.unscaled)))
-		# warning("We're scaling C by a constant. Make sure this is okay!")
 	}
 
 	eig <- eigen(C)
