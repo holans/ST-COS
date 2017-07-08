@@ -37,6 +37,7 @@ gibbs.stcos.raw <- function(Z, S, V, C.inv, H, R, report.period = R+1,
 
 	logger("Begin computing eigenvalues/vectors of HpinvVH\n")
 	eig.HpinvVH <- eigen(HpinvVH, symmetric = TRUE)
+	eig.HpinvVH$vectors <- Matrix(eig.HpinvVH$vectors)
 	logger("Finished computing eigenvalues/vectors of HpinvVH\n")
 
 	tt.keep <- 0
