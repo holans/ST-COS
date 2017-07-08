@@ -69,3 +69,27 @@ sptcovar.randwalk <- function(Qinv, M, S, lag_max)
 	logger("Finished computing K\n")
 	return(SpSinv %*% C %*% SpSinv)
 }
+
+sptcovar.indep <- function(Qinv, S, lag_max)
+{
+	n <- nrow(Qinv)
+	d <- nrow(S)
+	r <- ncol(S)
+	SpS <- t(S) %*% S
+	
+	if (rankMatrix(SpS) < r) {
+		warning("The matrix (S' S) is rank-deficient. Consider reducing the dimension of S")
+	}
+	SpSinv <- ginv(as.matrix(SpS))
+	
+	C <- matrix(0, r, r)
+	for (i in 1:lag_max) {
+		logger("Computing block (%d,%d)\n", i, i)
+		idx <- seq(n*(i-1)+1, n*i)
+		C <- C + t(S[idx,]) %*% Qinv %*% S[idx,]
+	}
+	
+	logger("Finished computing K\n")
+	return(SpSinv %*% C %*% SpSinv)
+}
+

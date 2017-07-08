@@ -210,7 +210,7 @@ STCOSPrep <- R6Class("STCOSPrep",
 			logger("Computing target covariance\n")
 			if (!autoreg) {
 				# Assume no autocovariance between spatial domains
-				C <- kronecker(Qinv, Diagonal(n=T, x=1))
+				C <- sptcovar.indep(Qinv, Sconnectorf, lag_max = T)
 			} else if (is.null(X)) {
 				# Take X to be an identity matrix, which leads to M being an identity matrix
 				M <- Diagonal(n,1)
