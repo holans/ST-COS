@@ -72,11 +72,9 @@ STCOSPrep <- R6Class("STCOSPrep",
 			H <- t(Matrix(apply(H.prime, 2, normalize)))
 
 			logger("Computing basis functions\n")
-			draws.out <- draw_spt_basis_mc(R = private$basis_mc_reps, domain = domain,
-										   period_len = length(period), report.period = private$report_period)
 			S <- compute_spt_basis_mc(basis = private$basis, domain = domain,
-									  period = period, s1 = draws.out$s1, s2 = draws.out$s2,
-									  report.period = private$report_period)
+				R = private$basis_mc_reps, period = period,
+				report.period = private$report_period)
 
 			geo <- data.frame(obs = private$L, row = 1:nrow(domain), geo_id = domain[[geo_name]])
 			list(H = H, S = S, geo = geo)
@@ -172,17 +170,11 @@ STCOSPrep <- R6Class("STCOSPrep",
 			r <- private$basis$get_dim()
 
 			Sconnector <- Matrix(0, 0, r)
-			draws.out <- draw_spt_basis_mc(R = private$basis_mc_reps,
-										   domain = private$fine_domain, period_len = 1,
-										   report.period = private$report_period)
-
 			for (t in 1:T) {
 				idx <- 1:n + (t-1)*n
 				logger("Constructing S matrix for fine-scale at time %d of %d\n", t, T)
-				S <- compute_spt_basis_mc(basis = private$basis,
-										  domain = private$fine_domain, period = times[t],
-										  s1 = draws.out$s1, s2 = draws.out$s2,
-										  report.period = private$report_period)
+				S <- compute_spt_basis_mc(basis = private$basis, domain = private$fine_domain,
+					R = private$basis_mc_reps, period = times[t], report.period = private$report_period)
 
 				# rbind usually slows performance, but here it's a lot faster
 				# than doing Sconnector[idx,] <- S
