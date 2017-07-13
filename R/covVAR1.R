@@ -2,6 +2,9 @@
 # M is AR(1) matrix
 covVAR1 <- function(A, Sigma, lag_max)
 {
+	A <- as.matrix(A)
+	Sigma <- as.matrix(Sigma)
+
 	m <- nrow(Sigma)
 	N <- m * (lag_max+1)
 	Gamma <- array(NA, dim = c(m, m, lag_max+1))
