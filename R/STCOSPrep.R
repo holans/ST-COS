@@ -9,12 +9,12 @@ STCOSPrep <- R6Class("STCOSPrep",
 		geo_list = NULL,
 		N = NULL,
 		L = NULL,
-		basis_mc_reps = NULL,
-		basis = NULL,
-		basis_reduction = NULL,
-		report_period = NULL
+		basis = NULL
 	),
 	public = list(
+		basis_reduction = NULL,
+		basis_mc_reps = NULL,
+		report_period = NULL,
 		initialize = function(fine_domain, fine_domain_geo_name, basis, basis_mc_reps = 500, report_period = 100) {
 			stopifnot(inherits(fine_domain, "sf"))
 			stopifnot(inherits(basis, "SpaceTimeBisquareBasis"))
@@ -27,10 +27,10 @@ STCOSPrep <- R6Class("STCOSPrep",
 			private$geo_list <- list()
 			private$N <- 0
 			private$L <- 0
-			private$basis_mc_reps <- basis_mc_reps
+			self$basis_mc_reps <- basis_mc_reps
 			private$basis <- basis
-			private$basis_reduction <- identity
-			private$report_period <- report_period
+			self$basis_reduction <- identity
+			self$report_period <- report_period
 			private$fine_domain_geo_name <- fine_domain_geo_name
 		},
 		add_obs = function(domain, period, estimate_name, variance_name, geo_name)
@@ -73,11 +73,12 @@ STCOSPrep <- R6Class("STCOSPrep",
 
 			logger("Computing basis functions\n")
 			S <- compute_spt_basis_mc(basis = private$basis, domain = domain,
-				R = private$basis_mc_reps, period = period,
-				report.period = private$report_period)
+				R = self$basis_mc_reps, period = period,
+				report.period = self$report_period)
+			S.reduced <- self$basis_reduction(S)
 
 			geo <- data.frame(obs = private$L, row = 1:nrow(domain), geo_id = domain[[geo_name]])
-			list(H = H, S = S, geo = geo)
+			list(H = H, S = S, S.reduced = S.reduced, geo = geo)
 		},
 		get_Z = function()
 		{
@@ -139,7 +140,7 @@ STCOSPrep <- R6Class("STCOSPrep",
 		},
 		get_reduced_S = function()
 		{
-			private$basis_reduction(self$get_S())
+			self$basis_reduction(self$get_S())
 		},
 		get_geo = function()
 		{
@@ -156,7 +157,7 @@ STCOSPrep <- R6Class("STCOSPrep",
 		set_basis_reduction = function(f = identity)
 		{
 			stopifnot(is.function(f))
-			private$basis_reduction <- f
+			self$basis_reduction <- f
 		},
 		get_Cinv = function(times, X = NULL, autoreg = TRUE)
 		{
@@ -174,7 +175,7 @@ STCOSPrep <- R6Class("STCOSPrep",
 				idx <- 1:n + (t-1)*n
 				logger("Constructing S matrix for fine-scale at time %d of %d\n", t, T)
 				S <- compute_spt_basis_mc(basis = private$basis, domain = private$fine_domain,
-					R = private$basis_mc_reps, period = times[t], report.period = private$report_period)
+					R = self$basis_mc_reps, period = times[t], report.period = self$report_period)
 
 				# rbind usually slows performance, but here it's a lot faster
 				# than doing Sconnector[idx,] <- S
@@ -182,7 +183,7 @@ STCOSPrep <- R6Class("STCOSPrep",
 			}
 
 			# Reduction should be same as the one used on S matrix for the observations
-			Sconnectorf <- private$basis_reduction(Sconnector)
+			Sconnectorf <- self$basis_reduction(Sconnector)
 
 			# Compute adjacency matrix
 			logger("Computing adjacency matrix\n")

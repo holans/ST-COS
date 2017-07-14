@@ -4,7 +4,7 @@ rArea <- function(n, area, blocksize = n)
 	res <- matrix(NA, 0, 2)
 
 	done <- FALSE
-	while(!done) {
+	while (!done) {
 		u <- st_sample(area, size = blocksize)
 		if (NROW(u) > 0) {
 			M <- matrix(unlist(u), length(u), 2, byrow = TRUE)

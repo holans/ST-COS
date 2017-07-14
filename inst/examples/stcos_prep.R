@@ -25,7 +25,7 @@ load.domain <- function(shpfile, datfile, layername, crs.tx = NULL, crs.orig = N
 	idx.AK <- which(states == '15')
 	idx.PR <- which(states == '72')
 	# idx.keep <- setdiff(1:nrow(area), c(idx.HI, idx.AK, idx.PR))
-	idx.keep <- which(states == '24')
+	idx.keep <- which(states == '51')
 
 	area <- area[idx.keep,]
 	# plot(area)
@@ -115,17 +115,25 @@ V <- sp$get_V()
 H <- sp$get_H()
 S <- sp$get_S()
 
-# Here's where we would think about a reduction for S.
-# Identity transformation as reduction (no reduction).
-sp$set_basis_reduction(identity)
-
-# Rank-revealing QR decomposition to pick out LI columns.
-# The same set of columns should be used every time the reduction is needed.
-li.out <- licols(as.matrix(S), tol = 0.285)
-f <- function(S) { S[,li.out$idx] }
-sp$set_basis_reduction(f)
-
-S.reduced <- sp$get_reduced_S()
+if (FALSE) {
+	# Here's where we would think about a reduction for S.
+	# Identity transformation as reduction (no reduction).
+	sp$set_basis_reduction(identity)
+} else if (FALSE) {
+	# Rank-revealing QR decomposition to pick out LI columns.
+	# The same set of columns should be used every time the reduction is needed.
+	li.out <- licols(as.matrix(S), tol = 0.285)
+	f <- function(S) { S[,li.out$idx] }
+	sp$set_basis_reduction(f)
+	S.reduced <- sp$get_reduced_S()
+} else {
+	eig <- eigen(t(S) %*% S)
+	plot(cumsum(eig$values) / sum(eig$values))
+	idx <- which(cumsum(eig$values) / sum(eig$values) < 0.80)
+	f <- function(S) { S %*% t(eig$vectors[idx,]) }
+	sp$set_basis_reduction(f)
+	S.reduced <- sp$get_reduced_S()
+}
 
 var.type <- "sp"
 if (var.type == "var") {
@@ -207,6 +215,9 @@ if (TRUE) {
 	plot(loglik.mcmc)
 }
 
+# save.image("test.Rdata")
+load("test.Rdata")
+
 # We want to be able to link design matrices from model back to other data sources
 # TBD: We should also be able to handle multiple ID columns (e.g. (STATE, COUNTY, TRACT, BLOCK)).
 G <- sp$get_geo()
@@ -215,19 +226,23 @@ G <- sp$get_geo()
 # Based on both MCMC draws for the mean and posterior predictive distribution
 # TBD: We could perhaps make this easier if Gibbs output contained sp, or sp contained Gibbs sampler. Revisit later
 # TBD: The reduction on S is also a little awkward for the user here.
-dom <- acs5.2013
-dom$DirectEst <- NULL
-dom$DirectVar <- NULL
-target.out <- sp$domain2model(dom, period = 2013, geo_name = "GEO_ID")
-E.hat.scaled <- fitted(gibbs.out, target.out$H, f(target.out$S))
-Y.pred.scaled <- predict(gibbs.out, target.out$H, f(target.out$S))
+aiannh.2015 <- st_read("aiannh/cb_2015_us_aiannh_500k.shp")
+dom <- st_transform(aiannh.2015, crs = st_crs(acs5.2013))
+INT <- st_intersects(dom, acs5.2013)
+dom <- dom[which(unlist(Map(length, INT)) > 0),]
+
+sp$report_period <- 1
+target.out <- sp$domain2model(dom, period = 2015, geo_name = "AFFGEOID")
+target.out$S.reduced <- f(target.out$S)
+E.hat.scaled <- fitted(gibbs.out, target.out$H, target.out$S.reduced)
+Y.pred.scaled <- predict(gibbs.out, target.out$H, target.out$S.reduced)
 
 # Uncenter and unscale the predictions
 E.hat <- sd(Z) * E.hat.scaled + mean(Z)
 Y.pred <- sd(Z) * Y.pred.scaled + mean(Z)
 
-dom$SD <- sqrt(dom$DirectVar)
-acs1.2013$DirectSD <- sqrt(acs1.2013$DirectVar)
+# dom$SD <- sqrt(dom$DirectVar)
+# acs1.2013$DirectSD <- sqrt(acs1.2013$DirectVar)
 
 dom$E.mean <- colMeans(E.hat)
 dom$E.sd <- apply(E.hat, 2, sd)
