@@ -37,7 +37,6 @@ STCOSPrep <- R6Class("STCOSPrep",
 		{
 			stopifnot(class(estimate_name) == "character")
 			stopifnot(class(variance_name) == "character")
-			stopifnot(class(geo_name) == "character")
 
 			private$N <- private$N + nrow(domain)
 			private$L <- private$L + 1
@@ -65,6 +64,7 @@ STCOSPrep <- R6Class("STCOSPrep",
 			## Check the argument types
 			stopifnot(inherits(domain, "sf"))
 			stopifnot(length(period) >= 1)
+			stopifnot(class(geo_name) == "character")
 
 			logger("Computing overlap matrix using field '%s'\n", geo_name)
 			H.prime <- compute.overlap(private$fine_domain, domain,

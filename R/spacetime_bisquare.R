@@ -25,11 +25,22 @@ SpaceTimeBisquareBasis <- R6Class("SpaceTimeBisquareBasis",
 		get_dim = function() {
 			private$r
 		},
+		get_cutpoints = function() {
+			private$cutpoints
+		},
+		get_rl = function() {
+			private$rl
+		},
+		get_ws = function() {
+			private$w.s
+		},
+		get_wt = function() {
+			private$w.t
+		},
 		compute = function(x, y, time)
 		{
 			X <- cbind(x, y, time)
-			cc <- private$cutpoints
-			S <- compute_basis_spt(X, cc, private$rl, private$w.t)
+			S <- compute_basis_spt(X, private$cutpoints, private$rl, private$w.t)
 			return(S)
 		}
 	)
