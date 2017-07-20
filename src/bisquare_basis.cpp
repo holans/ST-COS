@@ -39,7 +39,7 @@ arma::sp_mat compute_basis_sp(const arma::mat& X, const arma::mat& cc, double w)
 	arma::umat locations(2, vals.size());
 	locations.row(0) = arma::conv_to<arma::uvec>::from(ind_row).t();
 	locations.row(1) = arma::conv_to<arma::uvec>::from(ind_col).t();
-	
+
 	// Create an sp_mat
 	arma::sp_mat S(locations, values, N, r);
 	return S;
@@ -62,11 +62,8 @@ arma::sp_mat compute_basis_spt(const arma::mat& X, const arma::mat& cc, double w
 	double w2_s = w_s * w_s;
 	double w2_t = w_t * w_t;
 
-	// Rprintf("Computing basis entries\n");
 	for (size_t i = 0; i < N; i++) {
-		// Rprintf("compute_basis: i=%d\n", i);
 		for (size_t j = 0; j < r; j++) {
-			// Rprintf("compute_basis: i=%d, j=%d\n", i, j);
 			double ds1 = X.at(i,0) - cc.at(j,0);
 			double ds2 = X.at(i,1) - cc.at(j,1);
 			double dt = X.at(i,2) - cc.at(j,2);
@@ -83,17 +80,13 @@ arma::sp_mat compute_basis_spt(const arma::mat& X, const arma::mat& cc, double w
 	}
 
 	// Convert to a format that can be used to initialize sp_mat efficiently
-	// Rprintf("Copying to arma dense format\n");
 	arma::vec values = arma::conv_to<arma::vec>::from(vals);
 	arma::umat locations(2, vals.size());
 	locations.row(0) = arma::conv_to<arma::uvec>::from(ind_row).t();
 	locations.row(1) = arma::conv_to<arma::uvec>::from(ind_col).t();
 
 	// Create an sp_mat
-	// Rprintf("Copying to arma::sp_mat\n");
 	arma::sp_mat S(locations, values, N, r);
-	
-	// Rprintf("DONE\n");
 	return S;
 }
 

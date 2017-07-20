@@ -5,7 +5,7 @@ gibbs.stcos <- function(prep, R, report.period = R+1, burn = 0, thin = 1,
 	V <- prep$get_V()
 	H <- prep$get_H()
 	S <- prep$get_reduced_S()
-	C.inv <- prep$get_Cinv()
+	K.inv <- prep$get_Kinv()
 	mle.out <- mle.stcos(Z, S, V, H, init = list(sig2xi.init))
 
 	init <- list(
@@ -13,12 +13,12 @@ gibbs.stcos <- function(prep, R, report.period = R+1, burn = 0, thin = 1,
 		mu_B = mle.out$mu.hat,
 		eta = mle.out$eta.hat
 	)
-	gibbs.out <- gibbs.stcos.raw(Z = Z, S = S, V = V, C.inv = C.inv, H = H,
+	gibbs.out <- gibbs.stcos.raw(Z = Z, S = S, V = V, K.inv = K.inv, H = H,
 		R = R, report.period = report.period, burn = burn, thin = thin,
 		init = init, hyper = hyper)
 }
 
-gibbs.stcos.raw <- function(Z, S, V, C.inv, H, R, report.period = R+1,
+gibbs.stcos.raw <- function(Z, S, V, K.inv, H, R, report.period = R+1,
 	burn = 0, thin = 1, init = NULL, fixed = NULL, hyper = NULL)
 {
 	timer <- list(mu_B = 0, sig2mu = 0, eta = 0, xi = 0, sig2xi = 0, sig2K = 0,
@@ -57,7 +57,7 @@ gibbs.stcos.raw <- function(Z, S, V, C.inv, H, R, report.period = R+1,
 	if (is.null(init$sig2K)) { init$sig2K <- 1 }
 	if (is.null(init$mu_B)) { init$mu_B <- rnorm(n_mu, 0, sqrt(init$sig2mu)) }
 	if (is.null(init$eta)) {
-		eig <- eigen(C.inv)
+		eig <- eigen(K.inv)
 		ee <- eig$values
 		ee[ee <= 0] <- min(ee[ee > 0])
 		ee[ee > 0] <- 1 / ee[ee > 0]
@@ -135,14 +135,14 @@ gibbs.stcos.raw <- function(Z, S, V, C.inv, H, R, report.period = R+1,
 
 		# Draw from [sig2K | ---]
 		st <- Sys.time()
-		scale <- as.numeric(0.5 * t(eta) %*% C.inv %*% eta)
+		scale <- as.numeric(0.5 * t(eta) %*% K.inv %*% eta)
 		sig2K.new <- 1 / rgamma(1, r/2 + hyper$a.sig2K, hyper$b.sig2K + scale)
 		if (!fixed$sig2K) { sig2K <- sig2K.new }
 		timer$sig2K <- timer$sig2K + as.numeric(Sys.time() - st, units = "secs")
 
 		# Draw from [eta | ---]
 		st <- Sys.time()
-		V.eta <- solve(as.matrix((1/sig2K * C.inv) + SpinvVS))
+		V.eta <- solve(as.matrix((1/sig2K * K.inv) + SpinvVS))
 		mean.eta <- V.eta %*% (SpinvV %*% (Z - H %*% mu_B - xi))
 		eta.new <- mean.eta + chol(V.eta) %*% rnorm(r)
 		idx <- setdiff(1:r, fixed$eta)

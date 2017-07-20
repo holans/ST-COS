@@ -159,7 +159,7 @@ STCOSPrep <- R6Class("STCOSPrep",
 			stopifnot(is.function(f))
 			self$basis_reduction <- f
 		},
-		get_Cinv = function(times, X = NULL, autoreg = TRUE)
+		get_Kinv = function(times, X = NULL, autoreg = TRUE)
 		{
 			ll <- max(times) - min(times) + 1
 			if (length(times) != ll) {
@@ -221,18 +221,18 @@ STCOSPrep <- R6Class("STCOSPrep",
 
 				# Target Covariance
 				logger("Computing target covariance\n")
-				C <- sptcovar.vectautoreg(Qinv, M, Sconnectorf, lag_max = T)
+				K <- sptcovar.vectautoreg(Qinv, M, Sconnectorf, lag_max = T)
 			}
 
-			eig <- eigen(C)
+			eig <- eigen(K)
 			P <- Re(eig$vectors)
 			D <- Re(eig$values)
 			D[D < 0] <- 0
 			Dinv <- D
 			Dinv[D > 0] <- 1 / D[D > 0]
-			Cinv.higham <- P %*% (Dinv * t(P))
+			Kinv <- P %*% (Dinv * t(P))
 
-			return(Cinv.higham)
+			return(Kinv)
 		}
 	)
 )
