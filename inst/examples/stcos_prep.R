@@ -48,6 +48,7 @@ load.domain <- function(shpfile, datfile, layername, crs.tx = NULL, crs.orig = N
 # Note: Projecting everything to latlon coordinates leads to a weird error in sf_area.
 #	For some reason it's programmed differently for latlon projections.
 acs5.2013 <- load.domain("jon-acs/shp/period3.shp", "jon-acs/csv/period3.csv", "period3")
+dom.fine <- acs5.2013
 # acs5.2013 <- st_transform(acs5.2013, "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 
 # ----- Set up knots for bisquare basis -----
@@ -127,7 +128,7 @@ if (FALSE) {
 	sp$set_basis_reduction(f)
 	S.reduced <- sp$get_reduced_S()
 } else {
-	eig <- eigen(t(S) %*% S)
+	system.time(eig <- eigen(t(S) %*% S))
 	plot(cumsum(eig$values) / sum(eig$values))
 	idx <- which(cumsum(eig$values) / sum(eig$values) < 0.80)
 	f <- function(S) { S %*% t(eig$vectors[idx,]) }
@@ -135,21 +136,19 @@ if (FALSE) {
 	S.reduced <- sp$get_reduced_S()
 }
 
-var.type <- "sp"
+var.type <- "var"
 if (var.type == "var") {
 	# Do a spatial-only basis expansion of fine-domain, and use this as the
 	# design matrix to project away from
 	sp.basis <- SpatialBisquareBasis$new(knots.sp[,1], knots.sp[,2], w = 1)
-	draws.out <- draw_sp_basis_mc(R = 500, domain = dom.fine, report.period = 100)
-	X <- compute_sp_basis_mc(basis = sp.basis, domain = dom.fine,
-		s1 = draws.out$s1, s2 = draws.out$s2, report.period = 100)
-	C.inv <- sp$get_Cinv(2005:2015, X)
+	X <- compute_sp_basis_mc(basis = sp.basis, domain = dom.fine, report.period = 100, R = 500)
+	K.inv <- sp$get_Kinv(2005:2015, X)
 } else if (var.type == "rw") {
-	C.inv <- sp$get_Cinv(2005:2015)
+	K.inv <- sp$get_Kinv(2005:2015)
 } else if (var.type == "sp"){
-	C.inv <- sp$get_Cinv(2005:2015, autoreg = FALSE)
+	K.inv <- sp$get_Kinv(2005:2015, autoreg = FALSE)
 } else if (var.type == "ind"){
-	C.inv <- diag(x = 1, nrow = ncol(S.reduced))
+	K.inv <- diag(x = 1, nrow = ncol(S.reduced))
 } else {
 	stop("Invalid var.type")
 }
@@ -170,7 +169,7 @@ if (TRUE) {
 		mu_B = mle.out$mu.hat,
 		eta = mle.out$eta.hat
 	)
-	gibbs.out <- gibbs.stcos.raw(Z.scaled, S.reduced, V.scaled, C.inv, H, R = 2000,
+	gibbs.out <- gibbs.stcos.raw(Z.scaled, S.reduced, V.scaled, K.inv, H, R = 2000,
 		report.period = 1000, burn = 1000, thin = 1, init = init)
 	print(gibbs.out)
 	DIC(gibbs.out)
@@ -198,7 +197,7 @@ if (TRUE) {
 		mu_B = mle.out$mu.hat,
 		eta = mle.out$eta.hat
 	)
-	gibbs.out <- gibbs.stcos.raw(Z, S.reduced, V, C.inv, H, R = 2000,
+	gibbs.out <- gibbs.stcos.raw(Z, S.reduced, V, K.inv, H, R = 2000,
 		report.period = 1000, burn = 1000, thin = 1, init = init)
 	mu_B.mcmc <- mcmc(gibbs.out$mu_B.hist)
 	xi.mcmc <- mcmc(gibbs.out$xi.hist)
