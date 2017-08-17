@@ -150,10 +150,12 @@ gibbs.stcos.raw <- function(Z, S, V, K.inv, H, R, report.period = R+1,
 		timer$eta <- timer$eta + as.numeric(Sys.time() - st, units = "secs")
 
 		# Draw from [mu_B | ---] using sparse matrix inverse
+		# We use the ugly version below because it avoids a large matrix-matrix multiplcation
 		st <- Sys.time()
 		PostLam <- 1 / (eig.HpinvVH$values + 1/sig2mu)
-		V.mu_B <- eig.HpinvVH$vectors %*% (PostLam * t(eig.HpinvVH$vectors))
-		mean.mu_B <- V.mu_B %*% (HpVinv %*% (Z - S %*% eta - xi))
+		# V.mu_B <- eig.HpinvVH$vectors %*% (PostLam * t(eig.HpinvVH$vectors))		# Nice-looking version
+		# mean.mu_B <- V.mu_B %*% (HpVinv %*% (Z - S %*% eta - xi))					# Nice-looking version
+		mean.mu_B <- eig.HpinvVH$vectors %*% ((PostLam * t(eig.HpinvVH$vectors)) %*% (HpVinv %*% (Z - S %*% eta - xi)))		# Ugly version
 		mu_B.new <- mean.mu_B + (eig.HpinvVH$vectors %*% (sqrt(PostLam) * rnorm(n_mu)))
 		idx <- setdiff(1:n_mu, fixed$mu_B)
 		mu_B[idx] <- mu_B.new[idx]
