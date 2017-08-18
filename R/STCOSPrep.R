@@ -203,13 +203,13 @@ STCOSPrep <- R6Class("STCOSPrep",
 			logger("Computing target covariance\n")
 			if (!autoreg) {
 				# Assume no autocovariance between spatial domains
-				C <- sptcovar.indep(Qinv, Sconnectorf, lag_max = T)
+				K <- sptcovar.indep(Qinv, Sconnectorf, lag_max = T)
 			} else if (is.null(X)) {
 				# Take X to be an identity matrix, which leads to M being an identity matrix
 				M <- Diagonal(n,1)
 
 				# Target Covariance
-				C <- sptcovar.randwalk(Qinv, M, Sconnectorf, lag_max = T)
+				K <- sptcovar.randwalk(Qinv, M, Sconnectorf, lag_max = T)
 			} else {
 				# Use the given X to compute M
 				licols.out <- licols(as.matrix(X))

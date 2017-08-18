@@ -89,7 +89,7 @@ acs3.2007 <- load.domain("jon-acs/shp/period2_2007.shp", "jon-acs/csv/period2_20
 acs1.2006 <- load.domain("jon-acs/shp/period1_2006.shp", "jon-acs/csv/period1_2006.csv", "period1_2006", crs.tx = st_crs(acs5.2013))
 
 # Construct a STCOSPrep object, then add space-time domains with observations
-sp <- STCOSPrep$new(fine_domain = acs5.2013, fine_domain_geo_name = "GEO_ID", basis = basis, basis_mc_reps = 500)
+sp <- STCOSPrep$new(fine_domain = acs5.2013, fine_domain_geo_name = "GEO_ID", basis = basis, basis_mc_reps = 50)
 sp$add_obs(acs1.2013, period = 2013, estimate_name = "DirectEst", variance_name = "DirectVar", geo_name = "GEO_ID")
 sp$add_obs(acs1.2012, period = 2012, estimate_name = "DirectEst", variance_name = "DirectVar", geo_name = "GEO_ID")
 sp$add_obs(acs1.2011, period = 2011, estimate_name = "DirectEst", variance_name = "DirectVar", geo_name = "GEO_ID")
@@ -135,7 +135,7 @@ if (FALSE) {
 	S.reduced <- sp$get_reduced_S()
 }
 
-var.type <- "sp"
+var.type <- "rw"
 if (var.type == "var") {
 	# Do a spatial-only basis expansion of fine-domain, and use this as the
 	# design matrix to project away from
@@ -143,11 +143,11 @@ if (var.type == "var") {
 	draws.out <- draw_sp_basis_mc(R = 500, domain = dom.fine, report.period = 100)
 	X <- compute_sp_basis_mc(basis = sp.basis, domain = dom.fine,
 		s1 = draws.out$s1, s2 = draws.out$s2, report.period = 100)
-	C.inv <- sp$get_Cinv(2005:2015, X)
+	C.inv <- sp$get_Kinv(2005:2015, X)
 } else if (var.type == "rw") {
-	C.inv <- sp$get_Cinv(2005:2015)
+	C.inv <- sp$get_Kinv(2005:2015)
 } else if (var.type == "sp"){
-	C.inv <- sp$get_Cinv(2005:2015, autoreg = FALSE)
+	C.inv <- sp$get_Kinv(2005:2015, autoreg = FALSE)
 } else if (var.type == "ind"){
 	C.inv <- diag(x = 1, nrow = ncol(S.reduced))
 } else {
