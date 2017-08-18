@@ -22,7 +22,7 @@ SpatialBisquareBasis <- R6Class("SpatialBisquareBasis",
 		get_dim = function() {
 			private$r
 		},
-				get_cutpoints = function() {
+		get_cutpoints = function() {
 			private$cutpoints
 		},
 		get_rl = function() {
@@ -34,8 +34,7 @@ SpatialBisquareBasis <- R6Class("SpatialBisquareBasis",
 		get_wt = function() {
 			private$w.t
 		},
-		compute = function(x, y)
-		{
+		compute = function(x, y) {
 			X <- cbind(x, y)
 			S <- compute_basis_sp(X, private$cutpoints, private$rl)
 			return(S)
