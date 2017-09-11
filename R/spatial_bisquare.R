@@ -16,7 +16,7 @@ SpatialBisquareBasis <- R6Class("SpatialBisquareBasis",
 			# Jon's code computes basis with rl instead of w.s
 			# Use type 1 quantile algorithm to match Matlab 
 			G <- dist(private$cutpoints)
-			private$rl <- w * quantile(G[G > 0], prob = 0.05, type = 1)
+			private$rl <- as.numeric(w * quantile(G[G > 0], prob = 0.05, type = 1))
 			printf("rl = %f\n", private$rl)
 		},
 		get_dim = function() {

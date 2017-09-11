@@ -2,6 +2,7 @@ library(stcos)
 library(sf)
 library(fields)
 library(coda)
+library(plotrix)
 
 set.seed(1234)
 setwd("/home/araim/Documents/simulations/ST-COS")
@@ -58,14 +59,18 @@ M <- matrix(unlist(u), length(u), 2, byrow = TRUE)
 out <- cover.design(M, 250)
 knots.sp <- out$design
 
-plot(acs5.2013[,1])
-points(knots.sp, pch = 2)
-
 knots.t <- c(2012.5, 2011, 2011.5, 2011, 2010, 2010.5, 2010, 2009, 2009.5, 2009,
 			 2008, 2008.5, 2008, 2007, 2007.5, 2007, 2006.5, 2006, 2005.5)
 knots <- merge(knots.sp, knots.t)
 names(knots) <- c("x", "y", "t")
 basis <- SpaceTimeBisquareBasis$new(knots[,1], knots[,2], knots[,3], w.s = 1, w.t = 1)
+
+plot(acs5.2013[,1])
+points(knots.sp, pch = 2)
+for (i in 1:nrow(knots.sp)) {
+	# Uses the plotrix package
+	draw.circle(knots.sp[i,1], knots.sp[i,2], basis$get_rl(), lwd = 0.5)
+}
 
 # Load the domains with observations.
 # If necessary, each one can be loaded at a time and added to "sp".

@@ -38,9 +38,6 @@ STCOSPrep <- R6Class("STCOSPrep",
 			stopifnot(class(estimate_name) == "character")
 			stopifnot(class(variance_name) == "character")
 
-			private$N <- private$N + nrow(domain)
-			private$L <- private$L + 1
-
 			logger("Begin adding observed space-time domain\n")
 			out <- self$domain2model(domain, period, geo_name)
 
@@ -49,13 +46,16 @@ STCOSPrep <- R6Class("STCOSPrep",
 			Z <- domain[[estimate_name]]
 			V <- domain[[variance_name]]
 
-			L <- private$L
-			N <- private$N
-			private$Z_list[[L]] <- Z
-			private$V_list[[L]] <- V
-			private$H_list[[L]] <- out$H
-			private$S_list[[L]] <- out$S
-			private$geo_list[[L]] <- out$geo
+			# Update internal state
+			private$N <- private$N + nrow(domain)
+			private$L <- private$L + 1
+			private$Z_list[[private$L]] <- Z
+			private$V_list[[private$L]] <- V
+			private$H_list[[private$L]] <- out$H
+			private$S_list[[private$L]] <- out$S
+			geo <- out$geo
+			geo$obs <- private$L
+			private$geo_list[[private$L]] <- geo
 
 			logger("Finished adding observed space-time domain\n")
 		},
@@ -68,7 +68,7 @@ STCOSPrep <- R6Class("STCOSPrep",
 
 			logger("Computing overlap matrix using field '%s'\n", geo_name)
 			H.prime <- compute.overlap(private$fine_domain, domain,
-									   geo.name.D = private$fine_domain_geo_name, geo.name.G = geo_name)
+				geo.name.D = private$fine_domain_geo_name, geo.name.G = geo_name)
 			H <- t(Matrix(apply(H.prime, 2, normalize)))
 
 			logger("Computing basis functions\n")
@@ -77,7 +77,7 @@ STCOSPrep <- R6Class("STCOSPrep",
 				report.period = self$report_period)
 			S.reduced <- self$basis_reduction(S)
 
-			geo <- data.frame(obs = private$L, row = 1:nrow(domain), geo_id = domain[[geo_name]])
+			geo <- data.frame(row = 1:nrow(domain), geo_id = domain[[geo_name]])
 			list(H = H, S = S, S.reduced = S.reduced, geo = geo)
 		},
 		get_Z = function()
@@ -126,7 +126,7 @@ STCOSPrep <- R6Class("STCOSPrep",
 		},
 		get_S = function()
 		{
-			r <- basis$get_dim()
+			r <- private$basis$get_dim()
 			S <- Matrix(0, 0, r)
 			L <- private$L
 			cnt <- 0
@@ -158,6 +158,10 @@ STCOSPrep <- R6Class("STCOSPrep",
 		{
 			stopifnot(is.function(f))
 			self$basis_reduction <- f
+		},
+		get_basis = function()
+		{
+			return(private$basis)
 		},
 		get_Kinv = function(times, X = NULL, autoreg = TRUE)
 		{
@@ -243,7 +247,7 @@ STCOSPrep <- R6Class("STCOSPrep",
 # STCOSPrep$set("public", "get_S", get_S)
 # STCOSPrep$set("public", "get_reduced_S", get_reduced_S)
 # STCOSPrep$set("public", "get_geo", get_geo)
-# STCOSPrep$set("public", "get_Cinv", get_Cinv)
+# STCOSPrep$set("public", "get_Kinv", get_Kinv)
 # STCOSPrep$set("public", "add_obs", add_obs)
 # STCOSPrep$set("public", "domain2model", domain2model)
 # STCOSPrep$set("public", "set_basis_reduction", set_basis_reduction)

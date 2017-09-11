@@ -18,6 +18,9 @@ covVAR1 <- function(A, Sigma, lag_max)
 	eig <- eigen(A)
 	V <- eig$vectors
 	lambda <- eig$values
+	if (any(lambda > 1 - 1e-20)) {
+		warning("Unit root detected in covVAR1")
+	}
 	rm(eig)
 	if (isSymmetric(V)) {
 		V.inv <- t(V)
