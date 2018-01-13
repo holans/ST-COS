@@ -230,34 +230,21 @@ load("test.Rdata")
 # We want to be able to link design matrices from model back to other data sources
 # TBD: We should also be able to handle multiple ID columns (e.g. (STATE, COUNTY, TRACT, BLOCK)).
 G <- sp$get_geo()
-
-# Predictions for 2013 geography
-# Based on both MCMC draws for the mean and posterior predictive distribution
-# TBD: We could perhaps make this easier if Gibbs output contained sp, or sp contained Gibbs sampler. Revisit later
-# TBD: The reduction on S is also a little awkward for the user here.
-aiannh.2015 <- st_read("aiannh/cb_2015_us_aiannh_500k.shp")
-dom <- st_transform(aiannh.2015, crs = st_crs(acs5.2013))
-INT <- st_intersects(dom, acs5.2013)
-dom <- dom[which(unlist(Map(length, INT)) > 0),]
-
 sp$report_period <- 1
-target.out <- sp$domain2model(dom, period = 2015, geo_name = "AFFGEOID")
-target.out$S.reduced <- f(target.out$S)
-E.hat.scaled <- fitted(gibbs.out, target.out$H, target.out$S.reduced)
-Y.pred.scaled <- predict(gibbs.out, target.out$H, target.out$S.reduced)
 
-# Uncenter and unscale the predictions
+# ----- Take a source support as a target support for estimates/predictions -----
+dom <- acs5.2013
+target.out <- sp$get_obs(15)
+
+E.hat.scaled <- fitted(gibbs.out, target.out$H[[1]], target.out$S.reduced[[1]])
 E.hat <- sd(Z) * E.hat.scaled + mean(Z)
-Y.pred <- sd(Z) * Y.pred.scaled + mean(Z)
-
-# dom$SD <- sqrt(dom$DirectVar)
-# acs1.2013$DirectSD <- sqrt(acs1.2013$DirectVar)
-
 dom$E.mean <- colMeans(E.hat)
 dom$E.sd <- apply(E.hat, 2, sd)
 dom$E.lo <- apply(E.hat, 2, quantile, prob = 0.025)
 dom$E.hi <- apply(E.hat, 2, quantile, prob = 0.975)
 
+Y.pred.scaled <- predict(gibbs.out, target.out$H[[1]], target.out$S.reduced[[1]])
+Y.pred <- sd(Z) * Y.pred.scaled + mean(Z)
 dom$PP.mean <- colMeans(Y.pred)
 dom$PP.sd <- apply(Y.pred, 2, sd)
 dom$PP.lo <- apply(Y.pred, 2, quantile, prob = 0.025)
@@ -265,9 +252,29 @@ dom$PP.hi <- apply(Y.pred, 2, quantile, prob = 0.975)
 
 plot(dom[,c("E.mean")])
 plot(dom[,c("E.sd")])
-plot(acs1.2013[,c("DirectEst")])
-plot(acs1.2013[,c("DirectSD")])
 
-plot(dom[,c("PP.mean","PP.sd")])
-plot(acs1.2013[,c("DirectEst","DirectSD")])
+# ----- Take a new target support for estimates/predictions -----
+# Take only the regions relevant to the study area
+aiannh.2015 <- st_read("~/Documents/simulations/ST-COS/aiannh/merged/aiannh_acs_5yr2015.shp")
+dom <- st_transform(aiannh.2015, crs = st_crs(acs5.2013))
+INT <- st_intersects(dom, acs5.2013)
+dom <- dom[which(unlist(Map(length, INT)) > 0),]
 
+target.out <- sp$domain2model(dom, period = 2011:2015, geo_name = "GEO_ID")
+
+E.hat.scaled <- fitted(gibbs.out, target.out$H, target.out$S.reduced)
+E.hat <- sd(Z) * E.hat.scaled + mean(Z)
+dom$E.mean <- colMeans(E.hat)
+dom$E.sd <- apply(E.hat, 2, sd)
+dom$E.lo <- apply(E.hat, 2, quantile, prob = 0.025)
+dom$E.hi <- apply(E.hat, 2, quantile, prob = 0.975)
+
+Y.pred.scaled <- predict(gibbs.out, target.out$H, target.out$S.reduced)
+Y.pred <- sd(Z) * Y.pred.scaled + mean(Z)
+dom$PP.mean <- colMeans(Y.pred)
+dom$PP.sd <- apply(Y.pred, 2, sd)
+dom$PP.lo <- apply(Y.pred, 2, quantile, prob = 0.025)
+dom$PP.hi <- apply(Y.pred, 2, quantile, prob = 0.975)
+
+plot(dom[,c("E.mean")])
+plot(dom[,c("E.sd")])
