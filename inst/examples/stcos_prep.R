@@ -141,7 +141,7 @@ if (FALSE) {
 	S.reduced <- sp$get_reduced_S()
 }
 
-var.type <- "rw"
+var.type <- "ind"
 if (var.type == "var") {
 	# Do a spatial-only basis expansion of fine-domain, and use this as the
 	# design matrix to project away from
@@ -157,6 +157,11 @@ if (var.type == "var") {
 } else {
 	stop("Invalid var.type")
 }
+
+# Test to make sure we can retrieve specific obs. With these,
+# we can easily compute fits and preds on source supports after MCMC
+out <- sp$get_obs()
+out <- sp$get_obs(1:3)
 
 # ----- Apply Gibbs sampler using MLE as initial value -----
 

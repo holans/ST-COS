@@ -59,6 +59,17 @@ STCOSPrep <- R6Class("STCOSPrep",
 
 			logger("Finished adding observed space-time domain\n")
 		},
+		get_obs = function(idx = 1:private$L)
+		{
+			Z <- private$Z_list[idx]
+			V <- private$V_list[idx]
+			H <- private$H_list[idx]
+			S <- private$S_list[idx]
+			geo <- private$geo_list[idx]
+			S.reduced <- lapply(S, self$basis_reduction)
+
+			list(Z = Z, V = V, H = H, S = S, geo = geo, S.reduced = S.reduced)
+		},
 		domain2model = function(domain, period, geo_name)
 		{
 			## Check the argument types
