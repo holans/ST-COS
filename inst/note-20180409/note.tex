@@ -23,8 +23,8 @@ Center for Statistical Research and Methodology, U.S. Census Bureau
 \label{sec:intro}
 We are developing simulation to validate the R implementation of the STCOS model proposed in \citet{BradleyEtAl2016-STAT}. Some initial work was presented in \citet{JSM2017-STCOS} using real ACS data; here the estimates for the source supports matched very well between the model and direct estimates, but the estimates on congressional districts did not match very well. It was not clear if the model-based estimates were problematic or not, as the direct estimates are also attempting to describe an unknown quantity. Now we are looking to generate microdata, where the truth is completely known, and compare model-based results to that. In this document, we will record details for such a proposed simulation.
 
-\section{Simulation}
-\label{sec:sim}
+\section{Preparing to Run the Simulation}
+\label{sec:sim-prep}
 
 \begin{enumerate}
 \item The fine-level support to be counties (as defined in 2015) for the state of Pennslyvania.
@@ -44,27 +44,66 @@ TBD: make some pictures.
 
 \item We use the 2016 Planning Database to get realistic means and MOEs for Median Household Income at the block-group level. We also get realistic counts of housing units at the block-group level. The three relevant variables are: \code{Med\_HHD}, \code{Med\_HHD\_MOE}, and \code{Tot\_Housing\_Units\_CEN\_2010}.
 
-\item We generate microdata for each block group in the following way. Let $i = 1, \ldots, n_\text{BG}$ index the block group. Let the total number of housing units in the $i$th block group, $N_i$, be equal to \code{Tot\_Housing\_Units\_CEN\_2010}. For the $j$th housing unit in the $i$th block group, generate spatial coordinates from uniform distribution on the polygon for the block group. Let $\phi_i$ be equal to \code{Med\_HHD} and $\tau$ be equal to \code{Med\_HHD\_MOE / 1.645}. These quantities will not change in the simulation, but for each repetition we will redraw $y_{ij}$, the log(Median Household Income) for the $j$th household within the $i$th block group. We first assume that the Median Household Incomes observed in the Planning Database are log-normally distributed 
+\item \label{step:means} We generate microdata for each block group in the following way. Let $i = 1, \ldots, n_\text{BG}$ index the block group. Let the total number of housing units in the $i$th block group, $N_i$, be equal to \code{Tot\_Housing\_Units\_CEN\_2010}. For the $j$th housing unit in the $i$th block group, generate spatial coordinates from uniform distribution on the polygon for the block group. Let $m_i$ be \code{Med\_HHD} and $s_i$ be \code{Med\_HHD\_MOE / 1.645}. These quantities will not change in the simulation, but for each repetition we will redraw $y_{ij}$, the log(Median Household Income) for the $j$th household within the $i$th block group. We first assume that Median Household Incomes $e^{y_{ij}}$ are log-normally distributed with first moment $m_i$ and second central moment $s_i^2$. Then we have that $y_{ij} \iid \text{N}(\phi_i, \tau_i^2)$, for $j = 1, \ldots, N_i$, with
+%
+\begin{align*}
+\phi_i = \log(m_i) - \tau_i^2 / 2
+\quad \text{and} \quad
+\tau_i^2 = \log(1 + s_i^2 / m_i^2).
+\end{align*}
+%
+Here we are using the calculation in \url{https://en.wikipedia.org/wiki/Log-normal_distribution#Notation}.
 
-\sim \text{N}(\phi_i, \tau^2)$
+\item We define source supports, which are equivalent in geography, to the fine-level support for the following:
+%
+\begin{enumerate*}
+\item[a.] 1-year lookback for 2005, 2006, \ldots, 2015.
+\item[b.] 3-year lookback for 2007, 2008, \ldots, 2015.
+\item[c.] 5-year lookback for 2009, 2010, \ldots, 2015.
+\end{enumerate*}
+%
+Using these supports (and not yet requiring observed data), we compute the overlap matrix $\vec{H}$ and the basis decomposition matrix $\vec{S}$. We apply PCA to $\vec{S}$ and keep a number of dimensions corresponding to 75\% of the variability. We also compute the fixed part $\vec{K}_{-1}$ of the spatio-temporal random effects' precision matrix.
+\end{enumerate}
 
-var.normal <- log(1 + sim.popn$sd_y^2 / sim.popn$mean_y^2)
-mean.normal <- log(sim.popn$mean_y) - 1/2 * var.normal
-sim.popn$y <- rnorm(nrow(sim.popn), mean.normal, sqrt(var.normal))
+Note that in a given simulation rep, the microdata is assumed to be fixed over time. However, a new sample of this data is taken each year, in a manner that will be described in the next section. This is how we attempt to create a situation with temporal dependence.
 
 
+\section{Within a Simulation Rep}
+\label{sec:sim-rep}
+
+\begin{enumerate}
+\item We first generate microdata $y_{ij} \iid \text{N}(\phi_i, \tau_i^2)$, for $j = 1, \ldots, N_i$ as specified in Step \ref{step:means} above.
+
+\item The microdata is ``spatially joined'' to each of the five target supports, and the true population means are computed in each area of each target support.
+
+\item Now we compute direct estimates and variances, $Z^{(\ell)}_t(A)$ and $\sigma^2_{t\ell}(A)$, for use with the STCOS model. We assume that no estimates are suppressed. For each year $t$ and each county $A$, we take a simple random sample (with replacement) $\mathcal{S}_t(A)$ of 0.5\% of the population units. 
+%
+\begin{enumerate*}
+\item[a.] For the 1-year lookback, we take $Z^{(1)}_t(A)$ and $\sigma^2_{t,1}(A)$ to be sample means and variances of the units in $\mathcal{S}_t(A)$.
+\item[b.] For the 3-year lookback, we take $Z^{(3)}_t(A)$ and $\sigma^2_{t,3}(A)$ to be sample means and variances of the units in $\bigcup_{j=0}^2 \mathcal{S}_{t-j}(A)$.
+\item[c.] For the 5-year lookback, we take $Z^{(5)}_t(A)$ and $\sigma^2_{t,5}(A)$ to be sample means and variances of the units in $\bigcup_{j=0}^4 \mathcal{S}_{t-j}(A)$.
+\end{enumerate*}
+%
+TBD: Make sure these are reasonable design-based estimators.
+
+\item Now we have all quantities needed to fit the STCOS model. We first construct the vector $\vec{Z}$ of all area-level direct estimates and the vector $\vec{V}$ of all area-level direct variance estimates. We standardize the $\vec{Z}$ by subtracting its mean then dividing by its standard deviation; $\vec{V}$ is then adjusted accordingly. We then compute the MLE and use it as a starting value for the MCMC.
+
+\item Using the draws from MCMC, we estimate the posterior mean for each area in the five target-level supports. We may then compare the (known) area-level means from the target supports with the model-based estimates from the MCMC.
 
 \end{enumerate}
 
+\bibliographystyle{plainnat}
+\bibliography{references}
+%\input{references.bbl}
 
-
-\appendix
 \clearpage
 
-\section{R Code Copied Over}
+\appendix
+
+\section{R Code}
 \label{sec:code}
 
-\begin{footnotesize}
+\begin{scriptsize}
 \begin{verbatim}
 library(fields)
 library(ggplot2)
@@ -265,7 +304,6 @@ plot(dom.fine[,1])
 plot(cb_2016_us_cd115[,1], col = "NA", add = TRUE, lwd = 2, lty = 2)
 plot(cb_2016_us_cd115[,4])
 
-# See https://gis.stackexchange.com/questions/225157/generate-rectangular-fishnet-or-vector-grid-cells-shapefile-in-r/243585
 # Remove squares that intersect with the outside of the state
 # Also remove Erie County (049) because much of it is water
 state.grid <- st_make_grid(extract(dom.fine), n = c(gridn, gridn), what = 'polygons') %>%
@@ -283,7 +321,6 @@ state.grid <- state.grid[-idx.drop,]
 plot(dom.fine[,1])
 plot(state.grid[,1], col = NA, add = TRUE)
 
-# See https://gis.stackexchange.com/questions/225157/generate-rectangular-fishnet-or-vector-grid-cells-shapefile-in-r/243585
 # Remove squares that intersect with the outside of the state
 # Also remove Erie County (049) because much of it is water
 state.grid.finer <- st_make_grid(extract(dom.fine), n = c(gridn*2, gridn*2), what = 'polygons') %>%
@@ -301,7 +338,6 @@ state.grid.finer <- state.grid.finer[-idx.drop,]
 plot(dom.fine[,1])
 plot(state.grid.finer[,1], col = NA, add = TRUE)
 
-# See https://gis.stackexchange.com/questions/225157/generate-rectangular-fishnet-or-vector-grid-cells-shapefile-in-r/243585
 # Remove squares that intersect with the outside of the state
 # Also remove Erie County (049) because much of it is water
 state.grid.coarser <- st_make_grid(extract(dom.fine), n = c(gridn/2, gridn/2), what = 'polygons') %>%
@@ -635,11 +671,6 @@ plot(totals5_sf$y_bar, totals5_sf$E_hat); abline(c(0,1))
 
 save.image("results.Rdata")
 \end{verbatim}
-\end{footnotesize}
-
-
-\bibliographystyle{plainnat}
-\bibliography{references}
-%\input{references.bbl}
+\end{scriptsize}
 
 \end{document}
