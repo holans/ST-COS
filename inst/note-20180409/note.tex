@@ -76,15 +76,43 @@ Note that in a given simulation rep, the microdata is assumed to be fixed over t
 
 \item The microdata is ``spatially joined'' to each of the five target supports, and the true population means are computed in each area of each target support.
 
-\item Now we compute direct estimates and variances, $Z^{(\ell)}_t(A)$ and $\sigma^2_{t\ell}(A)$, for use with the STCOS model. We assume that no estimates are suppressed. For each year $t$ and each county $A$, we take a simple random sample (with replacement) $\mathcal{S}_t(A)$ of 0.5\% of the population units. 
+\item Now we compute direct estimates and variances, $Z^{(\ell)}_t(A)$ and $\sigma^2_{t\ell}(A)$, for use with the STCOS model. We assume that no estimates are suppressed. For each year $t$ and each county $A$, we take a simple random sample with replacement (SRSWR) of 0.5\% of the population units 
+
+For the remainder of this discussion, let us focus on one particular area $A$ so that we may suppress it from the notation. Suppose there are $N$ units in the area labeled $\{ 1, \ldots, N\}$. Each unit $i \in \{ 1, \ldots, N)\}$ has variable of interest as $y_{i}$. Let $n = 0.005 N$ denote the sample size taken at each time $t$. Let $\vec{w}^{(t)} = (w_1^{(t)}, \ldots, w_N^{(t)})$ denote that multiplicities of each unit which have been included in the sample for year $t$. To estimate each population mean $\bar{Y}$, we use the sample mean
 %
-\begin{enumerate*}
-\item[a.] For the 1-year lookback, we take $Z^{(1)}_t(A)$ and $\sigma^2_{t,1}(A)$ to be sample means and variances of the units in $\mathcal{S}_t(A)$.
-\item[b.] For the 3-year lookback, we take $Z^{(3)}_t(A)$ and $\sigma^2_{t,3}(A)$ to be sample means and variances of the units in $\bigcup_{j=0}^2 \mathcal{S}_{t-j}(A)$.
-\item[c.] For the 5-year lookback, we take $Z^{(5)}_t(A)$ and $\sigma^2_{t,5}(A)$ to be sample means and variances of the units in $\bigcup_{j=0}^4 \mathcal{S}_{t-j}(A)$.
-\end{enumerate*}
+\begin{align}
+\bar{y}^{(t)} = \frac{1}{n}\sum_{i=1}^N w_i^{(t)} y_i,
+\label{eqn:direct-est}
+\end{align}
 %
-TBD: Make sure these are reasonable design-based estimators.
+and to estimate the variance of $\bar{y}^{(t)}$ we use
+%
+\begin{align}
+\hat{V}(\bar{y}^{(t)}) = \frac{1}{n(n-1)} \sum_{i=1}^N w_i^{(t)} (y_i - \bar{y}^{(t)})^2.
+\label{eqn:direct-var}
+\end{align}
+%
+Using the fact that $\vec{w}^{(t)} \sim \text{Multinomial}_N(n, 1/N)$ under SRSWR, we can show that
+%
+\begin{align*}
+&\E(\bar{y}^{(t)}) = \bar{Y}, \\
+&\Var(\bar{y}^{(t)}) = \frac{1}{n} \left[ \frac{1}{N} \sum_{i=1}^N y_i^2 - \bar{Y}^2 \right], \\
+&\E( \hat{V}(\bar{y}^{(t)}) ) = \Var(\bar{y}^{(t)}).
+\end{align*}
+%
+Therefore, we take our 1-year period estimates $Z^{(1)}_t(A)$ and $\sigma^2_{t,1}(A)$ to be \eqref{eqn:direct-est} and \eqref{eqn:direct-var} respectively. For 3-year estimates, we take $Z^{(3)}_t(A)$ and $\sigma^2_{t,3}(A)$ to be
+%
+\begin{align*}
+\bar{y}^{(t,3)} = \frac{1}{3} \sum_{\ell=0}^2 \bar{y}^{(t-\ell)}, \quad \text{and} \quad
+\hat{V}(\bar{y}^{(t,3)}) = \frac{1}{3} \sum_{\ell=0}^2 \hat{V}(\bar{y}^{(t-\ell)}),
+\end{align*}
+%
+respectively; we can show that $\E(\bar{y}^{(t,3)}) = \bar{Y}$ and $\E(\hat{V}(\bar{y}^{(t,3)})) = \Var(\bar{y}^{(t,3)})$. Similarly, we take 3-year estimates $Z^{(5)}_t(A)$ and $\sigma^2_{t,5}(A)$ to be
+%
+\begin{align*}
+\bar{y}^{(t,5)} = \frac{1}{5} \sum_{\ell=0}^4 \bar{y}^{(t-\ell)}, \quad \text{and} \quad
+\hat{V}(\bar{y}^{(t,5)}) = \frac{1}{5} \sum_{\ell=0}^4 \hat{V}(\bar{y}^{(t-\ell)}).
+\end{align*}
 
 \item Now we have all quantities needed to fit the STCOS model. We first construct the vector $\vec{Z}$ of all area-level direct estimates and the vector $\vec{V}$ of all area-level direct variance estimates. We standardize the $\vec{Z}$ by subtracting its mean then dividing by its standard deviation; $\vec{V}$ is then adjusted accordingly. We then compute the MLE and use it as a starting value for the MCMC.
 
