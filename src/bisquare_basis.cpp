@@ -71,10 +71,10 @@ arma::sp_mat compute_basis_spt(const arma::mat& X, const arma::mat& cc, double w
 			double norm2_t = dt*dt;
 
 			if (norm2_s <= w2_s && norm2_t <= w2_t) {
-				double root_dist = 1 - norm2_s / w2_s - norm2_t / w2_t;
+				double root_dist = 2 - norm2_s / w2_s - norm2_t / w2_t;
 				ind_row.push_back(i);
 				ind_col.push_back(j);
-				vals.push_back(root_dist * root_dist);
+				vals.push_back(root_dist * root_dist / 4);
 			}
 		}
 	}

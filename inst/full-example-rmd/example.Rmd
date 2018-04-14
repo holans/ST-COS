@@ -1,5 +1,6 @@
 ---
 title: "A Full Example with the stcos Package"
+author: Andrew Raim
 output: html_document
 ---
 
@@ -13,6 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 library(sf)
+library(dplyr)
 ```
 
 For our fine-level domain, we will use counties in PA. We will need to get a shapefile with the county boundaries.
@@ -22,74 +24,92 @@ For our fine-level domain, we will use counties in PA. We will need to get a sha
 3. Unzip the downloaded file.
 
 ```{r}
-pa_counties <- sf::st_read("C:/Users/raim0001/Downloads/County_Boundary.shp")
-head(pa_counties)
-plot(pa_counties[,"COUNTY_NAM"])
+dom.fine <- st_read("C:/Users/raim0001/Downloads/County_Boundary.shp")
+head(dom.fine)
+plot(dom.fine[,1], col = NA, main = "PA Counties")
 ```
 
 Generate some fake direct estimates. Use the same idea as our simulation, but don't worry about microdata or making it too realistic.
+
+``` {r}
+year.levels <- 2010:2015
+
+mean.counties <- rnorm(nrow(dom.fine), mean = 100, sd = 10)
+var.counties <- rnorm(nrow(dom.fine), mean = 10, sd = 1)
+
+source.supps.1yr <- list()
+for (j in 1:length(year.levels)) {
+	year <- year.levels[j]
+	supp <- dom.fine
+	supp$DirectEst <- rnorm(nrow(dom.fine), 100,  10)
+	supp$DirectVar <- 1
+	source.supps.1yr[[as.character(year)]] <- supp
+}
+
+source.supps.3yr <- list()
+for (j in 1:length(year.levels)) {
+	if (j < 3) next
+	year <- year.levels[j]
+	supp <- dom.fine
+	supp$DirectEst <- 
+		source.supps.1yr[[as.character(year-2)]]$DirectEst / 3 +
+		source.supps.1yr[[as.character(year-1)]]$DirectEst / 3 +
+		source.supps.1yr[[as.character(year)]]$DirectEst / 3
+	supp$DirectVar <- 
+		source.supps.1yr[[as.character(year-2)]]$DirectVar / 3 +
+		source.supps.1yr[[as.character(year-1)]]$DirectVar / 3 +
+		source.supps.1yr[[as.character(year)]]$DirectVar / 3
+	source.supps.3yr[[as.character(year)]] <- supp
+}
+
+source.supps.5yr <- list()
+for (j in 1:length(year.levels)) {
+	if (j < 5) next
+	year <- year.levels[j]
+	supp <- dom.fine
+	supp$DirectEst <- 
+		source.supps.1yr[[as.character(year-4)]]$DirectEst / 5 +
+		source.supps.1yr[[as.character(year-3)]]$DirectEst / 5 +
+		source.supps.1yr[[as.character(year-2)]]$DirectEst / 5 +
+		source.supps.1yr[[as.character(year-1)]]$DirectEst / 5 +
+		source.supps.1yr[[as.character(year)]]$DirectEst / 5
+	supp$DirectVar <- 
+		source.supps.1yr[[as.character(year-4)]]$DirectVar / 5 +
+		source.supps.1yr[[as.character(year-3)]]$DirectVar / 5 +
+		source.supps.1yr[[as.character(year-2)]]$DirectVar / 5 +
+		source.supps.1yr[[as.character(year-1)]]$DirectVar / 5 +
+		source.supps.1yr[[as.character(year)]]$DirectVar / 5
+	source.supps.5yr[[as.character(year)]] <- supp
+}
+```
 
 Make up a fake target support using a grid.
 ```{r}
 # See https://gis.stackexchange.com/questions/225157/generate-rectangular-fishnet-or-vector-grid-cells-shapefile-in-r/243585
 # Remove squares that intersect with the outside of the state
-# Also remove Erie County (049) because much of it is water
-state.grid <- st_make_grid(extract(dom.fine), n = c(gridn, gridn), what = 'polygons') %>%
+gridn <- 6
+dom.target <- st_make_grid(dom.fine, n = c(gridn, gridn), what = 'polygons') %>%
 	st_sf('geometry' = ., data.frame('GEO_ID' = 1:length(.))) %>%
-	st_transform(st_crs(dom.fine))
-d1 <- state.grid %>%
-	st_join(county_acs_5yr2015) %>%
-	filter(STATE != '42' | COUNTY == '049' | is.na(COUNTY)) %>%
-	group_by(GEO_ID.x) %>%
-	summarize(count = length(GEO_ID.x)) %>%
-	mutate(GEO_ID = GEO_ID.x) %>%
-	select(GEO_ID, count)
-idx.drop <- which(state.grid$GEO_ID %in% d1$GEO_ID)
-state.grid <- state.grid[-idx.drop,]
-plot(dom.fine[,1])
-plot(state.grid[,1], col = NA, add = TRUE)
+	st_transform(st_crs(dom.fine)) %>%
+	filter(!(GEO_ID %in% c(6,12,18,24,30,31:36)))
+plot(dom.fine[,"COUNTY_NAM"])
+plot(dom.target[,1], col = NA, add = TRUE)
 ```
 
 # Preparing the Model
 
-```{r, eval=FALSE}
+```{r}
+library(fields)
 library(stcos)
 
-# Fine-level support comes from ACS 5-year estimates for 2015
-dom.fine <- st_read("shp/county_acs_5yr2015.shp")
-
-# ACS 1-year source supports 
-acs1.2005 <- st_read("shp/county_acs_1yr2005.shp")
-acs1.2006 <- st_read("shp/county_acs_1yr2006.shp")
-...
-acs1.2015 <- st_read("shp/county_acs_1yr2015.shp")
-
-# ACS 3-year source supports
-acs3.2007 <- st_read("shp/county_acs_3yr2007.shp")
-acs3.2008 <- st_read("shp/county_acs_3yr2008.shp")
-...
-acs3.2013 <- st_read("shp/county_acs_3yr2013.shp")
-
-# ACS 5-year source supports
-acs5.2009 <- st_read("shp/county_acs_5yr2009.shp")
-acs5.2010 <- st_read("shp/county_acs_5yr2010.shp")
-...
-acs5.2015 <- st_read("shp/county_acs_5yr2015.shp")
-```
-
-```{r, eval=FALSE}
-library(fields)
-
 # Spatial knots are selected via space-filling design
-u <- st_sample(dom.fine, size = 5000)
+u <- st_sample(dom.fine, size = 2000)
 M <- matrix(unlist(u), length(u), 2, byrow = TRUE)
-out <- cover.design(M, 500)
+out <- cover.design(M, 100)
 knots.sp <- out$design
 
 # Temporal knots are selected to be evenly spaced
-knots.t <- c(2005, 2005.5, 2006, 2006.5, 2007, 2007.5, 2008, 2008.5,
-    2009, 2009.5, 2010, 2010.5, 2011, 2011.5, 2012, 2012.5, 2013, 2013.5,
-    2014, 2014.5, 2015)
+knots.t <- seq(2010, 2015, by = 0.5)
 
 # Combined spatio-temporal knots
 knots <- merge(knots.sp, knots.t)
@@ -99,23 +119,42 @@ names(knots) <- c("x", "y", "t")
 basis <- SpaceTimeBisquareBasis$new(knots[,1], knots[,2], knots[,3], w.s = 1, w.t = 1)
 ```
 
-```{r, eval=FALSE}
-sp <- STCOSPrep$new(fine_domain = dom.fine, fine_domain_geo_name = "GEO_ID",
-    basis = basis, basis_mc_reps = 500)
-sp$add_obs(acs1.2015, period = 2015, estimate_name = "DirectEst",
-    variance_name = "DirectVar", geo_name = "GEO_ID")
-sp$add_obs(acs3.2013, period = 2011:2013, estimate_name = "DirectEst",
-    variance_name = "DirectVar", geo_name = "GEO_ID")
-sp$add_obs(acs5.2013, period = 2009:2013, estimate_name = "DirectEst",
-    variance_name = "DirectVar", geo_name = "GEO_ID")
-...
+```{r}
+sp <- STCOSPrep$new(fine_domain = dom.fine, fine_domain_geo_name = "FIPS_ID",
+    basis = basis, basis_mc_reps = 25)
+
+for (j in 1:length(year.levels)) {
+	year <- year.levels[j]
+	sp$add_obs(source.supps.1yr[[as.character(year)]], period = year,
+		estimate_name = "DirectEst", variance_name = "DirectVar",
+		geo_name = "FIPS_ID")
+}
+
+for (j in 1:length(year.levels)) {
+	if (j < 3) next
+	year <- year.levels[j]
+	sp$add_obs(source.supps.3yr[[as.character(year)]], period = seq(year-2, year),
+		estimate_name = "DirectEst", variance_name = "DirectVar",
+		geo_name = "FIPS_ID")
+}
+
+for (j in 1:length(year.levels)) {
+	if (j < 5) next
+	year <- year.levels[j]
+	sp$add_obs(source.supps.5yr[[as.character(year)]], period = seq(year-4, year),
+		estimate_name = "DirectEst", variance_name = "DirectVar",
+		geo_name = "FIPS_ID")
+}
+```
+
+```{r}
 Z <- sp$get_Z()
 V <- sp$get_V()
 H <- sp$get_H()
 S <- sp$get_S()
 ```
 
-```{r, eval=FALSE}
+```{r}
 eig <- eigen(t(S) %*% S)
 rho <- eig$values
 
@@ -127,25 +166,29 @@ sp$set_basis_reduction(f)
 S.reduced <- sp$get_reduced_S()
 ```
 
-```{r, eval=FALSE}
-# Random Walk
-K.inv <- sp$get_Kinv(2005:2015)
-
-# Spatial-only
-K.inv <- sp$get_Kinv(2005:2015, autoreg = FALSE)
-
-# Independence
-K.inv <- diag(x = 1, nrow = ncol(S.reduced))
+```{r}
+if (FALSE) {
+	# Random Walk
+	K.inv <- sp$get_Kinv(2005:2015)
+} else if (FALSE) {
+	# Spatial-only
+	K.inv <- sp$get_Kinv(2005:2015, autoreg = FALSE)
+} else if (TRUE) {
+	# Independence
+	K.inv <- diag(x = 1, nrow = ncol(S.reduced))
+}
 ```
 
 # Fitting the Model
 
-```{r, eval=FALSE}
+```{r}
 # Std'ize before MCMC
 D <- Diagonal(n = length(Z), x = 1/sd(Z))
 Z.scaled <- (Z - mean(Z)) / sd(Z)
 V.scaled <- V / var(Z)
+```
 
+```{r, eval=FALSE}
 # Use MLE as initial value for MCMC
 mle.out <- mle.stcos(Z.scaled, S.reduced, V.scaled, H, init = list(sig2xi = 1))
 init <- list(
@@ -153,40 +196,95 @@ init <- list(
     mu_B = mle.out$mu.hat,
     eta = mle.out$eta.hat
 )
+```
 
+```{r}
 # Gibbs Sampler
-gibbs.out <- gibbs.stcos.raw(Z.scaled, S.reduced, V.scaled, K.inv, H, R = 10000,
-    report.period = 100, burn = 1000, thin = 10, init = init)
+gibbs.out <- gibbs.stcos.raw(Z.scaled, S.reduced, V.scaled, K.inv, H, R = 5000,
+    report.period = 1000, burn = 500, thin = 10, init = init)
+print(gibbs.out)
+```
+
+```{r}
+library(coda)
+
+plot(sig2mu.mcmc <- mcmc(gibbs.out$sig2mu.hist))
+plot(sig2xi.mcmc <- mcmc(gibbs.out$sig2xi.hist))
+plot(sig2K.mcmc <- mcmc(gibbs.out$sig2K.hist))
 ```
 
 # Producing Results
 
-```{r, eval=FALSE}
-# Load a target support and transform to fine-level support's projection
-aiannh.2015 <- st_read("shp/cb_2015_us_aiannh_500k.shp")
-dom <- st_transform(aiannh.2015, crs = st_crs(dom.fine))
-
+```{r}
 # Compute H and S matrices
-target.out <- sp$domain2model(dom, period = 2015, geo_name = "AFFGEOID")
+target.out <- sp$domain2model(dom.target, period = 2015, geo_name = "GEO_ID")
 
 # Posterior distribution for E(Y)
 E.hat.scaled <- fitted(gibbs.out, target.out$H, target.out$S.reduced)
-E.hat <- sd(Z) * E.hat.scaled + mean(Z)             # Uncenter and unscale
-dom$E.mean <- colMeans(E.hat)                       # Point estimates
-dom$E.sd <- apply(E.hat, 2, sd)                     # SDs
-dom$E.lo <- apply(E.hat, 2, quantile, prob = 0.025) # Credible interval lo
-dom$E.hi <- apply(E.hat, 2, quantile, prob = 0.975) # Credible interval hi
+E.hat <- sd(Z) * E.hat.scaled + mean(Z)                    # Uncenter and unscale
+dom.target$E.mean <- colMeans(E.hat)                       # Point estimates
+dom.target$E.sd <- apply(E.hat, 2, sd)                     # SDs
+dom.target$E.lo <- apply(E.hat, 2, quantile, prob = 0.025) # Credible interval lo
+dom.target$E.hi <- apply(E.hat, 2, quantile, prob = 0.975) # Credible interval hi
 
 # Posterior predictive distribution of Y
 Y.pred.scaled <- predict(gibbs.out, target.out$H, target.out$S.reduced)
-Y.pred <- sd(Z) * Y.pred.scaled + mean(Z)             # Uncenter and unscale
-dom$PP.mean <- colMeans(Y.pred)                       # Point estimates
-dom$PP.sd <- apply(Y.pred, 2, sd)                     # SDs
-dom$PP.lo <- apply(Y.pred, 2, quantile, prob = 0.025) # Prediction interval lo
-dom$PP.hi <- apply(Y.pred, 2, quantile, prob = 0.975) # Prediction interval hi
+Y.pred <- sd(Z) * Y.pred.scaled + mean(Z)                    # Uncenter and unscale
+dom.target$PP.mean <- colMeans(Y.pred)                       # Point estimates
+dom.target$PP.sd <- apply(Y.pred, 2, sd)                     # SDs
+dom.target$PP.lo <- apply(Y.pred, 2, quantile, prob = 0.025) # Prediction interval lo
+dom.target$PP.hi <- apply(Y.pred, 2, quantile, prob = 0.975) # Prediction interval hi
+```
 
-head(dom)
+```{r}
+head(dom.target)
+```
+
+```{r, eval=FALSE}
+plot(dom.target[,"E.mean"])
+plot(dom.target[,"PP.mean"])
+plot(dom.target[,"E.sd"])
+plot(dom.target[,"PP.sd"])
+```
+
+Plot observed vs. predicted with a particular source support.
+```{r, eval=FALSE}
+d2 <- source.supps.1yr[["2015"]]
+target2.out <- sp$domain2model(d2, period = 2015, geo_name = "FIPS_ID")
+
+E.hat.scaled <- fitted(gibbs.out, target2.out$H, target2.out$S.reduced)
+E.hat <- sd(Z) * E.hat.scaled + mean(Z)            # Uncenter and unscale
+d2$E.mean <- colMeans(E.hat)                       # Point estimates
+d2$E.sd <- apply(E.hat, 2, sd)                     # SDs
+d2$E.lo <- apply(E.hat, 2, quantile, prob = 0.025) # Credible interval lo
+d2$E.hi <- apply(E.hat, 2, quantile, prob = 0.975) # Credible interval hi
+
+plot(d2[,c("DirectEst", "E.mean")])
+
+plot(d2$DirectEst, d2$E.mean)
 ```
 
 # Plotting with ggplot2
 
+``` {r}
+library(ggplot2)
+library(gridExtra)
+
+lim.est <- range(d2$DirectEst, d2$E.mean)
+
+g <- ggplot(d2) +
+	geom_sf(colour = "black", size = 0.05, aes(fill = DirectEst)) +
+	ggtitle("Median Household Income for Coarse Grid") +
+	scale_fill_distiller("DirectEst", palette = "RdYlBu", limits = lim.est) +
+	theme_bw()
+plot(g)
+
+h <- ggplot(d2) +
+	geom_sf(colour = "black", size = 0.05, aes(fill = E.mean)) +
+	ggtitle("Median Household Income for Coarse Grid") +
+	scale_fill_distiller("E.mean", palette = "RdYlBu", limits = lim.est) +
+	theme_bw()
+plot(h)
+
+grid.arrange(g,h)
+```
