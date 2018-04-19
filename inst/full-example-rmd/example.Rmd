@@ -9,6 +9,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 # Introduction
+TBD: Write something here...
 
 # Preparing Your Data
 First we will prepare a small dataset for demonstration purposes. The `stcos` package makes use of the `sf` ("Simple Features") package for shapefile manipulation; the inputs to `stcos` are prepared as `sf` objects.
@@ -295,20 +296,15 @@ library(ggplot2)
 library(gridExtra)
 
 lim.est <- range(d2$DirectEst, d2$E.mean)
-
 g <- ggplot(d2) +
 	geom_sf(colour = "black", size = 0.05, aes(fill = DirectEst)) +
 	ggtitle("Median Household Income for Coarse Grid") +
 	scale_fill_distiller("DirectEst", palette = "RdYlBu", limits = lim.est) +
 	theme_bw()
-plot(g)
-
 h <- ggplot(d2) +
 	geom_sf(colour = "black", size = 0.05, aes(fill = E.mean)) +
 	ggtitle("Median Household Income for Coarse Grid") +
 	scale_fill_distiller("E.mean", palette = "RdYlBu", limits = lim.est) +
 	theme_bw()
-plot(h)
-
 grid.arrange(g,h)
 ```
