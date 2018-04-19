@@ -34,10 +34,11 @@ compute_spt_basis_mc <- function(basis, domain, R, period, report.period = 100)
 		# Request a few more samples than we'll need, to prevent the loop in rArea.
 		P <- rArea(R, domain[j,], blocksize = ceiling(1.2*R))
 
+		# This block is just for debugging, and should be taken out soon
 		if (FALSE) {
 			browser()
-			plot(dom.fine[1,1], col = NA)
-			points(P)
+			plot(dom.fine[,1], col = NA)
+			points(P[,], pch = ".")
 			points(t(P[1,]), pch = 18, col = "red", cex = 3)
 			points(knots, pch = 16, col = "blue", cex = 3)
 
