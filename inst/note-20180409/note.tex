@@ -7,7 +7,7 @@
 \def\blfootnote{\xdef\@thefnmark{}\@footnotetext}
 \makeatother
 
-\title{An STCOS Simulation with Microdata}
+\title{STCOS Simulation Studies}
 %\date{}
 \author{Andrew M. Raim
 \vspace{0.5em} \\
@@ -21,9 +21,37 @@ Center for Statistical Research and Methodology, U.S. Census Bureau
 % ---------------------------------------------------
 \section{Introduction}
 \label{sec:intro}
-We are developing simulation to validate the R implementation of the STCOS model proposed in \citet{BradleyEtAl2016-STAT}. Some initial work was presented in \citet{JSM2017-STCOS} using real ACS data; here the estimates for the source supports matched very well between the model and direct estimates, but the estimates on congressional districts did not match very well. It was not clear if the model-based estimates were problematic or not, as the direct estimates are also attempting to describe an unknown quantity. Now we are looking to generate microdata, where the truth is completely known, and compare model-based results to that. In this document, we will record details for such a proposed simulation.
+We are developing simulation to validate the R implementation of the STCOS model proposed in \citet{BradleyEtAl2016-STAT}. Some initial work was presented in \citet{JSM2017-STCOS} using real ACS data; there, the the model and direct estimates were very close for geography of the source supports, but were not very close for the congressional districts target support. It was not clear if the there was an issue with the software or the methodology, if these kinds of results are to be expected.
 
-\section{Preparing to Run the Simulation}
+We now consider running two simulation studies: the first generates data from the (correctly specified) STCOS model, and the second generates point level microdata which is aggregated to the area level for modeling. The microdata provides an underlying truth which the STCOS model is really trying to capture. In this document, we will record details for these two simulation studies.
+
+\section{Simulation from the STCOS Model}
+This is probably the first thing that comes to mind for a ``simulation''. Here are the steps, at a high level.
+%
+\begin{enumerate}
+\item Fit the ACS data for Pennslyvania counties following the steps in \citet{JSM2017-STCOS}. As in the proceedings paper, we can take 500 spatial knot points and radius $w_s = 1$ for the bisquare basis, and 75\% of the variability for the PCA to reduce the dimension of the resulting design matrix.
+
+\item From the MCMC which was run on the real ACS data, compute the mean of the draws for $\sigma_\mu^2$, $\sigma_\xi^2$, $\sigma_K^2$, and each coordinate of $\vec{\mu}_B$ and $\vec{\eta}$.
+
+\item Now, for $r = 1, \ldots, R$, where $R$ is the number of simulation reps, draw a sample
+%
+\begin{align*}
+\vec{Y}^{(r)} &\sim \text{N}(\vec{H} \vec{\mu}_B + \vec{S} \vec{\eta}, \sigma_\xi^2 \vec{I}), \\
+\vec{Z}^{(r)} &\sim \text{N}(\vec{Y}^{(r)}, \vec{V}),
+\end{align*}
+%
+and run the Gibbs sampler.
+
+\item This results in $R$ sets of draws, from each of which we can compute (say) the average $\vec{\mu}_B^{(r)}$ and $\vec{\eta}^{(r)}$. Suppose $\tilde{\vec{H}}$ and $\tilde{\vec{S}}$ are overlap and design matrices for a given target support. We can compute a point estimate at each area in our target support via $\hat{\vec{E}}^{(r)} = \tilde{\vec{H}} \vec{\mu}_B^{(r)} + \tilde{\vec{S}} \vec{\eta}^{(r)}$.
+
+\item We can now summarize the model fit by comparing the $\hat{\vec{E}}^{(r)}$ to the corresponding true values $\vec{E}$. For example, we could consider a mean-squared error, a measure of variability, or simply produce a scatter plot of $\sum_{r=1}^R \hat{\vec{E}}^{(r)}$ versus $\vec{E}$.
+
+\item Using the above, we can compare several target supports to get a sense of how model performance is affected by geography. For example, we can superimpose grids over Pennslyvania with varying levels of coarseness. From both previous experience and intuition, we believe that model performance will degrade as we make the grid finer.
+\end{enumerate}
+
+\section{Microdata Simulation}
+
+\subsection{Preparing to Run the Simulation}
 \label{sec:sim-prep}
 
 \begin{enumerate}
@@ -68,7 +96,7 @@ Using these supports (and not yet requiring observed data), we compute the overl
 Note that in a given simulation rep, the microdata is assumed to be fixed over time. However, a new sample of this data is taken each year, in a manner that will be described in the next section. This is how we attempt to create a situation with temporal dependence.
 
 
-\section{Within a Simulation Rep}
+\subsection{Within a Simulation Rep}
 \label{sec:sim-rep}
 
 \begin{enumerate}
@@ -128,7 +156,7 @@ respectively; we can show that $\E(\bar{y}^{(t,3)}) = \bar{Y}$ and $\E(\hat{V}(\
 
 \appendix
 
-\section{R Code}
+\section{R Code for Microdata Simulation}
 \label{sec:code}
 
 \begin{scriptsize}
