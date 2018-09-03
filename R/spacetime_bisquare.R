@@ -1,3 +1,12 @@
+#' SpaceTime Bisquare Basis
+#' 
+#' An R6 class for ...
+#'
+#' @export
+#' @docType class
+#' @format An \code{\link{R6Class}} generator object
+#'
+#' @examples
 SpaceTimeBisquareBasis <- R6Class("SpaceTimeBisquareBasis",
 	private = list(
 		r = NULL,

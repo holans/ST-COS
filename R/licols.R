@@ -1,27 +1,33 @@
-# [Xsub,idx]=
-
-# Extract a linearly independent set of columns of a given matrix X
-# Copied from a Matlab forum and ported to R
-# https://www.mathworks.com/matlabcentral/answers/108835-how-to-get-only-linearly-independent-rows-in-a-matrix-or-to-remove-linear-dependency-b-w-rows-in-a-m
-# Input:
-#   X: The given input matrix
-#   tol: A rank estimation tolerance. Default=1e-10
-# Output:
-#   Xsub: The extracted columns of X
-#   idx:  The indices (into X) of the extracted columns
-#
-# Important Note: I get the same result as Jon if I take X to be a full
-# (not sparse) matrix, but it takes a much much longer time to compute
-# the QR decomposition than if X is sparse. The sparse QR in R seems
-# to give different results than the dense or sparse QR in Matlab.
-# Running non-sparse QR on the 32836 x 4750 S matrix takes about 15
-# minutes in R; maybe not much less in Matlab.
-#
-# Another note: The sparse QR algorithm in the matrix package doesn't
-# return the same kind of pivot. It may be a "non-rank-revealing
-# decomposition".
+#' licols
+#'
+#' An R version of a Matlab \code{licols} function given in
+#' \url{https://www.mathworks.com/matlabcentral/answers/108835-how-to-get-only-linearly-independent-rows-in-a-matrix-or-to-remove-linear-dependency-b-w-rows-in-a-m}.
+#' Extract a linearly independent set of columns of a given matrix \code{X}.
+#'
+#' @param X A matrix.
+#' @param tol A tolerance for rank estimation. Default is 1e-10.
+#' @param quiet A boolean; if FALSE, print a warning about computation time if \code{X} is large.
+#'
+#' @return \code{Xsub} contains the extracted columns of \code{X} and \code{idx}
+#' contains the indices (into X) of those columns. The elapsed time is stored in
+#' \code{elapsed.sec}.
+#'
+#' @export
+#'
+#' @examples
 licols <- function(X, tol = 1e-10, quiet = FALSE)
 {
+	# Important Note: I get the same result as Jon if I take X to be a full
+	# (not sparse) matrix, but it takes a much much longer time to compute
+	# the QR decomposition than if X is sparse. The sparse QR in R seems
+	# to give different results than the dense or sparse QR in Matlab.
+	# Running non-sparse QR on the 32836 x 4750 S matrix takes about 15
+	# minutes in R; maybe not much less in Matlab.
+	#
+	# Another note: The sparse QR algorithm in the matrix package doesn't
+	# return the same kind of pivot. It may be a "non-rank-revealing
+	# decomposition".
+
 	stopifnot(class(X) == "matrix")
 	m <- nrow(X)
 	n <- ncol(X)

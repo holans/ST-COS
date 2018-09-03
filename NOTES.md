@@ -45,6 +45,7 @@ AOAS paper and possibly also the Cressie and Wilke book.
 - [ ] Correctness of basis calculation vs Matlab
 - [ ] Computation of `Kinv`
 - [ ] Result of `sptcov` function
+- [ ] MLE computation - ensure eta is treated as random effect (not prior)
 
 # To ask
 - [ ] Should we keep the magic factor of 0.9 in `Q = I - 0.9 countAdj`?

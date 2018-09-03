@@ -1,3 +1,17 @@
+#' Title
+#'
+#' @param prep 
+#' @param R 
+#' @param report.period 
+#' @param burn 
+#' @param thin 
+#' @param hyper 
+#' @param sig2xi.init 
+#'
+#' @return
+#' @export
+#'
+#' @examples
 gibbs.stcos <- function(prep, R, report.period = R+1, burn = 0, thin = 1,
 	hyper = NULL, sig2xi.init = NULL)
 {
@@ -18,6 +32,25 @@ gibbs.stcos <- function(prep, R, report.period = R+1, burn = 0, thin = 1,
 		init = init, hyper = hyper)
 }
 
+#' Title
+#'
+#' @param Z 
+#' @param S 
+#' @param V 
+#' @param K.inv 
+#' @param H 
+#' @param R 
+#' @param report.period 
+#' @param burn 
+#' @param thin 
+#' @param init 
+#' @param fixed 
+#' @param hyper 
+#'
+#' @return
+#' @export
+#'
+#' @examples
 gibbs.stcos.raw <- function(Z, S, V, K.inv, H, R, report.period = R+1,
 	burn = 0, thin = 1, init = NULL, fixed = NULL, hyper = NULL)
 {
@@ -203,6 +236,7 @@ gibbs.stcos.raw <- function(Z, S, V, K.inv, H, R, report.period = R+1,
 	return(ret)
 }
 
+#' @export
 logLik.stcos <- function(object, ...)
 {
 	if (!is.null(object$loglik)) {
@@ -223,6 +257,7 @@ logLik.stcos <- function(object, ...)
 	return(loglik.mcmc)
 }
 
+#' @export
 DIC.stcos <- function(object, ...)
 {
 	if (!is.null(object$dic)) {
@@ -241,11 +276,21 @@ DIC.stcos <- function(object, ...)
 	D.thetabar + 2*(D.bar - D.thetabar)
 }
 
-# TBD: We can compute summaries ourselves and remove dependency on coda
+#' @export
 print.stcos <- function (x, ...)
 {
-	variances.mcmc <- mcmc(cbind(x$sig2mu.hist, x$sig2K.hist, x$sig2xi.hist))
+	# We could compute summaries ourselves and remove dependency on coda ...
+	variances.mcmc <- cbind(x$sig2mu.hist, x$sig2K.hist, x$sig2xi.hist)
 	colnames(variances.mcmc) <- c("sig2mu", "sig2K", "sig2xi")
+	summary.mcmc <- data.frame(
+		apply(variances.mcmc, 2, mean),
+		apply(variances.mcmc, 2, sd),
+		apply(variances.mcmc, 2, quantile, probs = 0.025),
+		apply(variances.mcmc, 2, quantile, probs = 0.25),
+		apply(variances.mcmc, 2, quantile, probs = 0.75),
+		apply(variances.mcmc, 2, quantile, probs = 0.975)
+	)
+	colnames(summary.mcmc) <- c("Mean", "SD", "2.5%", "25%", "75%", "97.5%")
 
 	total.sec <- sum(unlist(x$elapsed.sec))
 	hh <- floor(total.sec / 60^2)
@@ -254,13 +299,14 @@ print.stcos <- function (x, ...)
 
 	printf("Fit for STCOS model\n")
 	printf("--\n")
-	print(summary(variances.mcmc)$statistics)
+	print(summary.mcmc)
 	printf("--\n")
 	printf("Saved %d draws\n", x$R.keep)
 	printf("DIC: %f\n", x$dic)
 	printf("Elapsed time: %02d:%02d:%02d\n", hh, mm, ss)
 }
 
+#' @export
 fitted.stcos <- function (object, H, S, ...)
 {
 	R.keep <- object$R.keep
@@ -274,6 +320,7 @@ fitted.stcos <- function (object, H, S, ...)
 	return(E.mcmc)
 }
 
+#' @export
 predict.stcos <- function (object, H, S, ...)
 {
 	R.keep <- object$R.keep

@@ -1,3 +1,16 @@
+#' Title
+#'
+#' @param Z 
+#' @param S 
+#' @param V 
+#' @param H 
+#' @param init 
+#' @param optim.control 
+#'
+#' @return
+#' @export
+#'
+#' @examples
 mle.stcos <- function(Z, S, V, H, init = NULL,
 	optim.control = list())
 {

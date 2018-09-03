@@ -1,3 +1,12 @@
+#' Spatial Bisquare Basis
+#' 
+#' An R6 class for ...
+#'
+#' @export
+#' @docType class
+#' @format An \code{\link{R6Class}} generator object
+#'
+#' @examples
 SpatialBisquareBasis <- R6Class("SpatialBisquareBasis",
 	private = list(
 		r = NULL,
@@ -17,7 +26,6 @@ SpatialBisquareBasis <- R6Class("SpatialBisquareBasis",
 			# Use type 1 quantile algorithm to match Matlab 
 			G <- dist(private$cutpoints)
 			private$rl <- as.numeric(w * quantile(G[G > 0], prob = 0.05, type = 1))
-			printf("rl = %f\n", private$rl)
 		},
 		get_dim = function() {
 			private$r

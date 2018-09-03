@@ -1,3 +1,12 @@
+#' STCOS Prep
+#' 
+#' An R6 class for ...
+#'
+#' @export
+#' @docType class
+#' @format An \code{\link{R6Class}} generator object
+#'
+#' @examples
 STCOSPrep <- R6Class("STCOSPrep",
 	private = list(
 		fine_domain = NULL,
