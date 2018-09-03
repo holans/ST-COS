@@ -8,7 +8,7 @@ Maintainer: Andrew M. Raim <andrew.raim@gmail.com>
 Description: An R Package for Space-Time Change of Support modeling (TBD). 
 License: GPL (>= 2)
 Imports: R6
-Depends: Rcpp, Matrix, sf, coda, MASS
+Depends: Rcpp, Matrix, sf, MASS
 LinkingTo: Rcpp, RcppArmadillo
 RoxygenNote: 6.1.0
 Encoding: UTF-8

@@ -276,6 +276,7 @@ DIC.stcos <- function(object, ...)
 	D.thetabar + 2*(D.bar - D.thetabar)
 }
 
+#' @method print stcos
 #' @export
 print.stcos <- function (x, ...)
 {
@@ -304,6 +305,8 @@ print.stcos <- function (x, ...)
 	printf("Saved %d draws\n", x$R.keep)
 	printf("DIC: %f\n", x$dic)
 	printf("Elapsed time: %02d:%02d:%02d\n", hh, mm, ss)
+
+	invisible(x)
 }
 
 #' @export

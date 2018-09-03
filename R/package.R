@@ -7,7 +7,7 @@
 #' @import Rcpp
 #' @import Matrix
 #' @importFrom MASS ginv
-#' @importFrom stats dgamma dnorm logLik optim rgamma rnorm runif
+#' @importFrom stats dgamma dnorm logLik optim rgamma rnorm runif quantile sd
 #' @importFrom R6 R6Class
 #' @importFrom Rcpp evalCpp
 NULL
