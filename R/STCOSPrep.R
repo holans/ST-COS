@@ -1,12 +1,100 @@
-#' STCOS Prep
+# The following documentation format was suggested in
+# https://stackoverflow.com/questions/45431845/documenting-r6-classes-and-methods-within-r-package-in-rstudio/45603005#
+
+#' STCOS Preparation
 #' 
-#' An R6 class for ...
+#' An \code{\link{R6Class}} for preparing an STCOS analysis.
+#' 
+#' @section Arguments:
+#' \itemize{
+#' \item \code{fine_domain} An \code{sf} object; the fine-level support for the analysis.
+#' \item \code{fine_domain_geo_name} The name of the field in \code{fine_domain} which represents
+#' a unique geographical ID.
+#' \item \code{basis} An object of type \code{SpaceTimeBisquareBasis}.
+#' \item \code{basis_mc_reps} Number of Monte Carlo reps to use when computing
+#' area-level basis function decomposition.
+#' \item \code{report_period} Gibbs sampler will report progress each time this many
+#' iterations are completed.
+#' \item \code{domain} An \code{sf} object; a source support for the analysis.
+#' \item \code{period} A vector of times from which the estimates were computed. For
+#' example, to indicate 2015 ACS 5-year estimates, use \code{period = 2011:2015}.
+#' \item \code{estimate_name} Name of the field which contains direct estimates.
+#' \item \code{variance_name} Name of the field which contains direct variance estimates.
+#' \item \code{geo_name} Name of the fiend which represents unique geographical ID.
+#' \item \code{idx} A vector of indices.
+#' \item \code{f} A function which performs a dimension reduction.
+#' \item \code{times} A vector of times relevant to the analysis.
+#' \item \code{X} A fixed covariate, if one is available.
+#' \item \code{autoreg} A boolean; if TRUE, assume an autoregressive covariance
+#' structure in time. Otherwise assume independence between times.
+#' }
+#' 
+#' @section Methods:
+#' \itemize{
+#' \item \code{$new} Create a new \code{STCOSPrep} object, which does not yet
+#' contain any source supports.
+#' \item \code{$add_obs} Add a source support.
+#' \item \code{$get_obs} Get a source support(s) which have already been added.
+#' \item \code{$domain2model} Compute \code{H} and \code{S} matrix fragments
+#' for a given source support.
+#' \item \code{$get_Z} Get vector of direct estimates from added source supports.
+#' \item \code{$get_V} Get vector of direct variance estimates from added source
+#' supports.
+#' \item \code{$get_H} Get matrix of overlaps between fine-level support and added
+#' source supports.
+#' \item \code{$get_S} Get design matrix based on basis function decomposition, based
+#' on added source supports.
+#' \item \code{$get_reduced_S} Same as \code{get_S}, except first apply the dimension
+#' reduction function (which is the identity function by default).
+#' \item \code{$get_geo} Get vector of GEO IDs from added source supports.
+#' \item \code{$set_basis_reduction} Set the dimension reduction function to be
+#' applied to \code{S} and related matrices.
+#' \item \code{$get_basis} Get the basis function which has been used to construct
+#' this object.
+#' \item \code{$get_Kinv} Compute the \code{K.inv} matrix.
+#' }
 #'
+#' @name STCOSPrep
+#' 
+#' @examples
+#' \dontrun{
+#' sp <- STCOSPrep$new(dom.fine, "GEO_ID", basis, 500)
+#' 
+#' # Add source support data
+#' sp$add_obs(acs1.2015, 2015, "DirectEst", "DirectVar", "GEO_ID")
+#' ...
+#' sp$add_obs(acs5.2015, 2011:2015, "DirectEst", "DirectVar", "GEO_ID")
+#' 
+#' # Reduce dimension of the design matrix with basis expansion
+#' S <- sp$get_S()
+#' eig <- eigen(t(S) %*% S)
+#' idx.S <- which(cumsum(eig$values) / sum(eig$values) < 0.75)
+#' Tx.S <- t(eig$vectors[idx.S,])
+#' f <- function(S) { S %*% Tx.S }
+#' sp$set_basis_reduction(f)
+#' 
+#' # Get quantities needed for MCMC
+#' S.reduced <- sp$get_reduced_S()
+#' Z <- sp$get_Z()
+#' V <- sp$get_V()
+#' H <- sp$get_H()
+#'
+#' # compute K.inv matrix using Random-Walk method
+#' K.inv <- sp$get_Kinv(2011:2015)
+#' 
+#' # Retrieve some of the source supports
+#' sp$get_obs(idx = c(2,4,7))
+#' 
+#' # Return the basis function object from which sp was constructed
+#' sp$get_basis()
+#' 
+#' # Return the GEO IDs which have been processed so far
+#' sp$get_geo()
+#' }
+NULL
+
 #' @export
 #' @docType class
-#' @format An \code{\link{R6Class}} generator object
-#'
-#' @examples
 STCOSPrep <- R6Class("STCOSPrep",
 	private = list(
 		fine_domain = NULL,

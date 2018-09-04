@@ -29,7 +29,6 @@ SpaceTimeBisquareBasis <- R6Class("SpaceTimeBisquareBasis",
 			# Use type 1 quantile algorithm to match Matlab 
 			G <- dist(private$cutpoints)
 			private$rl <- as.numeric(w.s * quantile(G[G > 0], prob = 0.05, type = 1))
-			printf("rl = %f\n", private$rl)
 		},
 		get_dim = function() {
 			private$r

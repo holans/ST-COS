@@ -1,13 +1,18 @@
-#' Title
+#' MLE for STCOS Model
 #'
-#' @param Z 
-#' @param S 
-#' @param V 
-#' @param H 
-#' @param init 
-#' @param optim.control 
+#' @param Z Vector which represents the outcome; assumed to be direct
+#'        estimates from the survey.
+#' @param S Design matrix for basis decomposition.
+#' @param V Vector which represents direct variance estimates from the survey.
+#' @param H Matrix of overlaps between source and fine-level supports.
+#' @param init A list containing the following initial values for the MCMC:
+#' 	      \code{sig2xi}. If not specified, we select an arbitrary initial
+#' 	      value.
+#' @param optim.control This is passed as the \code{control} argument to
+#'        \code{optim}. Note that the value \code{fnscale} is ignored if
+#'        specified.
 #'
-#' @return
+#' @return A list containing maximum likelihood estimates.
 #' @export
 #'
 #' @examples

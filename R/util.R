@@ -23,17 +23,20 @@ normalize <- function(x)
 	return(x)
 }
 
-# Copied from invgamma package
+# Copied from invgamma package. We may not need this...
 dinvgamma <- function (x, shape, rate, scale = 1/rate, log = FALSE) 
 {
-	if (missing(rate) && !missing(scale)) 
+	if (missing(rate) && !missing(scale)) {
 		rate <- 1/scale
+	}
 	log_f <- dgamma(1/x, shape, rate, log = TRUE) - 2 * log(x)
-	if (log) 
+	if (log) {
 		return(log_f)
+	}
 	exp(log_f)
 }
 
+# Convert an adjacency list into a (sparse) matrix.
 adjList2Matrix <- function(a)
 {
 	n.tuples <- sum(unlist(Map(length, a)))

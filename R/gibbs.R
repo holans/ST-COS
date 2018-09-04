@@ -1,17 +1,45 @@
-#' Title
+#' Gibbs Sampler for STCOS Model
 #'
-#' @param prep 
-#' @param R 
-#' @param report.period 
-#' @param burn 
-#' @param thin 
-#' @param hyper 
-#' @param sig2xi.init 
+#' Run the Gibbs sampling algorithm for the STCOS model. \code{gibbs.stcos}
+#' presents a simplified interface, while \code{gibbs.stcos.raw} allows
+#' all inputs to be specified separately.
 #'
-#' @return
+#' @param Z Vector which represents the outcome; assumed to be direct
+#'        estimates from the survey.
+#' @param S Design matrix for basis decomposition.
+#' @param V Vector which represents direct variance estimates from the survey.
+#' @param K.inv Inverse of the \eqn{K} matrix, which is the covariance of the
+#'        random coefficient \eqn{\eta}
+#' @param H Matrix of overlaps between source and fine-level supports.
+#' @param init A list containing the following initial values for the MCMC:
+#' 	      \code{sig2mu}, \code{sig2xi}, \code{sig2K}, \code{mu_B}, \code{eta},
+#' 	      \code{xi}. Any values which are not specified are set to arbitrary
+#' 	      choices.
+#' @param fixed A list specifying which parameters to keep fixed in the MCMC.
+#'        This can normally be left blank. If elements \code{sig2mu},
+#'        \code{sig2xi}, or \code{sig2K} are specified they should be boolean,
+#'        where TRUE means fixed (i.e. not drawn). If elements \code{mu_B},
+#'        \code{eta}, or \code{xi} are specified, they should each be a vector
+#'        of indicies; the specified indices are to be treated as fixed (i.e.
+#'        not drawn).
+#' @param prep An \code{STCOSprep} object.
+#' @param R Number of MCMC reps.
+#' @param report.period Gibbs sampler will report progress each time this many
+#'        iterations are completed.
+#' @param burn Burn this many of \code{R} the draws, before saving history.
+#' @param thin After burn-ikn period, save one out of every \code{thin} draws.
+#' @param hyper A list containing the following hyperparameter values:
+#' 	      \code{a.sig2mu}, \code{a.sig2K}, \code{a.sig2xi}, \code{b.sig2mu},
+#' 	      \code{b.sig2K}, \code{b.sig2xi}. Any hyperparameters which are not
+#' 	      specified are set to a default value of 2.
+#' @param sig2xi.init An initial value of \code{sig2xi} to use for the MLE, which
+#'        is in turn used to find an initial value for the MCMC sampler.
+#'
+#' @return An \code{stcos} object which contains draws from the sampler.
 #' @export
 #'
 #' @examples
+#' @name gibbs
 gibbs.stcos <- function(prep, R, report.period = R+1, burn = 0, thin = 1,
 	hyper = NULL, sig2xi.init = NULL)
 {
@@ -32,25 +60,8 @@ gibbs.stcos <- function(prep, R, report.period = R+1, burn = 0, thin = 1,
 		init = init, hyper = hyper)
 }
 
-#' Title
-#'
-#' @param Z 
-#' @param S 
-#' @param V 
-#' @param K.inv 
-#' @param H 
-#' @param R 
-#' @param report.period 
-#' @param burn 
-#' @param thin 
-#' @param init 
-#' @param fixed 
-#' @param hyper 
-#'
-#' @return
+#' @name gibbs
 #' @export
-#'
-#' @examples
 gibbs.stcos.raw <- function(Z, S, V, K.inv, H, R, report.period = R+1,
 	burn = 0, thin = 1, init = NULL, fixed = NULL, hyper = NULL)
 {
@@ -257,8 +268,19 @@ logLik.stcos <- function(object, ...)
 	return(loglik.mcmc)
 }
 
+#' Deviance Information Criterion
+#' 
+#' A function to compute the Deviance Information Criterion (DIC) on an
+#' \code{stcos} object.
+#'
+#' @param object A result from the Gibbs sampler.
+#'
+#' @return DIC computed from saved draws
 #' @export
-DIC.stcos <- function(object, ...)
+#'
+#' @examples
+#' @seealso \code{\link{gibbs.stcos}} \code{\link{gibbs.stcos.raw}}
+DIC <- function(object)
 {
 	if (!is.null(object$dic)) {
 		return(object$dic)

@@ -1,5 +1,6 @@
-# Sigma is covariance of error term
-# M is AR(1) matrix
+# Compute the covariance matrix for a VAR(1) process.
+# Sigma is covariance of error term.
+# A is VAR(1) coefficient matrix.
 covVAR1 <- function(A, Sigma, lag_max)
 {
 	A <- as.matrix(A)

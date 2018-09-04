@@ -6,9 +6,8 @@ rArea <- function(n, area, blocksize = n)
 
 	done <- FALSE
 	while (!done) {
-		# The sf package offers a simple way to draw a uniform sample on an area.
-		# However, this is currently slower than the way below.
-
+		## The sf package offers a simple way to draw a uniform sample on an area.
+		## However, this currently seems to be slower than the way below.
 		# u <- st_sample(area, size = blocksize)
 		# if (NROW(u) > 0) {
 		#	M <- matrix(unlist(u), length(u), 2, byrow = TRUE)
