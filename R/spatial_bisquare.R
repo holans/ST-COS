@@ -1,12 +1,44 @@
-#' Spatial Bisquare Basis
+#' Spacial Bisquare Basis
 #' 
-#' An R6 class for ...
+#' An \code{\link{R6Class}} representing the spacial bisquare basis.
+#' 
+#' @section Arguments:
+#' \itemize{
+#' \item \code{cutpoints.x} x-coordinate of knot points.
+#' \item \code{cutpoints.y} y-coordinate of knot points.
+#' \item \code{w} (Original, before transformation) radius.
+#' \item \code{x} Vector of x-coordinates for points on which to evaluate the basis.
+#' \item \code{y} Vector of y-coordinates for points on which to evaluate the basis.
+#' }
+#' 
+#' @section Methods:
+#' \itemize{
+#' \item \code{new} Create a new \code{SpatialBisquareBasis} object.
+#' \item \code{get_dim} Get the number of cutpoints used to construct this basis.
+#' \item \code{get_cutpoints} Get the cutpoints used to construct this basis.
+#' \item \code{get_rl} Get the transformed spatial radius. The transformation is
+#' based on quantiles of distances between knots.
+#' \item \code{get_w} Get the original radius used to construct this
+#' basis. This is transformed before it is applied to account for the geography
+#' being used.
+#' \item \code{compute} Evaluate this basis on specific points.
+#' }
 #'
+#' @name SpatialBisquareBasis
+#' 
+#' @examples
+#' \dontrun{
+#' basis <- SpaceTimeBisquareBasis$new(cutpoints.x, cutpoints.y, w = 1)
+#' basis$compute(x, y, time)
+#' basis$get_dim()
+#' basis$get_cutpoints()
+#' basis$get_rl()
+#' basis$get_w()
+#' }
+NULL
+
 #' @export
 #' @docType class
-#' @format An \code{\link{R6Class}} generator object
-#'
-#' @examples
 SpatialBisquareBasis <- R6Class("SpatialBisquareBasis",
 	private = list(
 		r = NULL,
@@ -36,11 +68,8 @@ SpatialBisquareBasis <- R6Class("SpatialBisquareBasis",
 		get_rl = function() {
 			private$rl
 		},
-		get_ws = function() {
-			private$w.s
-		},
-		get_wt = function() {
-			private$w.t
+		get_w = function() {
+			private$w
 		},
 		compute = function(x, y) {
 			X <- cbind(x, y)
