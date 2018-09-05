@@ -2,6 +2,16 @@
 #' 
 #' An \code{\link{R6Class}} representing the spacial bisquare basis.
 #' 
+#' @section Usage:
+#' \preformatted{
+#' basis <- SpaceTimeBisquareBasis$new(cutpoints.x, cutpoints.y, w)
+#' basis$compute(x, y, time)
+#' basis$get_dim()
+#' basis$get_cutpoints()
+#' basis$get_rl()
+#' basis$get_w()
+#' }
+#' 
 #' @section Arguments:
 #' \itemize{
 #' \item \code{cutpoints.x} x-coordinate of knot points.

@@ -5,6 +5,27 @@
 #' 
 #' An \code{\link{R6Class}} for preparing an STCOS analysis.
 #' 
+#' @section Usage:
+#' \preformatted{
+#' sp <- STCOSPrep$new(fine_domain, fine_domain_geo_name, basis, basis_mc_reps = 500, report_period = 100)
+#' 
+#' sp$add_obs(domain, period, estimate_name, variance_name, geo_name)
+#' 
+#' S <- sp$get_S()
+#'
+#' sp$set_basis_reduction(f = identity)
+#' 
+#' sp$get_reduced_S()
+#'
+#' sp$get_Kinv(times, X = NULL, autoreg = TRUE)
+#' 
+#' sp$get_obs(idx)
+#' 
+#' sp$get_basis()
+#' 
+#' sp$get_geo()
+#' }
+#' 
 #' @section Arguments:
 #' \itemize{
 #' \item \code{fine_domain} An \code{sf} object; the fine-level support for the analysis.
