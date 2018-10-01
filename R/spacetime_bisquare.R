@@ -4,7 +4,7 @@
 #' 
 #' @section Usage:
 #' \preformatted{
-#' basis <- SpaceTimeBisquareBasis$new(cutpoints.x, cutpoints.y, cutpoints.t,
+#' basis <- SpaceTimeBisquareBasis$new(knots.x, knots.y, knots.t,
 #'     w.s, w.t)
 #' basis$compute(x, y, time)
 #' basis$get_dim()
@@ -16,9 +16,9 @@
 #' 
 #' @section Arguments:
 #' \itemize{
-#' \item \code{cutpoints.x} x-coordinate of knot points.
-#' \item \code{cutpoints.y} y-coordinate of knot points.
-#' \item \code{cutpoints.t} time coordinate of knot points.
+#' \item \code{knots.x} x-coordinate of knot points.
+#' \item \code{knots.y} y-coordinate of knot points.
+#' \item \code{knots.t} time coordinate of knot points.
 #' \item \code{w.s} (Original, before transformation) spatial radius.
 #' \item \code{w.t} Temporal radius.
 #' \item \code{x} Vector of x-coordinates for points on which to evaluate the basis.
@@ -44,7 +44,7 @@
 #' 
 #' @examples
 #' \dontrun{
-#' basis <- SpaceTimeBisquareBasis$new(cutpoints.x, cutpoints.y, cutpoints.t,
+#' basis <- SpaceTimeBisquareBasis$new(knots.x, knots.y, knots.t,
 #'     w.s, w.t)
 #' basis$compute(x, y, time)
 #' basis$get_dim()
@@ -66,11 +66,11 @@ SpaceTimeBisquareBasis <- R6Class("SpaceTimeBisquareBasis",
 		rl = NULL
 	),
 	public = list(
-		initialize = function(cutpoints.x, cutpoints.y, cutpoints.t, w.s, w.t) {
-			r <- length(cutpoints.x)
-			stopifnot(length(cutpoints.y) == r)
-			stopifnot(length(cutpoints.t) == r)
-			private$cutpoints <- cbind(cutpoints.x, cutpoints.y, cutpoints.t)
+		initialize = function(knots.x, knots.y, knots.t, w.s, w.t) {
+			r <- length(knots.x)
+			stopifnot(length(knots.y) == r)
+			stopifnot(length(knots.t) == r)
+			private$cutpoints <- cbind(knots.x, knots.y, knots.t)
 			private$w.s <- w.s
 			private$w.t <- w.t
 			private$r <- r

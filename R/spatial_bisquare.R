@@ -4,7 +4,7 @@
 #' 
 #' @section Usage:
 #' \preformatted{
-#' basis <- SpaceTimeBisquareBasis$new(cutpoints.x, cutpoints.y, w)
+#' basis <- SpaceTimeBisquareBasis$new(knots.x, knots.y, w)
 #' basis$compute(x, y, time)
 #' basis$get_dim()
 #' basis$get_cutpoints()
@@ -14,8 +14,8 @@
 #' 
 #' @section Arguments:
 #' \itemize{
-#' \item \code{cutpoints.x} x-coordinate of knot points.
-#' \item \code{cutpoints.y} y-coordinate of knot points.
+#' \item \code{knots.x} x-coordinate of knot points.
+#' \item \code{knots.y} y-coordinate of knot points.
 #' \item \code{w} (Original, before transformation) radius.
 #' \item \code{x} Vector of x-coordinates for points on which to evaluate the basis.
 #' \item \code{y} Vector of y-coordinates for points on which to evaluate the basis.
@@ -38,7 +38,7 @@
 #' 
 #' @examples
 #' \dontrun{
-#' basis <- SpaceTimeBisquareBasis$new(cutpoints.x, cutpoints.y, w = 1)
+#' basis <- SpaceTimeBisquareBasis$new(knots.x, knots.y, w = 1)
 #' basis$compute(x, y, time)
 #' basis$get_dim()
 #' basis$get_cutpoints()
@@ -57,10 +57,10 @@ SpatialBisquareBasis <- R6Class("SpatialBisquareBasis",
 		rl = NULL
 	),
 	public = list(
-		initialize = function(cutpoints.x, cutpoints.y, w) {
-			r <- length(cutpoints.x)
-			stopifnot(length(cutpoints.y) == r)
-			private$cutpoints <- cbind(cutpoints.x, cutpoints.y)
+		initialize = function(knots.x, knots.y, w) {
+			r <- length(knots.x)
+			stopifnot(length(knots.y) == r)
+			private$cutpoints <- cbind(knots.x, knots.y)
 			private$w <- w
 			private$r <- r
 
