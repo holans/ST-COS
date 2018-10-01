@@ -4,10 +4,10 @@
 #' presents a simplified interface, while \code{gibbs.stcos.raw} allows
 #' all inputs to be specified separately.
 #'
-#' @param Z Vector which represents the outcome; assumed to be direct
+#' @param z Vector which represents the outcome; assumed to be direct
 #'        estimates from the survey.
 #' @param S Design matrix for basis decomposition.
-#' @param V Vector which represents direct variance estimates from the survey.
+#' @param v Vector which represents direct variance estimates from the survey.
 #' @param K.inv Inverse of the \eqn{K} matrix, which is the covariance of the
 #'        random coefficient \eqn{\eta}
 #' @param H Matrix of overlaps between source and fine-level supports.
@@ -36,33 +36,47 @@
 #'        is in turn used to find an initial value for the MCMC sampler.
 #'
 #' @return An \code{stcos} object which contains draws from the sampler.
-#' @export
 #'
 #' @examples
+#' \dontrun{
+#' basis <- SpaceTimeBisquareBasis$new(x, y, t, w.s, w.t)
+#' sp <- STCOSPrep$new(fine_domain = dom.fine,
+#'     fine_domain_geo_name = "GEO_ID",
+#'     basis = basis, basis_mc_reps = 500)
+#' out1 <- gibbs.stcos(sp, R = 10000, burn = 0, thin = 1)
+#' 
+#' out2 <- gibbs.stcos.raw(z = sp$get_z(), S = sp$get_reduced_S(),
+#'     v = sp$get_v(), K.inv = sp$get_Kinv(), H = sp$get_H(),
+#'     R = 10000, burn = 0, thin = 1)
+#' }
 #' @name gibbs
+NULL
+
+#' @name gibbs
+#' @export
 gibbs.stcos <- function(prep, R, report.period = R+1, burn = 0, thin = 1,
 	hyper = NULL, sig2xi.init = NULL)
 {
-	Z <- prep$get_Z()
-	V <- prep$get_V()
+	z <- prep$get_z()
+	v <- prep$get_v()
 	H <- prep$get_H()
 	S <- prep$get_reduced_S()
 	K.inv <- prep$get_Kinv()
-	mle.out <- mle.stcos(Z, S, V, H, init = list(sig2xi.init))
+	mle.out <- mle.stcos(z, S, v, H, init = list(sig2xi.init))
 
 	init <- list(
 		sig2xi = mle.out$sig2xi.hat,
 		mu_B = mle.out$mu.hat,
 		eta = mle.out$eta.hat
 	)
-	gibbs.out <- gibbs.stcos.raw(Z = Z, S = S, V = V, K.inv = K.inv, H = H,
+	gibbs.out <- gibbs.stcos.raw(z = z, S = S, v = v, K.inv = K.inv, H = H,
 		R = R, report.period = report.period, burn = burn, thin = thin,
 		init = init, hyper = hyper)
 }
 
 #' @name gibbs
 #' @export
-gibbs.stcos.raw <- function(Z, S, V, K.inv, H, R, report.period = R+1,
+gibbs.stcos.raw <- function(z, v, H, S, K.inv, R, report.period = R+1,
 	burn = 0, thin = 1, init = NULL, fixed = NULL, hyper = NULL)
 {
 	timer <- list(mu_B = 0, sig2mu = 0, eta = 0, xi = 0, sig2xi = 0, sig2K = 0,
@@ -72,11 +86,11 @@ gibbs.stcos.raw <- function(Z, S, V, K.inv, H, R, report.period = R+1,
 	stopifnot(R > burn)
 
 	r <- ncol(S)
-	n <- length(Z)
+	n <- length(z)
 	n_mu <- ncol(H)
 
-	Vinv <- 1 / V
-	HpVinv <- t(H) %*% Diagonal(n = length(Vinv), x = Vinv)
+	vinv <- 1 / v
+	HpVinv <- t(H) %*% Diagonal(n = length(vinv), x = vinv)
 	HpinvVH <- HpVinv %*% H
 
 	logger("Begin computing eigenvalues/vectors of HpinvVH\n")
@@ -140,7 +154,7 @@ gibbs.stcos.raw <- function(Z, S, V, K.inv, H, R, report.period = R+1,
 	logger("Begin computing SpinvV\n")
 	SpinvV <- matrix(NA, r, n)
 	for (j in 1:r) {
-		SpinvV[j,] <- S[,j] / V
+		SpinvV[j,] <- S[,j] / v
 	}
 	SpinvVS <- SpinvV %*% S
 	logger("Finished computing SpinvV\n")
@@ -155,9 +169,9 @@ gibbs.stcos.raw <- function(Z, S, V, K.inv, H, R, report.period = R+1,
 
 		# Draw from [xi | ---] using sparse matrix inverse
 		st <- Sys.time()
-		Sigma.xi.inv <- Vinv + 1/sig2xi
+		Sigma.xi.inv <- vinv + 1/sig2xi
 		Sigma.xi <- 1 / Sigma.xi.inv
-		mean.xi <- Sigma.xi * Vinv * (Z - S %*% eta - H %*% mu_B)
+		mean.xi <- Sigma.xi * vinv * (z - S %*% eta - H %*% mu_B)
 		xi.new <- mean.xi + sqrt(Sigma.xi) * rnorm(n)
 		idx <- setdiff(1:n, fixed$xi)
 		xi[idx] <- xi.new[idx]
@@ -187,7 +201,7 @@ gibbs.stcos.raw <- function(Z, S, V, K.inv, H, R, report.period = R+1,
 		# Draw from [eta | ---]
 		st <- Sys.time()
 		V.eta <- solve(as.matrix((1/sig2K * K.inv) + SpinvVS))
-		mean.eta <- V.eta %*% (SpinvV %*% (Z - H %*% mu_B - xi))
+		mean.eta <- V.eta %*% (SpinvV %*% (z - H %*% mu_B - xi))
 		eta.new <- mean.eta + chol(V.eta) %*% rnorm(r)
 		idx <- setdiff(1:r, fixed$eta)
 		eta[idx] <- eta.new[idx]
@@ -198,8 +212,8 @@ gibbs.stcos.raw <- function(Z, S, V, K.inv, H, R, report.period = R+1,
 		st <- Sys.time()
 		PostLam <- 1 / (eig.HpinvVH$values + 1/sig2mu)
 		# V.mu_B <- eig.HpinvVH$vectors %*% (PostLam * t(eig.HpinvVH$vectors))		# Nice-looking version
-		# mean.mu_B <- V.mu_B %*% (HpVinv %*% (Z - S %*% eta - xi))					# Nice-looking version
-		mean.mu_B <- eig.HpinvVH$vectors %*% ((PostLam * t(eig.HpinvVH$vectors)) %*% (HpVinv %*% (Z - S %*% eta - xi)))		# Ugly version
+		# mean.mu_B <- V.mu_B %*% (HpVinv %*% (z - S %*% eta - xi))					# Nice-looking version
+		mean.mu_B <- eig.HpinvVH$vectors %*% ((PostLam * t(eig.HpinvVH$vectors)) %*% (HpVinv %*% (z - S %*% eta - xi)))		# Ugly version
 		mu_B.new <- mean.mu_B + (eig.HpinvVH$vectors %*% (sqrt(PostLam) * rnorm(n_mu)))
 		idx <- setdiff(1:n_mu, fixed$mu_B)
 		mu_B[idx] <- mu_B.new[idx]
@@ -234,7 +248,7 @@ gibbs.stcos.raw <- function(Z, S, V, K.inv, H, R, report.period = R+1,
 		sig2xi.hist = sig2xi.hist,
 		sig2K.hist = sig2K.hist,
 		Y.hist = Y.hist,
-		Z = Z, H = H, S = S, V = V, R.keep = R.keep,
+		z = z, H = H, S = S, v = v, R.keep = R.keep,
 		elapsed.sec = timer
 	)
 	class(ret) <- "stcos"
@@ -261,8 +275,8 @@ logLik.stcos <- function(object, ...)
 		eta <- object$eta.hist[r,]
 		sig2xi <- object$sig2xi.hist[r]
 		loglik.mcmc[r] <- sum(
-			dnorm(object$Z, as.numeric(object$H %*% mu_B + object$S %*% eta),
-			sqrt(object$V + sig2xi),
+			dnorm(object$z, as.numeric(object$H %*% mu_B + object$S %*% eta),
+			sqrt(object$v + sig2xi),
 			log = TRUE))
 	}
 	return(loglik.mcmc)
@@ -279,6 +293,10 @@ logLik.stcos <- function(object, ...)
 #' @export
 #'
 #' @examples
+#' \dontrun{
+#' out1 <- gibbs.stcos(sp, R = 10000, burn = 0, thin = 1)
+#' DIC(out1)
+#' }
 #' @seealso \code{\link{gibbs.stcos}} \code{\link{gibbs.stcos.raw}}
 DIC <- function(object)
 {
@@ -291,8 +309,8 @@ DIC <- function(object)
 	eta.bar <- colMeans(object$eta.hist)
 	sig2xi.bar <- mean(object$sig2xi.hist)
 	D.thetabar <- -2 * sum(
-		dnorm(object$Z, as.numeric(object$H %*% mu_B.bar + object$S %*% eta.bar),
-		sqrt(object$V + sig2xi.bar),
+		dnorm(object$z, as.numeric(object$H %*% mu_B.bar + object$S %*% eta.bar),
+		sqrt(object$v + sig2xi.bar),
 		log = TRUE))
 	D.bar <- mean(-2*loglik.mcmc)
 	D.thetabar + 2*(D.bar - D.thetabar)

@@ -147,8 +147,8 @@ for (j in 1:length(year.levels)) {
 
 Extract the quantities needed to fit the STCOS model.
 ```{r}
-Z <- sp$get_Z()
-V <- sp$get_V()
+z <- sp$get_z()
+v <- sp$get_v()
 H <- sp$get_H()
 S <- sp$get_S()
 ```
@@ -169,7 +169,7 @@ S.reduced <- sp$get_reduced_S()
 
 Now construct the inverse of the `K` matrix. There are several options we have considered.
 ```{r}
-method <- 1
+method <- 3
 if (method == 1) {
 	# Random Walk
 	K.inv <- sp$get_Kinv(2005:2015)
@@ -187,24 +187,26 @@ if (method == 1) {
 # Fitting the Model
 First we standardize the inputs so that the estimates `Z` have mean 0 and sd 1. Past experience has shown that draws from the Gibbs sampler can come out poorly if this is not done.
 ```{r}
-D <- Diagonal(n = length(Z), x = 1/sd(Z))
-Z.scaled <- (Z - mean(Z)) / sd(Z)
-V.scaled <- V / var(Z)
+D <- Diagonal(n = length(z), x = 1/sd(z))
+z.scaled <- (z - mean(z)) / sd(z)
+v.scaled <- v / var(z)
 ```
 
 Compute an MLE as initial value for Gibbs sampler.
 ```{r}
-mle.out <- mle.stcos(Z.scaled, S.reduced, V.scaled, H, init = list(sig2xi = 1))
+K <- solve(K.inv)
+# old.out <- mle.stcos.old(z.scaled, v.scaled, H, S.reduced, init = list(sig2xi = 1))
+mle.out <- mle.stcos(z.scaled, v.scaled, H, S.reduced, K, init = list(sig2K = 1, sig2xi = 1))
 init <- list(
+	sig2K = mle.out$sig2K.hat,
     sig2xi = mle.out$sig2xi.hat,
-    mu_B = mle.out$mu.hat,
-    eta = mle.out$eta.hat
+    mu_B = mle.out$mu.hat
 )
 ```
 
 Now run the Gibbs sampler.
 ```{r}
-gibbs.out <- gibbs.stcos.raw(Z.scaled, S.reduced, V.scaled, K.inv, H, R = 5000,
+gibbs.out <- gibbs.stcos.raw(z.scaled, v.scaled, H, S.reduced, K.inv, R = 5000,
     report.period = 1000, burn = 500, thin = 10, init = init)
 print(gibbs.out)
 ```

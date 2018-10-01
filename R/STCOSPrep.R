@@ -58,8 +58,8 @@
 #' \item \code{$get_obs} Get a source support(s) which have already been added.
 #' \item \code{$domain2model} Compute \code{H} and \code{S} matrix fragments
 #' for a given source support.
-#' \item \code{$get_Z} Get vector of direct estimates from added source supports.
-#' \item \code{$get_V} Get vector of direct variance estimates from added source
+#' \item \code{$get_z} Get vector of direct estimates from added source supports.
+#' \item \code{$get_v} Get vector of direct variance estimates from added source
 #' supports.
 #' \item \code{$get_H} Get matrix of overlaps between fine-level support and added
 #' source supports.
@@ -96,8 +96,8 @@
 #' 
 #' # Get quantities needed for MCMC
 #' S.reduced <- sp$get_reduced_S()
-#' Z <- sp$get_Z()
-#' V <- sp$get_V()
+#' z <- sp$get_z()
+#' v <- sp$get_v()
 #' H <- sp$get_H()
 #'
 #' # compute K.inv matrix using Random-Walk method
@@ -122,8 +122,8 @@ STCOSPrep <- R6Class("STCOSPrep",
 		fine_domain_geo_name = NULL,
 		H_list = NULL,
 		S_list = NULL,
-		Z_list = NULL,
-		V_list = NULL,
+		z_list = NULL,
+		v_list = NULL,
 		geo_list = NULL,
 		N = NULL,
 		L = NULL,
@@ -140,8 +140,8 @@ STCOSPrep <- R6Class("STCOSPrep",
 			private$fine_domain <- fine_domain
 			private$H_list <- list()
 			private$S_list <- list()
-			private$Z_list <- list()
-			private$V_list <- list()
+			private$z_list <- list()
+			private$v_list <- list()
 			private$geo_list <- list()
 			private$N <- 0
 			private$L <- 0
@@ -161,14 +161,14 @@ STCOSPrep <- R6Class("STCOSPrep",
 
 			logger("Extracting survey estimates from field '%s'", estimate_name)
 			printf(" and variance estimates from field '%s'\n", variance_name)
-			Z <- domain[[estimate_name]]
-			V <- domain[[variance_name]]
+			z <- domain[[estimate_name]]
+			v <- domain[[variance_name]]
 
 			# Update internal state
 			private$N <- private$N + nrow(domain)
 			private$L <- private$L + 1
-			private$Z_list[[private$L]] <- Z
-			private$V_list[[private$L]] <- V
+			private$z_list[[private$L]] <- z
+			private$v_list[[private$L]] <- v
 			private$H_list[[private$L]] <- out$H
 			private$S_list[[private$L]] <- out$S
 			geo <- out$geo
@@ -179,14 +179,14 @@ STCOSPrep <- R6Class("STCOSPrep",
 		},
 		get_obs = function(idx = 1:private$L)
 		{
-			Z <- private$Z_list[idx]
-			V <- private$V_list[idx]
+			z <- private$z_list[idx]
+			v <- private$v_list[idx]
 			H <- private$H_list[idx]
 			S <- private$S_list[idx]
 			geo <- private$geo_list[idx]
 			S.reduced <- lapply(S, self$basis_reduction)
 
-			list(Z = Z, V = V, H = H, S = S, geo = geo, S.reduced = S.reduced)
+			list(z = z, v = v, H = H, S = S, geo = geo, S.reduced = S.reduced)
 		},
 		domain2model = function(domain, period, geo_name)
 		{
@@ -209,35 +209,35 @@ STCOSPrep <- R6Class("STCOSPrep",
 			geo <- data.frame(row = 1:nrow(domain), geo_id = domain[[geo_name]])
 			list(H = H, S = S, S.reduced = S.reduced, geo = geo)
 		},
-		get_Z = function()
+		get_z = function()
 		{
 			n <- nrow(private$fine_domain)
-			Z <- numeric(private$N)
+			z <- numeric(private$N)
 			L <- private$L
 			cnt <- 0
 
 			for (l in 1:L) {
-				idx <- 1:length(private$Z_list[[l]]) + cnt
-				Z[idx] <- private$Z_list[[l]]
+				idx <- 1:length(private$z_list[[l]]) + cnt
+				z[idx] <- private$z_list[[l]]
 				cnt <- cnt + length(idx)
 			}
 
-			return(Z)
+			return(z)
 		},
-		get_V = function()
+		get_v = function()
 		{
 			n <- nrow(private$fine_domain)
-			V <- numeric(private$N)
+			v <- numeric(private$N)
 			L <- private$L
 			cnt <- 0
 
 			for (l in 1:L) {
-				idx <- 1:length(private$V_list[[l]]) + cnt
-				V[idx] <- private$V_list[[l]]
+				idx <- 1:length(private$v_list[[l]]) + cnt
+				v[idx] <- private$v_list[[l]]
 				cnt <- cnt + length(idx)
 			}
 
-			return(V)
+			return(v)
 		},
 		get_H = function()
 		{
@@ -370,8 +370,8 @@ STCOSPrep <- R6Class("STCOSPrep",
 	)
 )
 
-# STCOSPrep$set("public", "get_Z", get_Z)
-# STCOSPrep$set("public", "get_V", get_V)
+# STCOSPrep$set("public", "get_z", get_z)
+# STCOSPrep$set("public", "get_v", get_v)
 # STCOSPrep$set("public", "get_H", get_H)
 # STCOSPrep$set("public", "get_S", get_S)
 # STCOSPrep$set("public", "get_reduced_S", get_reduced_S)

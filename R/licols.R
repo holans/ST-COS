@@ -12,20 +12,23 @@
 #' contains the indices (into X) of those columns. The elapsed time is stored in
 #' \code{elapsed.sec}.
 #'
-#' @export
-#'
 #' @examples
+#' x <- sample(1:3, size = 20, replace = TRUE)
+#' Z <- model.matrix(~ as.factor(x) - 1)
+#' X <- cbind(1, Z)
+#' licols(X)
+#' 
+#' @export
 licols <- function(X, tol = 1e-10, quiet = FALSE)
 {
-	# Important Note: I get the same result as Jon if I take X to be a full
-	# (not sparse) matrix, but it takes a much much longer time to compute
+	# Note: It takes a much much longer time to compute
 	# the QR decomposition than if X is sparse. The sparse QR in R seems
 	# to give different results than the dense or sparse QR in Matlab.
 	# Running non-sparse QR on the 32836 x 4750 S matrix takes about 15
 	# minutes in R; maybe not much less in Matlab.
 	#
 	# Another note: The sparse QR algorithm in the matrix package doesn't
-	# return the same kind of pivot. It may be a "non-rank-revealing
+	# return the same kind of pivot. It appears to be a "non-rank-revealing
 	# decomposition".
 
 	stopifnot(class(X) == "matrix")
@@ -51,4 +54,3 @@ licols <- function(X, tol = 1e-10, quiet = FALSE)
 	elapsed.sec <- as.numeric(Sys.time() - st, units = "secs")
 	list(Xsub = X[,idx], idx = idx, elapsed.sec = elapsed.sec)
 }
-
