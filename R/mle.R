@@ -3,8 +3,10 @@
 #' @param z Vector which represents the outcome; assumed to be direct
 #'        estimates from the survey.
 #' @param v Vector which represents direct variance estimates from the survey.
-#' @param S Design matrix for basis decomposition.
 #' @param H Matrix of overlaps between source and fine-level supports.
+#' @param S Design matrix for basis decomposition.
+#' @param K.inv Inverse of the \eqn{K} matrix, which is the covariance of the
+#'        random coefficient \eqn{\eta}
 #' @param init A list containing the following initial values for the MCMC:
 #' 	      \code{sig2xi}. If not specified, we select an arbitrary initial
 #' 	      value.
@@ -13,14 +15,28 @@
 #'        specified.
 #'
 #' @return A list containing maximum likelihood estimates.
-#' @export
 #'
 #' @examples
-mle.stcos <- function(z, v, H, S, K, init = NULL,
+#' \dontrun{
+#' z <- sp$get_z()
+#' v <- sp$get_v()
+#' H <- sp$get_H()
+#' S.reduced <- sp$get_reduced_S() 
+#' K.inv <- sp$get_Kinv(2005:2015)
+#' 
+#' mle.out <- mle.stcos(z, v, S.reduced, H, K.inv)
+#' 
+#' sig2K.hat <- mle.out$sig2K.hat
+#' sig2xi.hat <- mle.out$sig2xi.hat
+#' mu.hat -> mle.out$mu.hat
+#' }
+#' @export
+mle.stcos <- function(z, v, H, S, K.inv, init = NULL,
 	optim.control = list())
 {
 	n <- ncol(H)
 	r <- ncol(S)
+	K <- solve(K.inv)
 
 	# Initial values
 	if (is.null(init)) { init <- list() }

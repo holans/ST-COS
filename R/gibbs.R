@@ -32,8 +32,6 @@
 #' 	      \code{a.sig2mu}, \code{a.sig2K}, \code{a.sig2xi}, \code{b.sig2mu},
 #' 	      \code{b.sig2K}, \code{b.sig2xi}. Any hyperparameters which are not
 #' 	      specified are set to a default value of 2.
-#' @param sig2xi.init An initial value of \code{sig2xi} to use for the MLE, which
-#'        is in turn used to find an initial value for the MCMC sampler.
 #'
 #' @return An \code{stcos} object which contains draws from the sampler.
 #'
@@ -55,21 +53,15 @@ NULL
 #' @name gibbs
 #' @export
 gibbs.stcos <- function(prep, R, report.period = R+1, burn = 0, thin = 1,
-	hyper = NULL, sig2xi.init = NULL)
+	hyper = NULL, init = NULL)
 {
 	z <- prep$get_z()
 	v <- prep$get_v()
 	H <- prep$get_H()
 	S <- prep$get_reduced_S()
 	K.inv <- prep$get_Kinv()
-	mle.out <- mle.stcos(z, S, v, H, init = list(sig2xi.init))
 
-	init <- list(
-		sig2xi = mle.out$sig2xi.hat,
-		mu_B = mle.out$mu.hat,
-		eta = mle.out$eta.hat
-	)
-	gibbs.out <- gibbs.stcos.raw(z = z, S = S, v = v, K.inv = K.inv, H = H,
+	gibbs.out <- gibbs.stcos.raw(z = z, v = v, H = H, S = S, K.inv = K.inv,
 		R = R, report.period = report.period, burn = burn, thin = thin,
 		init = init, hyper = hyper)
 }
