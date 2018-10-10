@@ -1,3 +1,12 @@
+# Test code
+We might want to add some test code for the following:
+* Basis functions, on a small geography
+* Autocovariance function
+* licols
+* Overlap calculation
+* MLE
+* Gibbs sampler
+
 # Notes
 * Needed to install udunits library as a prereq for `sf` package. In Ubuntu, I
 did this.
