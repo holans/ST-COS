@@ -1,7 +1,10 @@
 #' ---
-#' title: Analysis of City of Columbia data
+#' title: Analysis of City of Columbia Neighborhoods
+#' author: 
 #' date: October 2018
-#' output: pdf_document
+#' output:
+#'   pdf_document:
+#'     number_sections: true
 #' ---
 
 #' # Overview
@@ -12,6 +15,7 @@
 #' Therefore, the four neighborhoods will be our target supports, and the 2012,
 #' 2013, 2014, 2015 year block-groups will be our source supports.
 set.seed(1234)
+options(width = 80)
 
 #' # Loading Fine-level Support
 suppressMessages(library(jsonlite))
@@ -183,12 +187,10 @@ sp$set_basis_reduction(f)
 S.reduced <- sp$get_reduced_S()
 
 #' Plot the proportion of variation captured by our selection of PCA components.
-pdf("pca-reduction.pdf", width = 7, height = 5)
 eigprops <- cumsum(rho) / sum(rho)
 plot(eigprops[1:200], xlab = "Dimension", ylab = "Proportion of Variation")
 abline(v = max(idx.S), lty = 2)
 abline(h = eigprops[max(idx.S)], lty = 2)
-dev.off()
 
 #' Pick a covariance structure for random coefficients of basis expansion.
 if (FALSE) {
@@ -289,12 +291,15 @@ neighbs$E.mean <- apply(E.hat, 2, mean)
 neighbs$E.sd <- apply(E.hat, 2, sd)
 neighbs$E.lo <- apply(E.hat, 2, quantile, prob = 0.05)
 neighbs$E.hi <- apply(E.hat, 2, quantile, prob = 0.95)
+
+#' The objective of our analysis - predictions on the four target neighborhoods.
 print(neighbs)
 
 #' # Make some plots
 suppressMessages(library(gridExtra))
 suppressMessages(library(ggrepel))
 
+#' Maps of direct and model-based 2015 5-year estimates.
 lim.est <- range(acs5.2015$DirectEst, acs5.2015$E.mean)
 g <- ggplot(acs5.2015) +
 	geom_sf(colour = "black", size = 0.05, aes(fill = DirectEst)) +
@@ -307,10 +312,8 @@ h <- ggplot(acs5.2015) +
 	scale_fill_distiller("E.mean", palette = "RdYlBu", limits = lim.est) +
 	theme_bw()
 k <- grid.arrange(g,h, ncol = 2)
-ggsave(k, filename = "compare2015.pdf")
-ggsave(g, filename = "compare2015-direct.pdf", width = 5)
-ggsave(h, filename = "compare2015-model.pdf", width = 5)
 
+#' Scatter plots comparing direct and model-based 5-year estimates for 2012, ..., 2015.
 g2012 <- ggplot(acs5.2012, aes(x=DirectEst, y=E.mean)) +
 	geom_point(size = 2) +
 	geom_abline(intercept = 0, slope = 1, color="red",
@@ -340,22 +343,10 @@ g2015 <- ggplot(acs5.2015, aes(x=DirectEst, y=E.mean)) +
 	labs(x = "Direct Estimate", y = "Model-Based Estimate") +
 	theme_bw()
 k <- grid.arrange(g2012, g2013, g2014, g2015, nrow = 2, ncol = 2)
-ggsave(g2015, filename = "compare-scatter.pdf", width = 5, height = 5)
 
-
-idx <- which.max(abs(acs5.2015$DirectEst - acs5.2015$E.mean))
-acs5.2015$geoid_outlier <- ""
-acs5.2015$geoid_outlier[idx] <- acs5.2015$geoid[idx]
-g <- ggplot(acs5.2015, aes(x=DirectEst, y=E.mean)) +
-	geom_point(size = 2) +
-	geom_abline(intercept = 0, slope = 1, color="red",
-		linetype="dashed", size=1.2) +
-	ggtitle("2015 5-year Estimates") +
-	labs(x = "Direct Estimate", y = "Model-Based Estimate") +
-	theme_bw() +
-	geom_text(aes(label=geoid_outlier), hjust=0.5, vjust=-1)
-print(g)
-ggsave(g, filename = "compare2015-scatter.pdf", width = 5, height = 5)
+#' Plot neighborhood areas (target supports) among ACS 5-year direct estimates;
+#' this gives a sense of whether the model-based esimtates are reasonable.
+#' This map takes a bit of preparation.
 
 Central <- neighbs[1,]
 East <- neighbs[2,]
@@ -366,6 +357,18 @@ Missing1 <- dat.missing[[4]][1,]
 Missing2 <- dat.missing[[4]][2,]
 Missing3 <- dat.missing[[4]][3,]
 Missing4 <- dat.missing[[4]][4,]
+
+# Prevent `sf` package warnings like "st_centroid assumes attributes are
+# constant over geometries of x"
+st_agr(Central) <- "constant"
+st_agr(East) <- "constant"
+st_agr(North) <- "constant"
+st_agr(Paris) <- "constant"
+st_agr(Outlier) <- "constant"
+st_agr(Missing1) <- "constant"
+st_agr(Missing2) <- "constant"
+st_agr(Missing3) <- "constant"
+st_agr(Missing4) <- "constant"
 
 Central.coord <- st_coordinates(st_centroid(Central))
 East.coord <- st_coordinates(st_centroid(East))
@@ -395,4 +398,3 @@ g <- ggplot(acs5.2015) +
 	ylab(NULL) +
 	theme_bw()
 print(g)
-ggsave(g, filename = "areas-of-interest-map.pdf")
