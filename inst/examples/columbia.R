@@ -3,14 +3,12 @@
 #' author: 
 #' date: "Last Updated: `r format(Sys.time(), '%B %d, %Y')`"
 #' output:
-#'   pdf_document:
+#'   html_document:
 #'     number_sections: true
 #' ---
 
-# Set so that long lines in R will be wrapped
-#+ echo=FALSE, message=FALSE, warning=FALSE
-require(knitr)
-opts_chunk$set(results = 'asis')
+#+ echo = FALSE
+options(width = 80)
 
 #' # Overview
 #' In this example, we are given four neighborhoods in the City of Columbia in
@@ -112,7 +110,7 @@ for (idx in 1:length(year.levels)) {
 		filter(is.na(DirectEst))
 }
 
-#' Our assembled source supports are now acs5.2012, ..., acs5.2015
+#' Our assembled source supports are now `acs5.2012`, ..., `acs5.2015`
 acs5.2012 <- dat.list[[1]]
 acs5.2013 <- dat.list[[2]]
 acs5.2014 <- dat.list[[3]]
@@ -254,8 +252,8 @@ colnames(varcomps.mcmc) <- c("sig2mu", "sig2xi", "sig2K")
 plot(varcomps.mcmc)
 
 #' #  Produce Results on target supports
-# Compute H and S matrices and get summaries of posterior distribution for E(Y).
-# Use 90% significance for all credible intervals and MOEs.
+#' Compute `H` and `S` matrices and get summaries of posterior distribution for E(Y).
+#' Use 90% significance for all credible intervals and MOEs.
 
 targ.src <- sp$domain2model(acs5.2012, period = 2008:2012, geo_name = "geoid")
 E.hat.scaled <- fitted(gibbs.out, targ.src$H, targ.src$S.reduced)
