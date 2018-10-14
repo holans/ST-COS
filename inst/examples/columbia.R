@@ -1,11 +1,16 @@
 #' ---
 #' title: Analysis of City of Columbia Neighborhoods
 #' author: 
-#' date: October 2018
+#' date: "Last Updated: `r format(Sys.time(), '%B %d, %Y')`"
 #' output:
 #'   pdf_document:
 #'     number_sections: true
 #' ---
+
+# Set so that long lines in R will be wrapped
+#+ echo=FALSE, message=FALSE, warning=FALSE
+require(knitr)
+opts_chunk$set(results = 'asis')
 
 #' # Overview
 #' In this example, we are given four neighborhoods in the City of Columbia in
@@ -15,22 +20,23 @@
 #' Therefore, the four neighborhoods will be our target supports, and the 2012,
 #' 2013, 2014, 2015 year block-groups will be our source supports.
 set.seed(1234)
-options(width = 80)
 
 #' # Loading Fine-level Support
-suppressMessages(library(jsonlite))
-suppressMessages(library(sf))
-suppressMessages(library(tigris))
-suppressMessages(library(dplyr))
-suppressMessages(library(ggplot2))
+#+ message=FALSE
+library(jsonlite)
+library(sf)
+library(tigris)
+library(dplyr)
+library(ggplot2)
 
 #' Load the fine-level support via shapefile using the `tigris` package.
 #' For this, we will use the 2015 block-groups in Boone County, MO.
 #' Convert it to an `sf` object, and transform to the projection with EPSG
 #' code 3857.
+#+ message=FALSE
 options(tigris_use_cache = TRUE)
 options(tigris_refresh = FALSE)
-dom.fine <- suppressMessages(block_groups(state = '29', county = '019', year = 2015)) %>%
+dom.fine <- block_groups(state = '29', county = '019', year = 2015) %>%
 	st_as_sf() %>%
 	st_transform(crs = 3857) %>%
 	mutate(geoid = GEOID) %>%
@@ -130,9 +136,10 @@ ggplot(neighbs) +
 	theme_bw()
 
 #' # Prepare to fit the model
-suppressMessages(library(fields))
-suppressMessages(library(stcos))
-suppressMessages(library(ggforce))
+#+ message=FALSE
+library(fields)
+library(stcos)
+library(ggforce)
 
 #' Select spatial knots via space-filling design. Start with uniformly
 #' drawn points from the fine-level geography and use `cover.design`
@@ -146,29 +153,35 @@ knots.sp <- out$design
 #' to the source support years.
 knots.t <- seq(2008, 2015, by = 0.5)
 
-#' Use Cartesian join of spatial and temporal knots to obtain spatio-temporal knots
+#' Use Cartesian join of spatial and temporal knots to obtain spatio-temporal knots.
 knots <- merge(knots.sp, knots.t)
 basis <- SpaceTimeBisquareBasis$new(knots[,1], knots[,2], knots[,3], w.s = 1, w.t = 1)
 
-#' Here is a plot of the spatial knots.
+#' Here is a plot of the spatial knots. We plot a circle around one of the
+#' points to illustrate the choice of the `w.s` argument.
 knots.sp.dat <- data.frame(x = knots.sp[,1], y = knots.sp[,2], r = basis$get_rl())
 g <- ggplot(dom.fine) +
 	geom_sf(colour = "black", size = 0.25, fill = NA) +
 	geom_point(data = knots.sp.dat, aes(x, y), lwd = 1, col = "red") +
 	geom_point(data = knots.sp.dat[1,], aes(x, y), lwd = 3, col = "blue") +
-	geom_circle(data = knots.sp.dat[1,], aes(x0=x, y0=y, r=r), fill = NA, lwd = 0.5, col = "blue") +
+	geom_circle(data = knots.sp.dat[1,], aes(x0=x, y0=y, r=r), fill = NA,
+		lwd = 0.5, col = "blue") +
 	labs(x = "", y = "") +
 	theme_bw()
 print(g)
-ggsave(g, filename = "spatial-knots.pdf", width = 4, height = 7)
 
 #' # Build terms for STCOS model
 #' Create an STCOSPrep object and add source supports
-sp <- STCOSPrep$new(fine_domain = dom.fine, fine_domain_geo_name = "geoid", basis = basis, basis_mc_reps = 500)
-sp$add_obs(acs5.2012, period = 2008:2012, estimate_name = "DirectEst", variance_name = "DirectVar", geo_name = "geoid")
-sp$add_obs(acs5.2013, period = 2009:2013, estimate_name = "DirectEst", variance_name = "DirectVar", geo_name = "geoid")
-sp$add_obs(acs5.2014, period = 2010:2014, estimate_name = "DirectEst", variance_name = "DirectVar", geo_name = "geoid")
-sp$add_obs(acs5.2015, period = 2011:2015, estimate_name = "DirectEst", variance_name = "DirectVar", geo_name = "geoid")
+sp <- STCOSPrep$new(fine_domain = dom.fine, fine_domain_geo_name = "geoid",
+	basis = basis, basis_mc_reps = 500)
+sp$add_obs(acs5.2012, period = 2008:2012, estimate_name = "DirectEst",
+	variance_name = "DirectVar", geo_name = "geoid")
+sp$add_obs(acs5.2013, period = 2009:2013, estimate_name = "DirectEst",
+	variance_name = "DirectVar", geo_name = "geoid")
+sp$add_obs(acs5.2014, period = 2010:2014, estimate_name = "DirectEst",
+	variance_name = "DirectVar", geo_name = "geoid")
+sp$add_obs(acs5.2015, period = 2011:2015, estimate_name = "DirectEst",
+	variance_name = "DirectVar", geo_name = "geoid")
 
 #' Read the objects needed for MCMC
 z <- sp$get_z()
@@ -209,11 +222,13 @@ z.scaled <- (z - mean(z)) / sd(z)
 v.scaled <- v / var(z)
 
 #' # Fit the Model
-suppressMessages(library(coda))
+#+ message=FALSE
+library(coda)
 
 #' Fit MLE; this will serve as an initial value for MCMC.
 K <- solve(K.inv)
-mle.out <- mle.stcos(z.scaled, v.scaled, H, S.reduced, K, init = list(sig2K = 1, sig2xi = 1))
+mle.out <- mle.stcos(z.scaled, v.scaled, H, S.reduced, K,
+	init = list(sig2K = 1, sig2xi = 1))
 init <- list(
 	sig2K = mle.out$sig2K.hat,
     sig2xi = mle.out$sig2xi.hat,
@@ -221,8 +236,8 @@ init <- list(
 )
 
 #' Run the Gibbs sampler.
-gibbs.out <- gibbs.stcos.raw(z.scaled, v.scaled, H, S.reduced, K.inv, R = 10000,
-	report.period = 2000, burn = 2000, thin = 10, init = init)
+gibbs.out <- gibbs.stcos.raw(z.scaled, v.scaled, H, S.reduced, K.inv,
+	R = 10000, report.period = 2000, burn = 2000, thin = 10, init = init)
 print(gibbs.out)
 
 #' Show some trace plots to assess convergence of the sampler.
@@ -295,25 +310,29 @@ neighbs$E.hi <- apply(E.hat, 2, quantile, prob = 0.95)
 #' The objective of our analysis - predictions on the four target neighborhoods.
 print(neighbs)
 
-#' # Make some plots
-suppressMessages(library(gridExtra))
-suppressMessages(library(ggrepel))
+#' # Plot Results
+#+ message=FALSE
+library(gridExtra)
+library(ggrepel)
 
 #' Maps of direct and model-based 2015 5-year estimates.
 lim.est <- range(acs5.2015$DirectEst, acs5.2015$E.mean)
 g <- ggplot(acs5.2015) +
 	geom_sf(colour = "black", size = 0.05, aes(fill = DirectEst)) +
-	ggtitle("Median Household Income\nfor Boone County", subtitle = "2015 5yr ACS Direct Estimates") +
+	ggtitle("Median Household Income\nfor Boone County",
+		subtitle = "2015 5yr ACS Direct Estimates") +
 	scale_fill_distiller("DirectEst", palette = "RdYlBu", limits = lim.est) +
 	theme_bw()
 h <- ggplot(acs5.2015) +
 	geom_sf(colour = "black", size = 0.05, aes(fill = E.mean)) +
-	ggtitle("Median Household Income\nfor Boone County", subtitle = "2015 5yr Model Estimates") +
+	ggtitle("Median Household Income\nfor Boone County",
+		subtitle = "2015 5yr Model Estimates") +
 	scale_fill_distiller("E.mean", palette = "RdYlBu", limits = lim.est) +
 	theme_bw()
 k <- grid.arrange(g,h, ncol = 2)
 
-#' Scatter plots comparing direct and model-based 5-year estimates for 2012, ..., 2015.
+#' Scatter plots comparing direct and model-based 5-year estimates for
+#' 2012, ..., 2015.
 g2012 <- ggplot(acs5.2012, aes(x=DirectEst, y=E.mean)) +
 	geom_point(size = 2) +
 	geom_abline(intercept = 0, slope = 1, color="red",
@@ -382,18 +401,28 @@ Missing4.coord <- st_coordinates(st_centroid(Missing4))
 
 g <- ggplot(acs5.2015) +
 	geom_sf(colour = "black", size = 0.05, aes(fill = DirectEst)) +
-	ggtitle("Median Household Income for Boone County", subtitle = "ACS 2015 5yr Direct Estimates") +
+	ggtitle("Median Household Income for Boone County",
+		subtitle = "ACS 2015 5yr Direct Estimates") +
 	scale_fill_distiller("DirectEst", palette = "RdYlBu", limits = lim.est) +
 	geom_sf(data = neighbs, fill = "black") +
-	geom_label_repel(data = st_centroid(East), nudge_x = 20000, nudge_y = 130000, aes(x=East.coord[1], y=East.coord[2], label="East")) +
-	geom_label_repel(data = st_centroid(Central), nudge_x = -10000, nudge_y = 130000, aes(x=Central.coord[1], y=Central.coord[2], label="Central")) +
-	geom_label_repel(data = st_centroid(North), nudge_x = 0, nudge_y = 100000, aes(x=North.coord[1], y=North.coord[2], label="North")) +
-	geom_label_repel(data = st_centroid(Paris), nudge_x = 10000, nudge_y = 100000, aes(x=Paris.coord[1], y=Paris.coord[2], label="Paris")) +
-	geom_label_repel(data = st_centroid(Outlier), nudge_x = 0, nudge_y = -50000, aes(x=Outlier.coord[1], y=Outlier.coord[2], label="Outlier")) +
-	geom_label_repel(data = st_centroid(Missing1), nudge_x = 100000, nudge_y = -50000, aes(x=Missing1.coord[1], y=Missing1.coord[2], label="Missing1")) +
-	geom_label_repel(data = st_centroid(Missing2), nudge_x = 100000, nudge_y = -36000, aes(x=Missing2.coord[1], y=Missing2.coord[2], label="Missing2")) +
-	geom_label_repel(data = st_centroid(Missing3), nudge_x = -100000, nudge_y = -50000, aes(x=Missing3.coord[1], y=Missing3.coord[2], label="Missing3")) +
-	geom_label_repel(data = st_centroid(Missing4), nudge_x = -100000, nudge_y = -38000, aes(x=Missing4.coord[1], y=Missing4.coord[2], label="Missing4")) +
+	geom_label_repel(data = st_centroid(East), nudge_x = 20000, nudge_y = 130000,
+		aes(x=East.coord[1], y=East.coord[2], label="East")) +
+	geom_label_repel(data = st_centroid(Central), nudge_x = -10000, nudge_y = 130000,
+		aes(x=Central.coord[1], y=Central.coord[2], label="Central")) +
+	geom_label_repel(data = st_centroid(North), nudge_x = 0, nudge_y = 100000,
+		aes(x=North.coord[1], y=North.coord[2], label="North")) +
+	geom_label_repel(data = st_centroid(Paris), nudge_x = 10000, nudge_y = 100000,
+		aes(x=Paris.coord[1], y=Paris.coord[2], label="Paris")) +
+	geom_label_repel(data = st_centroid(Outlier), nudge_x = 0, nudge_y = -50000,
+		aes(x=Outlier.coord[1], y=Outlier.coord[2], label="Outlier")) +
+	geom_label_repel(data = st_centroid(Missing1), nudge_x = 100000, nudge_y = -50000,
+		aes(x=Missing1.coord[1], y=Missing1.coord[2], label="Missing1")) +
+	geom_label_repel(data = st_centroid(Missing2), nudge_x = 100000, nudge_y = -36000,
+		aes(x=Missing2.coord[1], y=Missing2.coord[2], label="Missing2")) +
+	geom_label_repel(data = st_centroid(Missing3), nudge_x = -100000, nudge_y = -50000,
+		aes(x=Missing3.coord[1], y=Missing3.coord[2], label="Missing3")) +
+	geom_label_repel(data = st_centroid(Missing4), nudge_x = -100000, nudge_y = -38000,
+		aes(x=Missing4.coord[1], y=Missing4.coord[2], label="Missing4")) +
 	xlab(NULL) +
 	ylab(NULL) +
 	theme_bw()
