@@ -159,7 +159,7 @@ STCOSPrep <- R6Class("STCOSPrep",
 			logger("Begin adding observed space-time domain\n")
 			out <- self$domain2model(domain, period, geo_name)
 
-			logger("Extracting survey estimates from field '%s'", estimate_name)
+			logger("Extracting direct estimates from field '%s'", estimate_name)
 			printf(" and variance estimates from field '%s'\n", variance_name)
 			z <- domain[[estimate_name]]
 			v <- domain[[variance_name]]
