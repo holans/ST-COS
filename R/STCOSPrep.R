@@ -18,6 +18,7 @@ STCOSPrep <- R6Class("STCOSPrep",
 		initialize = function(fine_domain, fine_domain_geo_name, basis, basis_mc_reps = 500, report_period = 100) {
 			stopifnot(inherits(fine_domain, "sf"))
 			stopifnot(inherits(basis, "SpaceTimeBisquareBasis"))
+			stopifnot(fine_domain_geo_name %in% colnames(fine_domain))
 
 			private$fine_domain <- fine_domain
 			private$H_list <- list()
@@ -37,6 +38,7 @@ STCOSPrep <- R6Class("STCOSPrep",
 		{
 			stopifnot(class(estimate_name) == "character")
 			stopifnot(class(variance_name) == "character")
+			stopifnot(geo_name %in% colnames(domain))
 
 			logger("Begin adding observed space-time domain\n")
 			out <- self$domain2model(domain, period, geo_name)
