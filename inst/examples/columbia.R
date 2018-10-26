@@ -125,7 +125,8 @@ ggplot(acs5.2015) +
 
 #' # Load Target Supports
 #' Make sure to transform to the same projection as the fine-level support.
-neighbs <- st_read("shp/neighborhoods.shp") %>%
+data(columbia_neighbs)
+neighbs <- columbia_neighbs %>%
 	st_transform(crs = st_crs(dom.fine))
 
 #' A quick plot of the neighborhoods.

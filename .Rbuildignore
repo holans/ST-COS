@@ -13,3 +13,4 @@ stan
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^inst/note
+^columbia-files$

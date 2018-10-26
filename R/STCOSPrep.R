@@ -322,7 +322,7 @@ STCOSPrep <- R6Class("STCOSPrep",
 			Sconnector <- Matrix(0, 0, r)
 			for (t in 1:T) {
 				idx <- 1:n + (t-1)*n
-				logger("Constructing S matrix for fine-scale at time %d of %d\n", t, T)
+				logger("Constructing S matrix for fine-scale at time %d\n", times[t])
 				S <- compute_spt_basis_mc(basis = private$basis,
 					domain = private$fine_domain,
 					R = private$basis_mc_reps, period = times[t],
@@ -351,7 +351,7 @@ STCOSPrep <- R6Class("STCOSPrep",
 			Qinv <- solve(Q)
 
 			# Target covariance
-			logger("Computing target covariance\n")
+			logger("Begin computing K\n")
 			if (!autoreg) {
 				# Assume no autocovariance between spatial domains
 				K <- sptcovar.indep(Qinv, Sconnectorf, lag_max = T)
@@ -366,14 +366,17 @@ STCOSPrep <- R6Class("STCOSPrep",
 				licols.out <- licols(as.matrix(X))
 				B <- Matrix(licols.out$Xsub)
 				P_perp <- Diagonal(nrow(B),1) - B %*% solve(t(B) %*% B, t(B))
+				if (norm(P_perp, type = "F") < 1e-6) {
+					warning("P_perp is almost a zero matrix. Try an X with covariates.")
+				}
 				eig <- eigen(P_perp, symmetric = TRUE)
 				M <- Re(eig$vectors)
 				M <- (M + t(M)) / 2
 
 				# Target Covariance
-				logger("Computing target covariance\n")
 				K <- sptcovar.vectautoreg(Qinv, M, Sconnectorf, lag_max = T)
 			}
+			logger("Finished computing K\n")
 
 			eig <- eigen(K)
 			P <- Re(eig$vectors)
