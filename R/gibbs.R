@@ -85,10 +85,8 @@ gibbs.stcos.raw <- function(z, v, H, S, K.inv, R, report.period = R+1,
 	HpVinv <- t(H) %*% Diagonal(n = length(vinv), x = vinv)
 	HpinvVH <- HpVinv %*% H
 
-	logger("Begin computing eigenvalues/vectors of HpinvVH\n")
 	eig.HpinvVH <- eigen(HpinvVH, symmetric = TRUE)
 	eig.HpinvVH$vectors <- Matrix(eig.HpinvVH$vectors)
-	logger("Finished computing eigenvalues/vectors of HpinvVH\n")
 
 	tt.keep <- 0
 	R.keep <- ceiling((R - burn) / thin)
@@ -143,13 +141,11 @@ gibbs.stcos.raw <- function(z, v, H, S, K.inv, R, report.period = R+1,
 	if (is.null(hyper$b.sig2K)) { hyper$b.sig2K <- 2 }
 	if (is.null(hyper$b.sig2xi)) { hyper$b.sig2xi <- 2 }
 
-	logger("Begin computing SpinvV\n")
 	SpinvV <- matrix(NA, r, n)
 	for (j in 1:r) {
 		SpinvV[j,] <- S[,j] / v
 	}
 	SpinvVS <- SpinvV %*% S
-	logger("Finished computing SpinvV\n")
 	timer$pre <- timer$pre + as.numeric(Sys.time() - st, units = "secs")
 
 	logger("Begin Gibbs sampler\n")

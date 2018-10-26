@@ -13,7 +13,7 @@
 #' 
 #' S <- sp$get_S()
 #'
-#' sp$set_basis_reduction(f = identity)
+#' sp$set_basis_reduction_dim(r)
 #' 
 #' sp$get_reduced_S()
 #'
@@ -68,8 +68,8 @@
 #' \item \code{$get_reduced_S} Same as \code{get_S}, except first apply the dimension
 #' reduction function (which is the identity function by default).
 #' \item \code{$get_geo} Get vector of GEO IDs from added source supports.
-#' \item \code{$set_basis_reduction} Set the dimension reduction function to be
-#' applied to \code{S} and related matrices.
+#' \item \code{$set_basis_reduction_dim} Set the target dimension if we wish to apply
+#' reduction via principal components to \code{S} and related matrices.
 #' \item \code{$get_basis} Get the basis function which has been used to construct
 #' this object.
 #' \item \code{$get_Kinv} Compute the \code{K.inv} matrix.
@@ -90,9 +90,7 @@
 #' S <- sp$get_S()
 #' eig <- eigen(t(S) %*% S)
 #' idx.S <- which(cumsum(eig$values) / sum(eig$values) < 0.75)
-#' Tx.S <- t(eig$vectors[idx.S,])
-#' f <- function(S) { S %*% Tx.S }
-#' sp$set_basis_reduction(f)
+#' sp$set_basis_reduction_dim(max(idx.S))
 #' 
 #' # Get quantities needed for MCMC
 #' S.reduced <- sp$get_reduced_S()
@@ -127,12 +125,14 @@ STCOSPrep <- R6Class("STCOSPrep",
 		geo_list = NULL,
 		N = NULL,
 		L = NULL,
-		basis = NULL
-	),
-	public = list(
+		r = NULL,
+		basis = NULL,
 		basis_reduction = NULL,
 		basis_mc_reps = NULL,
 		report_period = NULL,
+		reduction_modified = NULL
+	),
+	public = list(
 		initialize = function(fine_domain, fine_domain_geo_name, basis, basis_mc_reps = 500, report_period = 100) {
 			stopifnot(inherits(fine_domain, "sf"))
 			stopifnot(inherits(basis, "SpaceTimeBisquareBasis"))
@@ -146,11 +146,13 @@ STCOSPrep <- R6Class("STCOSPrep",
 			private$geo_list <- list()
 			private$N <- 0
 			private$L <- 0
-			self$basis_mc_reps <- basis_mc_reps
+			private$basis_mc_reps <- basis_mc_reps
 			private$basis <- basis
-			self$basis_reduction <- identity
-			self$report_period <- report_period
+			private$basis_reduction <- identity
+			private$r <- basis$get_dim()
+			private$report_period <- report_period
 			private$fine_domain_geo_name <- fine_domain_geo_name
+			private$reduction_modified <- FALSE
 		},
 		add_obs = function(domain, period, estimate_name, variance_name, geo_name)
 		{
@@ -176,6 +178,7 @@ STCOSPrep <- R6Class("STCOSPrep",
 			geo <- out$geo
 			geo$obs <- private$L
 			private$geo_list[[private$L]] <- geo
+			private$reduction_modified <- TRUE
 
 			logger("Finished adding observed space-time domain\n")
 		},
@@ -186,7 +189,7 @@ STCOSPrep <- R6Class("STCOSPrep",
 			H <- private$H_list[idx]
 			S <- private$S_list[idx]
 			geo <- private$geo_list[idx]
-			S.reduced <- lapply(S, self$basis_reduction)
+			S.reduced <- lapply(S, private$basis_reduction)
 
 			list(z = z, v = v, H = H, S = S, geo = geo, S.reduced = S.reduced)
 		},
@@ -204,9 +207,9 @@ STCOSPrep <- R6Class("STCOSPrep",
 
 			logger("Computing basis functions\n")
 			S <- compute_spt_basis_mc(basis = private$basis, domain = domain,
-				R = self$basis_mc_reps, period = period,
-				report.period = self$report_period)
-			S.reduced <- self$basis_reduction(S)
+				R = private$basis_mc_reps, period = period,
+				report.period = private$report_period)
+			S.reduced <- private$basis_reduction(S)
 
 			geo <- data.frame(row = 1:nrow(domain), geo_id = domain[[geo_name]])
 			list(H = H, S = S, S.reduced = S.reduced, geo = geo)
@@ -271,7 +274,10 @@ STCOSPrep <- R6Class("STCOSPrep",
 		},
 		get_reduced_S = function()
 		{
-			self$basis_reduction(self$get_S())
+			if (private$reduction_modified) {
+				self$update_basis_reduction()
+			}
+			private$basis_reduction(self$get_S())
 		},
 		get_geo = function()
 		{
@@ -289,10 +295,49 @@ STCOSPrep <- R6Class("STCOSPrep",
 		{
 			stopifnot(is.function(f))
 			self$basis_reduction <- f
+		}
+		update_basis_reduction = function()
+		{
+			if (private$r == 0) {
+				f <- function(S) {
+					S.Tx <- Matrix(0, private$N, 0)
+					return(S.Tx)
+				}
+			} else {
+				S <- self$get_S()
+				eig <- eigs_sym(t(S) %*% S, k = private$r)
+				idx <- seq_len(private$r)
+				Tx <- eig$vectors[,rev(idx)]				
+				f <- function(S) {
+					return(S %*% Tx)
+				}
+			}
+			private$basis_reduction <- f
+			private$reduction_modified <- FALSE
+		},
+		set_basis_reduction_dim = function(r)
+		{
+			stopifnot(is.numeric(r) && r >= 0 && r <= private$basis$get_dim())
+			if (private$r != r) {
+				private$reduction_modified <- TRUE
+				private$r <- r
+			}
 		},
 		get_basis = function()
 		{
 			return(private$basis)
+		},
+		get_basis_mc_reps = function()
+		{
+			return(private$basis_mc_reps)
+		},
+		get_report_period = function()
+		{
+			return(private$report_period)
+		},
+		get_basis_reduction = function()
+		{
+			return(private$basis_reduction)
 		},
 		get_Kinv = function(times, X = NULL, autoreg = TRUE)
 		{
@@ -309,8 +354,10 @@ STCOSPrep <- R6Class("STCOSPrep",
 			for (t in 1:T) {
 				idx <- 1:n + (t-1)*n
 				logger("Constructing S matrix for fine-scale at time %d of %d\n", t, T)
-				S <- compute_spt_basis_mc(basis = private$basis, domain = private$fine_domain,
-					R = self$basis_mc_reps, period = times[t], report.period = self$report_period)
+				S <- compute_spt_basis_mc(basis = private$basis,
+					domain = private$fine_domain,
+					R = private$basis_mc_reps, period = times[t],
+					report.period = private$report_period)
 
 				# rbind usually slows performance, but here it's a lot faster
 				# than doing Sconnector[idx,] <- S
@@ -318,7 +365,10 @@ STCOSPrep <- R6Class("STCOSPrep",
 			}
 
 			# Reduction should be same as the one used on S matrix for the observations
-			Sconnectorf <- self$basis_reduction(Sconnector)
+			if (private$reduction_modified) {
+				self$update_basis_reduction()
+			}
+			Sconnectorf <- private$basis_reduction(Sconnector)
 
 			# Compute adjacency matrix
 			logger("Computing adjacency matrix\n")
@@ -381,5 +431,5 @@ STCOSPrep <- R6Class("STCOSPrep",
 # STCOSPrep$set("public", "get_Kinv", get_Kinv)
 # STCOSPrep$set("public", "add_obs", add_obs)
 # STCOSPrep$set("public", "domain2model", domain2model)
-# STCOSPrep$set("public", "set_basis_reduction", set_basis_reduction)
+# STCOSPrep$set("public", "set_basis_reduction_dim", set_basis_reduction_dim)
 # STCOSPrep$lock()

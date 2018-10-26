@@ -49,7 +49,7 @@ mle.stcos <- function(z, v, H, S, K.inv, init = NULL,
 
 		Sigma <- sig2K * (S %*% K %*% t(S)) + diag(x = sig2xi + v)
 		Sigma.inv.H <- solve(Sigma, H)
-		mu.hat <- ginv(as.matrix(t(H) %*% Sigma.inv.H)) %*% (t(Sigma.inv.H) %*% z)
+		mu.hat <- pinv(as.matrix(t(H) %*% Sigma.inv.H)) %*% (t(Sigma.inv.H) %*% z)
 		# mu.hat <- as.numeric(solve(t(H) %*% Sigma.inv.H, t(Sigma.inv.H) %*% z))
 
 		logdet <- determinant(Sigma)
@@ -70,7 +70,7 @@ mle.stcos <- function(z, v, H, S, K.inv, init = NULL,
 	Sigma.hat <- (sig2K.hat * S %*% K %*% t(S)) + diag(x = sig2xi.hat + v)
 	Sigma.inv.H.hat <- solve(Sigma.hat, H)
 	# mu.hat <- as.numeric(solve(t(H) %*% Sigma.inv.H.hat, t(Sigma.inv.H.hat) %*% z))
-	mu.hat <- ginv(as.matrix(t(H) %*% Sigma.inv.H.hat)) %*% (t(Sigma.inv.H.hat) %*% z)
+	mu.hat <- pinv(as.matrix(t(H) %*% Sigma.inv.H.hat)) %*% (t(Sigma.inv.H.hat) %*% z)
 
 	list(sig2K.hat = sig2K.hat, sig2xi.hat = sig2xi.hat,
 		mu.hat = mu.hat, res = res, elapsed.sec = elapsed.sec)

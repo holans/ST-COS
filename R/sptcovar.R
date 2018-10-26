@@ -16,7 +16,7 @@ sptcovar.vectautoreg <- function(Qinv, M, S, lag_max)
 	if (rankMatrix(SpS) < r) {
 		warning("The matrix (S' S) is rank-deficient. Consider reducing the dimension of S")
 	}
-	SpSinv <- ginv(as.matrix(SpS))
+	SpSinv <- pinv(as.matrix(SpS))
 
 	# Get all the the autocovariances we'll need
 	logger("About to call covVAR1\n")
@@ -53,7 +53,7 @@ sptcovar.randwalk <- function(Qinv, M, S, lag_max)
 	if (rankMatrix(SpS) < r) {
 		warning("The matrix (S' S) is rank-deficient. Consider reducing the dimension of S")
 	}
-	SpSinv <- ginv(as.matrix(SpS))
+	SpSinv <- pinv(as.matrix(SpS))
 
 	C <- matrix(0, r, r)
 	for (i in 1:lag_max) {
@@ -80,7 +80,7 @@ sptcovar.indep <- function(Qinv, S, lag_max)
 	if (rankMatrix(SpS) < r) {
 		warning("The matrix (S' S) is rank-deficient. Consider reducing the dimension of S")
 	}
-	SpSinv <- ginv(as.matrix(SpS))
+	SpSinv <- pinv(as.matrix(SpS))
 	
 	C <- matrix(0, r, r)
 	for (i in 1:lag_max) {

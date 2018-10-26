@@ -26,7 +26,7 @@ covVAR1 <- function(A, Sigma, lag_max)
 	if (isSymmetric(V)) {
 		V.inv <- t(V)
 	} else {
-		V.inv <- ginv(V)
+		V.inv <- pinv(V)
 	}
 	C <- V.inv %*% as.matrix(Sigma) %*% t(V.inv)
 	rm(V.inv)
