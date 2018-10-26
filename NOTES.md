@@ -1,3 +1,12 @@
+# Test code
+We might want to add some test code for the following:
+* Basis functions, on a small geography
+* Autocovariance function
+* licols
+* Overlap calculation
+* MLE
+* Gibbs sampler
+
 # Notes
 * Needed to install udunits library as a prereq for `sf` package. In Ubuntu, I
 did this.
@@ -45,6 +54,7 @@ AOAS paper and possibly also the Cressie and Wilke book.
 - [ ] Correctness of basis calculation vs Matlab
 - [ ] Computation of `Kinv`
 - [ ] Result of `sptcov` function
+- [ ] MLE computation - ensure eta is treated as random effect (not prior)
 
 # To ask
 - [ ] Should we keep the magic factor of 0.9 in `Q = I - 0.9 countAdj`?

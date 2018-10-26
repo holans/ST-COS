@@ -1,11 +1,129 @@
+# The following documentation format was suggested in
+# https://stackoverflow.com/questions/45431845/documenting-r6-classes-and-methods-within-r-package-in-rstudio/45603005#
+
+#' STCOS Preparation
+#' 
+#' An \code{\link{R6Class}} for preparing an STCOS analysis.
+#' 
+#' @section Usage:
+#' \preformatted{
+#' sp <- STCOSPrep$new(fine_domain, fine_domain_geo_name, basis, basis_mc_reps = 500, report_period = 100)
+#' 
+#' sp$add_obs(domain, period, estimate_name, variance_name, geo_name)
+#' 
+#' S <- sp$get_S()
+#'
+#' sp$set_basis_reduction(f = identity)
+#' 
+#' sp$get_reduced_S()
+#'
+#' sp$get_Kinv(times, X = NULL, autoreg = TRUE)
+#' 
+#' sp$get_obs(idx)
+#' 
+#' sp$get_basis()
+#' 
+#' sp$get_geo()
+#' }
+#' 
+#' @section Arguments:
+#' \itemize{
+#' \item \code{fine_domain} An \code{sf} object; the fine-level support for the analysis.
+#' \item \code{fine_domain_geo_name} The name of the field in \code{fine_domain} which represents
+#' a unique geographical ID.
+#' \item \code{basis} An object of type \code{SpaceTimeBisquareBasis}.
+#' \item \code{basis_mc_reps} Number of Monte Carlo reps to use when computing
+#' area-level basis function decomposition.
+#' \item \code{report_period} Gibbs sampler will report progress each time this many
+#' iterations are completed.
+#' \item \code{domain} An \code{sf} object; a source support for the analysis.
+#' \item \code{period} A vector of times from which the estimates were computed. For
+#' example, to indicate 2015 ACS 5-year estimates, use \code{period = 2011:2015}.
+#' \item \code{estimate_name} Name of the field which contains direct estimates.
+#' \item \code{variance_name} Name of the field which contains direct variance estimates.
+#' \item \code{geo_name} Name of the fiend which represents unique geographical ID.
+#' \item \code{idx} A vector of indices.
+#' \item \code{f} A function which performs a dimension reduction.
+#' \item \code{times} A vector of times relevant to the analysis.
+#' \item \code{X} A fixed covariate, if one is available.
+#' \item \code{autoreg} A boolean; if TRUE, assume an autoregressive covariance
+#' structure in time. Otherwise assume independence between times.
+#' }
+#' 
+#' @section Methods:
+#' \itemize{
+#' \item \code{$new} Create a new \code{STCOSPrep} object, which does not yet
+#' contain any source supports.
+#' \item \code{$add_obs} Add a source support.
+#' \item \code{$get_obs} Get a source support(s) which have already been added.
+#' \item \code{$domain2model} Compute \code{H} and \code{S} matrix fragments
+#' for a given source support.
+#' \item \code{$get_z} Get vector of direct estimates from added source supports.
+#' \item \code{$get_v} Get vector of direct variance estimates from added source
+#' supports.
+#' \item \code{$get_H} Get matrix of overlaps between fine-level support and added
+#' source supports.
+#' \item \code{$get_S} Get design matrix based on basis function decomposition, based
+#' on added source supports.
+#' \item \code{$get_reduced_S} Same as \code{get_S}, except first apply the dimension
+#' reduction function (which is the identity function by default).
+#' \item \code{$get_geo} Get vector of GEO IDs from added source supports.
+#' \item \code{$set_basis_reduction} Set the dimension reduction function to be
+#' applied to \code{S} and related matrices.
+#' \item \code{$get_basis} Get the basis function which has been used to construct
+#' this object.
+#' \item \code{$get_Kinv} Compute the \code{K.inv} matrix.
+#' }
+#'
+#' @name STCOSPrep
+#' 
+#' @examples
+#' \dontrun{
+#' sp <- STCOSPrep$new(dom.fine, "GEO_ID", basis, 500)
+#' 
+#' # Add source support data
+#' sp$add_obs(acs1.2015, 2015, "DirectEst", "DirectVar", "GEO_ID")
+#' ...
+#' sp$add_obs(acs5.2015, 2011:2015, "DirectEst", "DirectVar", "GEO_ID")
+#' 
+#' # Reduce dimension of the design matrix with basis expansion
+#' S <- sp$get_S()
+#' eig <- eigen(t(S) %*% S)
+#' idx.S <- which(cumsum(eig$values) / sum(eig$values) < 0.75)
+#' Tx.S <- t(eig$vectors[idx.S,])
+#' f <- function(S) { S %*% Tx.S }
+#' sp$set_basis_reduction(f)
+#' 
+#' # Get quantities needed for MCMC
+#' S.reduced <- sp$get_reduced_S()
+#' z <- sp$get_z()
+#' v <- sp$get_v()
+#' H <- sp$get_H()
+#'
+#' # compute K.inv matrix using Random-Walk method
+#' K.inv <- sp$get_Kinv(2011:2015)
+#' 
+#' # Retrieve some of the source supports
+#' sp$get_obs(idx = c(2,4,7))
+#' 
+#' # Return the basis function object from which sp was constructed
+#' sp$get_basis()
+#' 
+#' # Return the GEO IDs which have been processed so far
+#' sp$get_geo()
+#' }
+NULL
+
+#' @export
+#' @docType class
 STCOSPrep <- R6Class("STCOSPrep",
 	private = list(
 		fine_domain = NULL,
 		fine_domain_geo_name = NULL,
 		H_list = NULL,
 		S_list = NULL,
-		Z_list = NULL,
-		V_list = NULL,
+		z_list = NULL,
+		v_list = NULL,
 		geo_list = NULL,
 		N = NULL,
 		L = NULL,
@@ -23,8 +141,8 @@ STCOSPrep <- R6Class("STCOSPrep",
 			private$fine_domain <- fine_domain
 			private$H_list <- list()
 			private$S_list <- list()
-			private$Z_list <- list()
-			private$V_list <- list()
+			private$z_list <- list()
+			private$v_list <- list()
 			private$geo_list <- list()
 			private$N <- 0
 			private$L <- 0
@@ -43,16 +161,16 @@ STCOSPrep <- R6Class("STCOSPrep",
 			logger("Begin adding observed space-time domain\n")
 			out <- self$domain2model(domain, period, geo_name)
 
-			logger("Extracting survey estimates from field '%s'", estimate_name)
+			logger("Extracting direct estimates from field '%s'", estimate_name)
 			printf(" and variance estimates from field '%s'\n", variance_name)
-			Z <- domain[[estimate_name]]
-			V <- domain[[variance_name]]
+			z <- domain[[estimate_name]]
+			v <- domain[[variance_name]]
 
 			# Update internal state
 			private$N <- private$N + nrow(domain)
 			private$L <- private$L + 1
-			private$Z_list[[private$L]] <- Z
-			private$V_list[[private$L]] <- V
+			private$z_list[[private$L]] <- z
+			private$v_list[[private$L]] <- v
 			private$H_list[[private$L]] <- out$H
 			private$S_list[[private$L]] <- out$S
 			geo <- out$geo
@@ -63,14 +181,14 @@ STCOSPrep <- R6Class("STCOSPrep",
 		},
 		get_obs = function(idx = 1:private$L)
 		{
-			Z <- private$Z_list[idx]
-			V <- private$V_list[idx]
+			z <- private$z_list[idx]
+			v <- private$v_list[idx]
 			H <- private$H_list[idx]
 			S <- private$S_list[idx]
 			geo <- private$geo_list[idx]
 			S.reduced <- lapply(S, self$basis_reduction)
 
-			list(Z = Z, V = V, H = H, S = S, geo = geo, S.reduced = S.reduced)
+			list(z = z, v = v, H = H, S = S, geo = geo, S.reduced = S.reduced)
 		},
 		domain2model = function(domain, period, geo_name)
 		{
@@ -93,35 +211,35 @@ STCOSPrep <- R6Class("STCOSPrep",
 			geo <- data.frame(row = 1:nrow(domain), geo_id = domain[[geo_name]])
 			list(H = H, S = S, S.reduced = S.reduced, geo = geo)
 		},
-		get_Z = function()
+		get_z = function()
 		{
 			n <- nrow(private$fine_domain)
-			Z <- numeric(private$N)
+			z <- numeric(private$N)
 			L <- private$L
 			cnt <- 0
 
 			for (l in 1:L) {
-				idx <- 1:length(private$Z_list[[l]]) + cnt
-				Z[idx] <- private$Z_list[[l]]
+				idx <- 1:length(private$z_list[[l]]) + cnt
+				z[idx] <- private$z_list[[l]]
 				cnt <- cnt + length(idx)
 			}
 
-			return(Z)
+			return(z)
 		},
-		get_V = function()
+		get_v = function()
 		{
 			n <- nrow(private$fine_domain)
-			V <- numeric(private$N)
+			v <- numeric(private$N)
 			L <- private$L
 			cnt <- 0
 
 			for (l in 1:L) {
-				idx <- 1:length(private$V_list[[l]]) + cnt
-				V[idx] <- private$V_list[[l]]
+				idx <- 1:length(private$v_list[[l]]) + cnt
+				v[idx] <- private$v_list[[l]]
 				cnt <- cnt + length(idx)
 			}
 
-			return(V)
+			return(v)
 		},
 		get_H = function()
 		{
@@ -254,8 +372,8 @@ STCOSPrep <- R6Class("STCOSPrep",
 	)
 )
 
-# STCOSPrep$set("public", "get_Z", get_Z)
-# STCOSPrep$set("public", "get_V", get_V)
+# STCOSPrep$set("public", "get_z", get_z)
+# STCOSPrep$set("public", "get_v", get_v)
 # STCOSPrep$set("public", "get_H", get_H)
 # STCOSPrep$set("public", "get_S", get_S)
 # STCOSPrep$set("public", "get_reduced_S", get_reduced_S)

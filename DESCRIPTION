@@ -1,13 +1,14 @@
 Package: stcos
 Type: Package
 Title: Space-Time Change of Support
-Version: 0.0.1
-Date: 2017-05-13
+Version: 0.1.0
+Date: 2018-10-07
 Author: Andrew M. Raim, Scott Holan
 Maintainer: Andrew M. Raim <andrew.raim@gmail.com>
-Description: An R Package for Space-Time Change of Support modeling (TBD). 
+Description: An R Package for Space-Time Change of Support (STCOS) modeling based on the paper <doi: 10.1002/sta4.94>. 
 License: GPL (>= 2)
 Imports: R6
-Depends: Rcpp, Matrix, sf, coda, MASS
+Depends: Rcpp, Matrix, sf, MASS
 LinkingTo: Rcpp, RcppArmadillo
-RoxygenNote: 6.0.1
+RoxygenNote: 6.1.0
+Encoding: UTF-8

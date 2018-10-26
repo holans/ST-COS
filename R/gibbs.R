@@ -1,24 +1,74 @@
+#' Gibbs Sampler for STCOS Model
+#'
+#' Run the Gibbs sampling algorithm for the STCOS model. \code{gibbs.stcos}
+#' presents a simplified interface, while \code{gibbs.stcos.raw} allows
+#' all inputs to be specified separately.
+#'
+#' @param z Vector which represents the outcome; assumed to be direct
+#'        estimates from the survey.
+#' @param S Design matrix for basis decomposition.
+#' @param v Vector which represents direct variance estimates from the survey.
+#' @param K.inv Inverse of the \eqn{K} matrix, which is the covariance of the
+#'        random coefficient \eqn{\eta}
+#' @param H Matrix of overlaps between source and fine-level supports.
+#' @param init A list containing the following initial values for the MCMC:
+#' 	      \code{sig2mu}, \code{sig2xi}, \code{sig2K}, \code{mu_B}, \code{eta},
+#' 	      \code{xi}. Any values which are not specified are set to arbitrary
+#' 	      choices.
+#' @param fixed A list specifying which parameters to keep fixed in the MCMC.
+#'        This can normally be left blank. If elements \code{sig2mu},
+#'        \code{sig2xi}, or \code{sig2K} are specified they should be boolean,
+#'        where TRUE means fixed (i.e. not drawn). If elements \code{mu_B},
+#'        \code{eta}, or \code{xi} are specified, they should each be a vector
+#'        of indicies; the specified indices are to be treated as fixed (i.e.
+#'        not drawn).
+#' @param prep An \code{STCOSprep} object.
+#' @param R Number of MCMC reps.
+#' @param report.period Gibbs sampler will report progress each time this many
+#'        iterations are completed.
+#' @param burn Burn this many of \code{R} the draws, before saving history.
+#' @param thin After burn-ikn period, save one out of every \code{thin} draws.
+#' @param hyper A list containing the following hyperparameter values:
+#' 	      \code{a.sig2mu}, \code{a.sig2K}, \code{a.sig2xi}, \code{b.sig2mu},
+#' 	      \code{b.sig2K}, \code{b.sig2xi}. Any hyperparameters which are not
+#' 	      specified are set to a default value of 2.
+#'
+#' @return An \code{stcos} object which contains draws from the sampler.
+#'
+#' @examples
+#' \dontrun{
+#' basis <- SpaceTimeBisquareBasis$new(x, y, t, w.s, w.t)
+#' sp <- STCOSPrep$new(fine_domain = dom.fine,
+#'     fine_domain_geo_name = "GEO_ID",
+#'     basis = basis, basis_mc_reps = 500)
+#' out1 <- gibbs.stcos(sp, R = 10000, burn = 0, thin = 1)
+#' 
+#' out2 <- gibbs.stcos.raw(z = sp$get_z(), S = sp$get_reduced_S(),
+#'     v = sp$get_v(), K.inv = sp$get_Kinv(), H = sp$get_H(),
+#'     R = 10000, burn = 0, thin = 1)
+#' }
+#' @name gibbs
+NULL
+
+#' @name gibbs
+#' @export
 gibbs.stcos <- function(prep, R, report.period = R+1, burn = 0, thin = 1,
-	hyper = NULL, sig2xi.init = NULL)
+	hyper = NULL, init = NULL)
 {
-	Z <- prep$get_Z()
-	V <- prep$get_V()
+	z <- prep$get_z()
+	v <- prep$get_v()
 	H <- prep$get_H()
 	S <- prep$get_reduced_S()
 	K.inv <- prep$get_Kinv()
-	mle.out <- mle.stcos(Z, S, V, H, init = list(sig2xi.init))
 
-	init <- list(
-		sig2xi = mle.out$sig2xi.hat,
-		mu_B = mle.out$mu.hat,
-		eta = mle.out$eta.hat
-	)
-	gibbs.out <- gibbs.stcos.raw(Z = Z, S = S, V = V, K.inv = K.inv, H = H,
+	gibbs.out <- gibbs.stcos.raw(z = z, v = v, H = H, S = S, K.inv = K.inv,
 		R = R, report.period = report.period, burn = burn, thin = thin,
 		init = init, hyper = hyper)
 }
 
-gibbs.stcos.raw <- function(Z, S, V, K.inv, H, R, report.period = R+1,
+#' @name gibbs
+#' @export
+gibbs.stcos.raw <- function(z, v, H, S, K.inv, R, report.period = R+1,
 	burn = 0, thin = 1, init = NULL, fixed = NULL, hyper = NULL)
 {
 	timer <- list(mu_B = 0, sig2mu = 0, eta = 0, xi = 0, sig2xi = 0, sig2K = 0,
@@ -28,11 +78,11 @@ gibbs.stcos.raw <- function(Z, S, V, K.inv, H, R, report.period = R+1,
 	stopifnot(R > burn)
 
 	r <- ncol(S)
-	n <- length(Z)
+	n <- length(z)
 	n_mu <- ncol(H)
 
-	Vinv <- 1 / V
-	HpVinv <- t(H) %*% Diagonal(n = length(Vinv), x = Vinv)
+	vinv <- 1 / v
+	HpVinv <- t(H) %*% Diagonal(n = length(vinv), x = vinv)
 	HpinvVH <- HpVinv %*% H
 
 	logger("Begin computing eigenvalues/vectors of HpinvVH\n")
@@ -96,7 +146,7 @@ gibbs.stcos.raw <- function(Z, S, V, K.inv, H, R, report.period = R+1,
 	logger("Begin computing SpinvV\n")
 	SpinvV <- matrix(NA, r, n)
 	for (j in 1:r) {
-		SpinvV[j,] <- S[,j] / V
+		SpinvV[j,] <- S[,j] / v
 	}
 	SpinvVS <- SpinvV %*% S
 	logger("Finished computing SpinvV\n")
@@ -111,9 +161,9 @@ gibbs.stcos.raw <- function(Z, S, V, K.inv, H, R, report.period = R+1,
 
 		# Draw from [xi | ---] using sparse matrix inverse
 		st <- Sys.time()
-		Sigma.xi.inv <- Vinv + 1/sig2xi
+		Sigma.xi.inv <- vinv + 1/sig2xi
 		Sigma.xi <- 1 / Sigma.xi.inv
-		mean.xi <- Sigma.xi * Vinv * (Z - S %*% eta - H %*% mu_B)
+		mean.xi <- Sigma.xi * vinv * (z - S %*% eta - H %*% mu_B)
 		xi.new <- mean.xi + sqrt(Sigma.xi) * rnorm(n)
 		idx <- setdiff(1:n, fixed$xi)
 		xi[idx] <- xi.new[idx]
@@ -143,7 +193,7 @@ gibbs.stcos.raw <- function(Z, S, V, K.inv, H, R, report.period = R+1,
 		# Draw from [eta | ---]
 		st <- Sys.time()
 		V.eta <- solve(as.matrix((1/sig2K * K.inv) + SpinvVS))
-		mean.eta <- V.eta %*% (SpinvV %*% (Z - H %*% mu_B - xi))
+		mean.eta <- V.eta %*% (SpinvV %*% (z - H %*% mu_B - xi))
 		eta.new <- mean.eta + chol(V.eta) %*% rnorm(r)
 		idx <- setdiff(1:r, fixed$eta)
 		eta[idx] <- eta.new[idx]
@@ -154,8 +204,8 @@ gibbs.stcos.raw <- function(Z, S, V, K.inv, H, R, report.period = R+1,
 		st <- Sys.time()
 		PostLam <- 1 / (eig.HpinvVH$values + 1/sig2mu)
 		# V.mu_B <- eig.HpinvVH$vectors %*% (PostLam * t(eig.HpinvVH$vectors))		# Nice-looking version
-		# mean.mu_B <- V.mu_B %*% (HpVinv %*% (Z - S %*% eta - xi))					# Nice-looking version
-		mean.mu_B <- eig.HpinvVH$vectors %*% ((PostLam * t(eig.HpinvVH$vectors)) %*% (HpVinv %*% (Z - S %*% eta - xi)))		# Ugly version
+		# mean.mu_B <- V.mu_B %*% (HpVinv %*% (z - S %*% eta - xi))					# Nice-looking version
+		mean.mu_B <- eig.HpinvVH$vectors %*% ((PostLam * t(eig.HpinvVH$vectors)) %*% (HpVinv %*% (z - S %*% eta - xi)))		# Ugly version
 		mu_B.new <- mean.mu_B + (eig.HpinvVH$vectors %*% (sqrt(PostLam) * rnorm(n_mu)))
 		idx <- setdiff(1:n_mu, fixed$mu_B)
 		mu_B[idx] <- mu_B.new[idx]
@@ -190,7 +240,7 @@ gibbs.stcos.raw <- function(Z, S, V, K.inv, H, R, report.period = R+1,
 		sig2xi.hist = sig2xi.hist,
 		sig2K.hist = sig2K.hist,
 		Y.hist = Y.hist,
-		Z = Z, H = H, S = S, V = V, R.keep = R.keep,
+		z = z, H = H, S = S, v = v, R.keep = R.keep,
 		elapsed.sec = timer
 	)
 	class(ret) <- "stcos"
@@ -203,6 +253,7 @@ gibbs.stcos.raw <- function(Z, S, V, K.inv, H, R, report.period = R+1,
 	return(ret)
 }
 
+#' @export
 logLik.stcos <- function(object, ...)
 {
 	if (!is.null(object$loglik)) {
@@ -216,14 +267,30 @@ logLik.stcos <- function(object, ...)
 		eta <- object$eta.hist[r,]
 		sig2xi <- object$sig2xi.hist[r]
 		loglik.mcmc[r] <- sum(
-			dnorm(object$Z, as.numeric(object$H %*% mu_B + object$S %*% eta),
-			sqrt(object$V + sig2xi),
+			dnorm(object$z, as.numeric(object$H %*% mu_B + object$S %*% eta),
+			sqrt(object$v + sig2xi),
 			log = TRUE))
 	}
 	return(loglik.mcmc)
 }
 
-DIC.stcos <- function(object, ...)
+#' Deviance Information Criterion
+#' 
+#' A function to compute the Deviance Information Criterion (DIC) on an
+#' \code{stcos} object.
+#'
+#' @param object A result from the Gibbs sampler.
+#'
+#' @return DIC computed from saved draws
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' out1 <- gibbs.stcos(sp, R = 10000, burn = 0, thin = 1)
+#' DIC(out1)
+#' }
+#' @seealso \code{\link{gibbs.stcos}} \code{\link{gibbs.stcos.raw}}
+DIC <- function(object)
 {
 	if (!is.null(object$dic)) {
 		return(object$dic)
@@ -234,18 +301,29 @@ DIC.stcos <- function(object, ...)
 	eta.bar <- colMeans(object$eta.hist)
 	sig2xi.bar <- mean(object$sig2xi.hist)
 	D.thetabar <- -2 * sum(
-		dnorm(object$Z, as.numeric(object$H %*% mu_B.bar + object$S %*% eta.bar),
-		sqrt(object$V + sig2xi.bar),
+		dnorm(object$z, as.numeric(object$H %*% mu_B.bar + object$S %*% eta.bar),
+		sqrt(object$v + sig2xi.bar),
 		log = TRUE))
 	D.bar <- mean(-2*loglik.mcmc)
 	D.thetabar + 2*(D.bar - D.thetabar)
 }
 
-# TBD: We can compute summaries ourselves and remove dependency on coda
+#' @method print stcos
+#' @export
 print.stcos <- function (x, ...)
 {
-	variances.mcmc <- mcmc(cbind(x$sig2mu.hist, x$sig2K.hist, x$sig2xi.hist))
+	# We could compute summaries ourselves and remove dependency on coda ...
+	variances.mcmc <- cbind(x$sig2mu.hist, x$sig2K.hist, x$sig2xi.hist)
 	colnames(variances.mcmc) <- c("sig2mu", "sig2K", "sig2xi")
+	summary.mcmc <- data.frame(
+		apply(variances.mcmc, 2, mean),
+		apply(variances.mcmc, 2, sd),
+		apply(variances.mcmc, 2, quantile, probs = 0.025),
+		apply(variances.mcmc, 2, quantile, probs = 0.25),
+		apply(variances.mcmc, 2, quantile, probs = 0.75),
+		apply(variances.mcmc, 2, quantile, probs = 0.975)
+	)
+	colnames(summary.mcmc) <- c("Mean", "SD", "2.5%", "25%", "75%", "97.5%")
 
 	total.sec <- sum(unlist(x$elapsed.sec))
 	hh <- floor(total.sec / 60^2)
@@ -254,13 +332,16 @@ print.stcos <- function (x, ...)
 
 	printf("Fit for STCOS model\n")
 	printf("--\n")
-	print(summary(variances.mcmc)$statistics)
+	print(summary.mcmc)
 	printf("--\n")
 	printf("Saved %d draws\n", x$R.keep)
 	printf("DIC: %f\n", x$dic)
 	printf("Elapsed time: %02d:%02d:%02d\n", hh, mm, ss)
+
+	invisible(x)
 }
 
+#' @export
 fitted.stcos <- function (object, H, S, ...)
 {
 	R.keep <- object$R.keep
@@ -274,6 +355,7 @@ fitted.stcos <- function (object, H, S, ...)
 	return(E.mcmc)
 }
 
+#' @export
 predict.stcos <- function (object, H, S, ...)
 {
 	R.keep <- object$R.keep
