@@ -117,6 +117,8 @@ NULL
 #' @export
 #' @docType class
 STCOSPrep <- R6Class("STCOSPrep",
+	lock_objects = TRUE,
+	lock_class = TRUE,
 	private = list(
 		fine_domain = NULL,
 		fine_domain_geo_name = NULL,
@@ -385,15 +387,3 @@ STCOSPrep <- R6Class("STCOSPrep",
 		}
 	)
 )
-
-# STCOSPrep$set("public", "get_z", get_z)
-# STCOSPrep$set("public", "get_v", get_v)
-# STCOSPrep$set("public", "get_H", get_H)
-# STCOSPrep$set("public", "get_S", get_S)
-# STCOSPrep$set("public", "get_reduced_S", get_reduced_S)
-# STCOSPrep$set("public", "get_geo", get_geo)
-# STCOSPrep$set("public", "get_Kinv", get_Kinv)
-# STCOSPrep$set("public", "add_obs", add_obs)
-# STCOSPrep$set("public", "domain2model", domain2model)
-# STCOSPrep$set("public", "set_basis_reduction", set_basis_reduction)
-# STCOSPrep$lock()

@@ -58,6 +58,8 @@ NULL
 #' @export
 #' @docType class
 SpaceTimeBisquareBasis <- R6Class("SpaceTimeBisquareBasis",
+	lock_objects = TRUE,
+	lock_class = TRUE,
 	private = list(
 		r = NULL,
 		cutpoints = NULL,
@@ -102,6 +104,3 @@ SpaceTimeBisquareBasis <- R6Class("SpaceTimeBisquareBasis",
 		}
 	)
 )
-
-# SpaceTimeBisquareBasis$set("public", "compute", compute)
-# SpaceTimeBisquareBasis$lock()

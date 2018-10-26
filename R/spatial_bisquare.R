@@ -50,6 +50,8 @@ NULL
 #' @export
 #' @docType class
 SpatialBisquareBasis <- R6Class("SpatialBisquareBasis",
+	lock_objects = TRUE,
+	lock_class = TRUE,
 	private = list(
 		r = NULL,
 		cutpoints = NULL,
@@ -88,7 +90,3 @@ SpatialBisquareBasis <- R6Class("SpatialBisquareBasis",
 		}
 	)
 )
-
-# SpatialBisquareBasis$set("public", "compute", compute)
-# SpatialBisquareBasis$lock()
-
