@@ -192,7 +192,9 @@ eig <- eigen(t(S) %*% S)
 rho <- eig$values
 
 idx.S <- which(cumsum(rho) / sum(rho) < 0.65)
-sp$set_basis_reduction_dim(max(idx.S))
+Tx <- eig$vectors[,idx.S]
+f <- function(S) { S %*% Tx }
+sp$set_basis_reduction(f)
 S.reduced <- sp$get_reduced_S()
 
 #' Plot the proportion of variation captured by our selection of PCA components.
