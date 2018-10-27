@@ -12,7 +12,7 @@
 #' sp$add_obs(domain, period, estimate_name, variance_name, geo_name)
 #' 
 #' S <- sp$get_S()
-#' 
+#'
 #' sp$set_basis_reduction(f)
 #' 
 #' sp$get_reduced_S()
@@ -90,8 +90,8 @@
 #' S <- sp$get_S()
 #' eig <- eigen(t(S) %*% S)
 #' idx.S <- which(cumsum(eig$values) / sum(eig$values) < 0.75)
-#' Tx <- eig$vectors[,idx.S]
-#' f <- function(S) { S %*% Tx }
+#' Tx.S <- t(eig$vectors[idx.S,])
+#' f <- function(S) { S %*% Tx.S }
 #' sp$set_basis_reduction(f)
 #' 
 #' # Get quantities needed for MCMC
@@ -308,7 +308,7 @@ STCOSPrep <- R6Class("STCOSPrep",
 		{
 			return(private$basis_reduction)
 		},
-		get_Kinv = function(times, X = NULL, autoreg = TRUE)
+		get_Kinv = function(times, method = c("moran", "randomwalk", "car", "independence"))
 		{
 			ll <- max(times) - min(times) + 1
 			if (length(times) != ll) {
@@ -319,14 +319,17 @@ STCOSPrep <- R6Class("STCOSPrep",
 			n <- nrow(private$fine_domain)
 			r <- private$basis$get_dim()
 
+			if (method == "independence") {
+				return(Diagonal(n = ncol(self$get_reduced_S())))
+			}
+
+			# Compute basis function for fine-level process
 			Sconnector <- Matrix(0, 0, r)
 			for (t in 1:T) {
 				idx <- 1:n + (t-1)*n
-				logger("Constructing S matrix for fine-scale at time %d\n", times[t])
-				S <- compute_spt_basis_mc(basis = private$basis,
-					domain = private$fine_domain,
-					R = private$basis_mc_reps, period = times[t],
-					report.period = private$report_period)
+				logger("Constructing S matrix for fine-scale at time %d of %d\n", t, T)
+				S <- compute_spt_basis_mc(basis = private$basis, domain = private$fine_domain,
+					R = private$basis_mc_reps, period = times[t], report.period = private$report_period)
 
 				# rbind usually slows performance, but here it's a lot faster
 				# than doing Sconnector[idx,] <- S
@@ -351,32 +354,30 @@ STCOSPrep <- R6Class("STCOSPrep",
 			Qinv <- solve(Q)
 
 			# Target covariance
-			logger("Begin computing K\n")
-			if (!autoreg) {
-				# Assume no autocovariance between spatial domains
+			logger("Computing target covariance\n")
+			if (method == "car") {
+				# Assume covariance structure without dependence over time
 				K <- sptcovar.indep(Qinv, Sconnectorf, lag_max = T)
-			} else if (is.null(X)) {
-				# Take X to be an identity matrix, which leads to M being an identity matrix
+			} else if (method == "randomwalk") {
+				# Assume covariance structure with M as identity matrix
 				M <- Diagonal(n,1)
-
-				# Target Covariance
 				K <- sptcovar.randwalk(Qinv, M, Sconnectorf, lag_max = T)
-			} else {
-				# Use the given X to compute M
-				licols.out <- licols(as.matrix(X))
-				B <- Matrix(licols.out$Xsub)
+			} else if (method == "moran") {
+				# Assume covariance structure with M computed via Moran's I basis
+				knots.sp <- unique(private$basis$get_cutpoints()[,1:2])
+				w.sp <- private$basis$get_ws()
+				basis.sp <- SpatialBisquareBasis$new(knots.sp[,1], knots.sp[,2], w.sp)
+				B <- compute_sp_basis_mc(basis = basis.sp, domain = private$fine_domain,
+					R = private$basis_mc_reps, report.period = private$report_period)
+
 				P_perp <- Diagonal(nrow(B),1) - B %*% solve(t(B) %*% B, t(B))
-				if (norm(P_perp, type = "F") < 1e-6) {
-					warning("P_perp is almost a zero matrix. Try an X with covariates.")
-				}
 				eig <- eigen(P_perp, symmetric = TRUE)
 				M <- Re(eig$vectors)
 				M <- (M + t(M)) / 2
-
-				# Target Covariance
 				K <- sptcovar.vectautoreg(Qinv, M, Sconnectorf, lag_max = T)
+			} else {
+				stop("Invalid argument for method")
 			}
-			logger("Finished computing K\n")
 
 			eig <- eigen(K)
 			P <- Re(eig$vectors)

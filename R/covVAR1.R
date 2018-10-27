@@ -4,8 +4,6 @@
 covVAR1 <- function(A, Sigma, lag_max)
 {
 	A <- as.matrix(A)
-	Sigma <- as.matrix(Sigma)
-
 	m <- nrow(Sigma)
 	N <- m * (lag_max+1)
 	Gamma <- array(NA, dim = c(m, m, lag_max+1))
@@ -26,7 +24,7 @@ covVAR1 <- function(A, Sigma, lag_max)
 	} else {
 		V.inv <- pinv(V)
 	}
-	C <- V.inv %*% as.matrix(Sigma) %*% t(V.inv)
+	C <- V.inv %*% Sigma %*% t(V.inv)
 	rm(V.inv)
 	e <- matrix(1 / (1 - lambda %x% lambda), m^2, 1) * matrix(C, m^2, 1)
 	rm(C)

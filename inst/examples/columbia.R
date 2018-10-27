@@ -206,14 +206,17 @@ abline(h = eigprops[max(idx.S)], lty = 2)
 
 #' Pick a covariance structure for random coefficients of basis expansion.
 if (FALSE) {
-	# Random Walk
-	K.inv <- sp$get_Kinv(2008:2015)
+	# Moran’s I Basis
+	K.inv <- sp$get_Kinv(2008:2015, method = "moran")
 } else if (FALSE) {
-	# Spatial-only
-	K.inv <- sp$get_Kinv(2008:2015, autoreg = FALSE)
+	# Random Walk
+	K.inv <- sp$get_Kinv(2008:2015, method = "randomwalk")
+} else if (FALSE) {
+	# Spatial-only (CAR)
+	K.inv <- sp$get_Kinv(2008:2015, method = "car")
 } else if (TRUE) {
 	# Independence
-	K.inv <- diag(x = 1, nrow = ncol(S.reduced))
+	K.inv <- sp$get_Kinv(2008:2015, method = "independence")
 }
 
 #' Standardize observations before running MCMC.

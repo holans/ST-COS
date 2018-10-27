@@ -20,6 +20,7 @@ sptcovar.vectautoreg <- function(Qinv, M, S, lag_max)
 
 	# Get all the the autocovariances we'll need
 	G <- covVAR1(M, Qinv, lag_max = lag_max)
+
 	Gamma <- function(h) {
 		if (h >= 0) {
 			G[,,h+1]
