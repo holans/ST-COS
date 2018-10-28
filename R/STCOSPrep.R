@@ -308,7 +308,7 @@ STCOSPrep <- R6Class("STCOSPrep",
 		{
 			return(private$basis_reduction)
 		},
-		get_Kinv = function(times, method = c("moran", "randomwalk", "car", "independence"))
+		get_Kinv = function(times, X = NULL, method = c("moran", "randomwalk", "car", "independence"))
 		{
 			ll <- max(times) - min(times) + 1
 			if (length(times) != ll) {
@@ -364,13 +364,17 @@ STCOSPrep <- R6Class("STCOSPrep",
 				K <- sptcovar.randwalk(Qinv, M, Sconnectorf, lag_max = T)
 			} else if (method == "moran") {
 				# Assume covariance structure with M computed via Moran's I basis
-				knots.sp <- unique(private$basis$get_cutpoints()[,1:2])
-				w.sp <- private$basis$get_ws()
-				basis.sp <- SpatialBisquareBasis$new(knots.sp[,1], knots.sp[,2], w.sp)
-				B <- compute_sp_basis_mc(basis = basis.sp, domain = private$fine_domain,
-					R = private$basis_mc_reps, report.period = private$report_period)
+				if (is.null(X)) {
+					knots.sp <- unique(private$basis$get_cutpoints()[,1:2])
+					w.sp <- private$basis$get_ws()
+					basis.sp <- SpatialBisquareBasis$new(knots.sp[,1], knots.sp[,2], w.sp)
+					X <- compute_sp_basis_mc(basis = basis.sp, domain = private$fine_domain,
+						R = private$basis_mc_reps, report.period = private$report_period)
+				} else {
+					stopifnot(nrow(X) == nrow(Sconnectorf))
+				}
 
-				P_perp <- Diagonal(nrow(B),1) - B %*% solve(t(B) %*% B, t(B))
+				P_perp <- Diagonal(nrow(X),1) - X %*% solve(t(X) %*% X, t(X))
 				eig <- eigen(P_perp, symmetric = TRUE)
 				M <- Re(eig$vectors)
 				M <- (M + t(M)) / 2
