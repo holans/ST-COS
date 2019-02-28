@@ -14,27 +14,19 @@ options(width = 80)
 #' In this example, we are given four neighborhoods in the City of Columbia in
 #' Boone County, Missouri. We would like to produce model-based estimates of
 #' median household income for these neighborhoods based on 5-year ACS estimates
-#' for block-groups in Boone County, Missouri from 2012, 2013, 2014, and 2015.
-#' Therefore, the four neighborhoods will be our target supports, and the 2012,
-#' 2013, 2014, 2015 year block-groups will be our source supports.
+#' for block-groups in Boone County, Missouri from years 2013, 2014, ..., 2017.
+#' Therefore, the four neighborhoods will be our target supports, and the 2013 -
+#' 2017 year block-groups will be our source supports.
 set.seed(1234)
 
-#' # Loading Fine-level Support
-#+ message=FALSE
-library(jsonlite)
-library(sf)
-library(tigris)
-library(dplyr)
-library(ggplot2)
-
 #' Load the fine-level support via shapefile using the `tigris` package.
-#' For this, we will use the 2015 block-groups in Boone County, MO.
+#' For this, we will use the 2017 block-groups in Boone County, MO.
 #' Convert it to an `sf` object, and transform to the projection with EPSG
 #' code 3857.
 #+ message=FALSE
 options(tigris_use_cache = TRUE)
 options(tigris_refresh = FALSE)
-dom.fine <- block_groups(state = '29', county = '019', year = 2015) %>%
+dom.fine <- block_groups(state = '29', county = '019', year = 2017) %>%
 	st_as_sf() %>%
 	st_transform(crs = 3857) %>%
 	mutate(geoid = GEOID) %>%
@@ -46,79 +38,11 @@ ggplot(dom.fine) +
 	ggtitle("Boone County, Missouri") +
 	theme_bw()
 
-#' # Assemble Source Supports
-#' The following loop pulls ACS direct estimates and associated MOEs from the
-#' Census Bureau's Data API, and merges them into a single data frame. For more
-#' information about the API, see
-#' <https://www.census.gov/data/developers/guidance/api-user-guide.html>.
-#' Examples of URLs to pull direct estimates and associated MOEs:
-#' 
-#' - <https://api.census.gov/data/2015/acs5?get=NAME,B19013_001E&for=block%20group:*&in=state:29+county:019>
-#' - <https://api.census.gov/data/2015/acs5?get=NAME,B19013_001M&for=block%20group:*&in=state:29+county:019>
-#' 
-#' Note: ACS 2016 data is not available via the API, at the time of this writing.
-
-year.levels <- 2012:2015
-dat.list <- list()
-dat.missing <- list()
-
-for (idx in 1:length(year.levels)) {
-	year <- year.levels[idx]
-
-	est_url <- paste('https://api.census.gov/data/', year,
-		'/acs5?get=NAME,B19013_001E&for=block%20group:*&in=state:29+county:019',
-		sep = '')
-	json_data <- fromJSON(est_url)
-	est_dat <- data.frame(json_data[-1,])
-	colnames(est_dat) <- json_data[1,]
-
-	moe_url <- paste('https://api.census.gov/data/', year,
-		'/acs5?get=NAME,B19013_001M&for=block%20group:*&in=state:29+county:019',
-		sep = '')
-	json_data <- fromJSON(moe_url)
-	moe_dat <- data.frame(json_data[-1,])
-	colnames(moe_dat) <- json_data[1,]
-
-	my_dat <- est_dat %>%
-		inner_join(moe_dat, by = c('state' = 'state', 'county' = 'county',
-			'tract' = 'tract', 'block group' = 'block group')) %>%
-		select(state, county, tract, blockgroup = `block group`,
-			DirectEst = B19013_001E, DirectMOE = B19013_001M) %>%
-		mutate(state = as.character(state)) %>%
-		mutate(county = as.character(county)) %>%
-		mutate(tract = as.character(tract)) %>%
-		mutate(blockgroup = as.character(blockgroup)) %>%
-		mutate(DirectEst = as.numeric(as.character(DirectEst))) %>%
-		mutate(DirectMOE = as.numeric(as.character(DirectMOE))) %>%
-		mutate(DirectVar = (DirectMOE / qnorm(0.95))^2)
-
-	my_shp <- block_groups(state = '29', county = '019', year = year) %>%
-		st_as_sf() %>%
-		st_transform(crs = 3857)
-
-	my_sf <- my_shp %>%
-		inner_join(my_dat, by = c('STATEFP' = 'state', 'COUNTYFP' = 'county',
-			'TRACTCE' = 'tract', 'BLKGRPCE' = 'blockgroup')) %>%
-		select(geoid = GEOID, state = STATEFP, county = COUNTYFP,
-			tract = TRACTCE, blockgroup = BLKGRPCE,
-			DirectEst, DirectMOE, DirectVar)
-
-	dat.list[[idx]] <- my_sf %>%
-		filter(!is.na(DirectEst))
-
-	dat.missing[[idx]] <- my_sf %>%
-		filter(is.na(DirectEst))
-}
-
-#' Our assembled source supports are now `acs5.2012`, ..., `acs5.2015`
-acs5.2012 <- dat.list[[1]]
-acs5.2013 <- dat.list[[2]]
-acs5.2014 <- dat.list[[3]]
-acs5.2015 <- dat.list[[4]]
-rm(dat.list)
+#' Load previously constructed source supports.
+data(acs_sf)
 
 #' A quick plot of one of the source supports.
-ggplot(acs5.2015) +
+ggplot(acs5_2017) +
 	geom_sf(colour = "black", size = 0.05, aes(fill = DirectEst)) +
 	scale_fill_distiller("DirectEst", palette = "RdYlBu") +
 	theme_bw()
@@ -150,7 +74,7 @@ knots.sp <- out$design
 
 #' Select temporal knots to be evenly spaced over the years relevant
 #' to the source support years.
-knots.t <- seq(2008, 2015, by = 0.5)
+knots.t <- seq(2009, 2017, by = 0.5)
 
 #' Use Cartesian join of spatial and temporal knots to obtain spatio-temporal knots.
 knots <- merge(knots.sp, knots.t)
@@ -173,13 +97,15 @@ print(g)
 #' Create an STCOSPrep object and add source supports
 sp <- STCOSPrep$new(fine_domain = dom.fine, fine_domain_geo_name = "geoid",
 	basis = basis, basis_mc_reps = 500)
-sp$add_obs(acs5.2012, period = 2008:2012, estimate_name = "DirectEst",
+sp$add_obs(acs5_2013, period = 2009:2013, estimate_name = "DirectEst",
 	variance_name = "DirectVar", geo_name = "geoid")
-sp$add_obs(acs5.2013, period = 2009:2013, estimate_name = "DirectEst",
+sp$add_obs(acs5_2014, period = 2010:2014, estimate_name = "DirectEst",
 	variance_name = "DirectVar", geo_name = "geoid")
-sp$add_obs(acs5.2014, period = 2010:2014, estimate_name = "DirectEst",
+sp$add_obs(acs5_2015, period = 2011:2015, estimate_name = "DirectEst",
 	variance_name = "DirectVar", geo_name = "geoid")
-sp$add_obs(acs5.2015, period = 2011:2015, estimate_name = "DirectEst",
+sp$add_obs(acs5_2016, period = 2012:2016, estimate_name = "DirectEst",
+	variance_name = "DirectVar", geo_name = "geoid")
+sp$add_obs(acs5_2017, period = 2013:2017, estimate_name = "DirectEst",
 	variance_name = "DirectVar", geo_name = "geoid")
 
 #' Read the objects needed for MCMC
@@ -187,6 +113,8 @@ z <- sp$get_z()
 v <- sp$get_v()
 H <- sp$get_H()
 S <- sp$get_S()
+idx.missing <- which(is.na(z))
+idx.nonmissing <- which(!is.na(z))
 
 #' Dimension reduction of `S` matrix via PCA.
 eig <- eigen(t(S) %*% S)
@@ -207,21 +135,23 @@ abline(h = eigprops[max(idx.S)], lty = 2)
 #' Pick a covariance structure for random coefficients of basis expansion.
 if (FALSE) {
 	# Moran’s I Basis
-	K.inv <- sp$get_Kinv(2008:2015, method = "moran")
+	K.inv <- sp$get_Kinv(2009:2017, method = "moran")
 } else if (FALSE) {
 	# Random Walk
-	K.inv <- sp$get_Kinv(2008:2015, method = "randomwalk")
+	K.inv <- sp$get_Kinv(2009:2017, method = "randomwalk")
 } else if (FALSE) {
 	# Spatial-only (CAR)
-	K.inv <- sp$get_Kinv(2008:2015, method = "car")
+	K.inv <- sp$get_Kinv(2009:2017, method = "car")
 } else if (TRUE) {
 	# Independence
-	K.inv <- sp$get_Kinv(2008:2015, method = "independence")
+	K.inv <- sp$get_Kinv(2009:2017, method = "independence")
 }
 
 #' Standardize observations before running MCMC.
-z.scaled <- (z - mean(z)) / sd(z)
-v.scaled <- v / var(z)
+z.mean <- mean(z, na.rm = TRUE)
+z.sd <- sd(z, na.rm = TRUE)
+z.scaled <- (z - z.mean) / z.sd
+v.scaled <- v / z.sd^2
 
 #' # Fit the Model
 #+ message=FALSE
@@ -229,8 +159,12 @@ library(coda)
 
 #' Fit MLE; this will serve as an initial value for MCMC.
 K <- solve(K.inv)
-mle.out <- mle.stcos(z.scaled, v.scaled, H, S.reduced, K,
-	init = list(sig2K = 1, sig2xi = 1))
+mle.out <- mle.stcos(
+	z.scaled[idx.nonmissing],
+	v.scaled[idx.nonmissing],
+	H[idx.nonmissing,],
+	S.reduced[idx.nonmissing,],
+	K, init = list(sig2K = 1, sig2xi = 1))
 init <- list(
 	sig2K = mle.out$sig2K.hat,
     sig2xi = mle.out$sig2xi.hat,
@@ -238,8 +172,12 @@ init <- list(
 )
 
 #' Run the Gibbs sampler.
-gibbs.out <- gibbs.stcos.raw(z.scaled, v.scaled, H, S.reduced, K.inv,
-	R = 10000, report.period = 2000, burn = 2000, thin = 10, init = init)
+gibbs.out <- gibbs.stcos.raw(
+	z.scaled[idx.nonmissing],
+	v.scaled[idx.nonmissing],
+	H[idx.nonmissing,],
+	S.reduced[idx.nonmissing,],
+	K.inv, R = 10000, report.period = 2000, burn = 2000, thin = 10, init = init)
 print(gibbs.out)
 
 #' Show some trace plots to assess convergence of the sampler.
@@ -259,55 +197,65 @@ plot(varcomps.mcmc)
 #' Compute `H` and `S` matrices and get summaries of posterior distribution for E(Y).
 #' Use 90% significance for all credible intervals and MOEs.
 
-targ.src <- sp$domain2model(acs5.2012, period = 2008:2012, geo_name = "geoid")
+targ.src <- sp$domain2model(acs5_2013, period = 2009:2013, geo_name = "geoid")
 E.hat.scaled <- fitted(gibbs.out, targ.src$H, targ.src$S.reduced)
-E.hat <- sd(z) * E.hat.scaled + mean(z)                   # Uncenter and unscale
-acs5.2012$E.mean <- colMeans(E.hat)                       # Point estimates
-acs5.2012$E.sd <- apply(E.hat, 2, sd)                     # SDs
-acs5.2012$E.lo <- apply(E.hat, 2, quantile, prob = 0.05)  # Credible interval lo
-acs5.2012$E.hi <- apply(E.hat, 2, quantile, prob = 0.95)  # Credible interval hi
-acs5.2012$E.median <- apply(E.hat, 2, median)             # Median
-acs5.2012$E.moe <- apply(E.hat, 2, sd) * qnorm(0.95)      # MOE
+E.hat <- z.sd * E.hat.scaled + z.mean                     # Uncenter and unscale
+acs5_2013$E.mean <- colMeans(E.hat)                       # Point estimates
+acs5_2013$E.sd <- apply(E.hat, 2, sd)                     # SDs
+acs5_2013$E.lo <- apply(E.hat, 2, quantile, prob = 0.05)  # Credible interval lo
+acs5_2013$E.hi <- apply(E.hat, 2, quantile, prob = 0.95)  # Credible interval hi
+acs5_2013$E.median <- apply(E.hat, 2, median)             # Median
+acs5_2013$E.moe <- apply(E.hat, 2, sd) * qnorm(0.95)      # MOE
 
-targ.src <- sp$domain2model(acs5.2013, period = 2009:2013, geo_name = "geoid")
+targ.src <- sp$domain2model(acs5_2014, period = 2010:2014, geo_name = "geoid")
 E.hat.scaled <- fitted(gibbs.out, targ.src$H, targ.src$S.reduced)
-E.hat <- sd(z) * E.hat.scaled + mean(z)                   # Uncenter and unscale
-acs5.2013$E.mean <- colMeans(E.hat)                       # Point estimates
-acs5.2013$E.sd <- apply(E.hat, 2, sd)                     # SDs
-acs5.2013$E.lo <- apply(E.hat, 2, quantile, prob = 0.05)  # Credible interval lo
-acs5.2013$E.hi <- apply(E.hat, 2, quantile, prob = 0.95)  # Credible interval hi
-acs5.2013$E.median <- apply(E.hat, 2, median)             # Median
-acs5.2013$E.moe <- apply(E.hat, 2, sd) * qnorm(0.95)      # MOE
+E.hat <- z.sd * E.hat.scaled + z.mean                     # Uncenter and unscale
+acs5_2014$E.mean <- colMeans(E.hat)                       # Point estimates
+acs5_2014$E.sd <- apply(E.hat, 2, sd)                     # SDs
+acs5_2014$E.lo <- apply(E.hat, 2, quantile, prob = 0.05)  # Credible interval lo
+acs5_2014$E.hi <- apply(E.hat, 2, quantile, prob = 0.95)  # Credible interval hi
+acs5_2014$E.median <- apply(E.hat, 2, median)             # Median
+acs5_2014$E.moe <- apply(E.hat, 2, sd) * qnorm(0.95)      # MOE
 
-targ.src <- sp$domain2model(acs5.2014, period = 2010:2014, geo_name = "geoid")
+targ.src <- sp$domain2model(acs5_2015, period = 2011:2015, geo_name = "geoid")
 E.hat.scaled <- fitted(gibbs.out, targ.src$H, targ.src$S.reduced)
-E.hat <- sd(z) * E.hat.scaled + mean(z)                   # Uncenter and unscale
-acs5.2014$E.mean <- colMeans(E.hat)                       # Point estimates
-acs5.2014$E.sd <- apply(E.hat, 2, sd)                     # SDs
-acs5.2014$E.lo <- apply(E.hat, 2, quantile, prob = 0.05)  # Credible interval lo
-acs5.2014$E.hi <- apply(E.hat, 2, quantile, prob = 0.95)  # Credible interval hi
-acs5.2014$E.median <- apply(E.hat, 2, median)             # Median
-acs5.2014$E.moe <- apply(E.hat, 2, sd) * qnorm(0.95)      # MOE
+E.hat <- z.sd * E.hat.scaled + z.mean                     # Uncenter and unscale
+acs5_2015$E.mean <- colMeans(E.hat)                       # Point estimates
+acs5_2015$E.sd <- apply(E.hat, 2, sd)                     # SDs
+acs5_2015$E.lo <- apply(E.hat, 2, quantile, prob = 0.05)  # Credible interval lo
+acs5_2015$E.hi <- apply(E.hat, 2, quantile, prob = 0.95)  # Credible interval hi
+acs5_2015$E.median <- apply(E.hat, 2, median)             # Median
+acs5_2015$E.moe <- apply(E.hat, 2, sd) * qnorm(0.95)      # MOE
 
-targ.src <- sp$domain2model(acs5.2015, period = 2011:2015, geo_name = "geoid")
+targ.src <- sp$domain2model(acs5_2016, period = 2012:2016, geo_name = "geoid")
 E.hat.scaled <- fitted(gibbs.out, targ.src$H, targ.src$S.reduced)
-E.hat <- sd(z) * E.hat.scaled + mean(z)                   # Uncenter and unscale
-acs5.2015$E.mean <- colMeans(E.hat)                       # Point estimates
-acs5.2015$E.sd <- apply(E.hat, 2, sd)                     # SDs
-acs5.2015$E.lo <- apply(E.hat, 2, quantile, prob = 0.05)  # Credible interval lo
-acs5.2015$E.hi <- apply(E.hat, 2, quantile, prob = 0.95)  # Credible interval hi
-acs5.2015$E.median <- apply(E.hat, 2, median)             # Median
-acs5.2015$E.moe <- apply(E.hat, 2, sd) * qnorm(0.95)      # MOE
+E.hat <- z.sd * E.hat.scaled + z.mean                     # Uncenter and unscale
+acs5_2016$E.mean <- colMeans(E.hat)                       # Point estimates
+acs5_2016$E.sd <- apply(E.hat, 2, sd)                     # SDs
+acs5_2016$E.lo <- apply(E.hat, 2, quantile, prob = 0.05)  # Credible interval lo
+acs5_2016$E.hi <- apply(E.hat, 2, quantile, prob = 0.95)  # Credible interval hi
+acs5_2016$E.median <- apply(E.hat, 2, median)             # Median
+acs5_2016$E.moe <- apply(E.hat, 2, sd) * qnorm(0.95)      # MOE
 
-targ.neighbs <- sp$domain2model(neighbs, period = 2011:2015, geo_name = "Region")
+targ.src <- sp$domain2model(acs5_2017, period = 2013:2017, geo_name = "geoid")
+E.hat.scaled <- fitted(gibbs.out, targ.src$H, targ.src$S.reduced)
+E.hat <- z.sd * E.hat.scaled + z.mean                     # Uncenter and unscale
+acs5_2017$E.mean <- colMeans(E.hat)                       # Point estimates
+acs5_2017$E.sd <- apply(E.hat, 2, sd)                     # SDs
+acs5_2017$E.lo <- apply(E.hat, 2, quantile, prob = 0.05)  # Credible interval lo
+acs5_2017$E.hi <- apply(E.hat, 2, quantile, prob = 0.95)  # Credible interval hi
+acs5_2017$E.median <- apply(E.hat, 2, median)             # Median
+acs5_2017$E.moe <- apply(E.hat, 2, sd) * qnorm(0.95)      # MOE
+
+targ.neighbs <- sp$domain2model(neighbs, period = 2013:2017, geo_name = "Region")
 E.hat.scaled <- fitted(gibbs.out, targ.neighbs$H, targ.neighbs$S.reduced)
-E.hat <- sd(z) * E.hat.scaled + mean(z)              # Uncenter and unscale
-neighbs$E.median <- apply(E.hat, 2, median)
-neighbs$E.moe <- apply(E.hat, 2, sd) * qnorm(0.95)
-neighbs$E.mean <- apply(E.hat, 2, mean)
-neighbs$E.sd <- apply(E.hat, 2, sd)
-neighbs$E.lo <- apply(E.hat, 2, quantile, prob = 0.05)
-neighbs$E.hi <- apply(E.hat, 2, quantile, prob = 0.95)
+E.hat <- z.sd * E.hat.scaled + z.mean                     # Uncenter and unscale
+neighbs$E.mean <- apply(E.hat, 2, mean)                   # Point estimates
+neighbs$E.sd <- apply(E.hat, 2, sd)                       # SDs
+neighbs$E.lo <- apply(E.hat, 2, quantile, prob = 0.05)    # Credible interval lo
+neighbs$E.hi <- apply(E.hat, 2, quantile, prob = 0.95)    # Credible interval hi
+neighbs$E.median <- apply(E.hat, 2, median)               # Median
+neighbs$E.moe <- apply(E.hat, 2, sd) * qnorm(0.95)        # MOE
 
 #' The objective of our analysis - predictions on the four target neighborhoods.
 print(neighbs)
@@ -317,53 +265,42 @@ print(neighbs)
 library(gridExtra)
 library(ggrepel)
 
-#' Maps of direct and model-based 2015 5-year estimates.
-lim.est <- range(acs5.2015$DirectEst, acs5.2015$E.mean)
-g <- ggplot(acs5.2015) +
+#' Maps of direct and model-based 2017 5-year estimates.
+lim.est <- range(acs5_2017$DirectEst, acs5_2017$E.mean)
+g <- ggplot(acs5_2017) +
 	geom_sf(colour = "black", size = 0.05, aes(fill = DirectEst)) +
 	ggtitle("Median Household Income\nfor Boone County",
-		subtitle = "2015 5yr ACS Direct Estimates") +
+		subtitle = "2017 5yr ACS Direct Estimates") +
 	scale_fill_distiller("DirectEst", palette = "RdYlBu", limits = lim.est) +
 	theme_bw()
-h <- ggplot(acs5.2015) +
+h <- ggplot(acs5_2017) +
 	geom_sf(colour = "black", size = 0.05, aes(fill = E.mean)) +
 	ggtitle("Median Household Income\nfor Boone County",
-		subtitle = "2015 5yr Model Estimates") +
+		subtitle = "2017 5yr Model Estimates") +
 	scale_fill_distiller("E.mean", palette = "RdYlBu", limits = lim.est) +
 	theme_bw()
 k <- grid.arrange(g,h, ncol = 2)
 
 #' Scatter plots comparing direct and model-based 5-year estimates for
-#' 2012, ..., 2015.
-g2012 <- ggplot(acs5.2012, aes(x=DirectEst, y=E.mean)) +
-	geom_point(size = 2) +
-	geom_abline(intercept = 0, slope = 1, color="red",
-		linetype="dashed", size=1.2) +
-	ggtitle("2012 5yr ACS Direct Estimates") +
-	labs(x = "Direct Estimate", y = "Model-Based Estimate") +
-	theme_bw()
-g2013 <- ggplot(acs5.2013, aes(x=DirectEst, y=E.mean)) +
-	geom_point(size = 2) +
-	geom_abline(intercept = 0, slope = 1, color="red",
-		linetype="dashed", size=1.2) +
-	ggtitle("2013 5yr ACS Direct Estimates") +
-	labs(x = "Direct Estimate", y = "Model-Based Estimate") +
-	theme_bw()
-g2014 <- ggplot(acs5.2014, aes(x=DirectEst, y=E.mean)) +
-	geom_point(size = 2) +
-	geom_abline(intercept = 0, slope = 1, color="red",
-		linetype="dashed", size=1.2) +
-	ggtitle("2014 5yr ACS Direct Estimates") +
-	labs(x = "Direct Estimate", y = "Model-Based Estimate") +
-	theme_bw()
-g2015 <- ggplot(acs5.2015, aes(x=DirectEst, y=E.mean)) +
-	geom_point(size = 2) +
-	geom_abline(intercept = 0, slope = 1, color="red",
-		linetype="dashed", size=1.2) +
-	ggtitle("2015 5yr ACS Direct Estimates") +
-	labs(x = "Direct Estimate", y = "Model-Based Estimate") +
-	theme_bw()
-k <- grid.arrange(g2012, g2013, g2014, g2015, nrow = 2, ncol = 2)
+#' 2013, ..., 2017.
+scatter.list <- list()
+years <- 2013:2017
+for (idx in 1:length(years)) {
+	year <- years[idx]
+	obj <- get(sprintf("acs5_%d", year))
+	g <- ggplot(obj, aes(x=DirectEst, y=E.mean)) +
+		geom_point(size = 2) +
+		geom_abline(intercept = 0, slope = 1, color="red",
+			linetype="dashed", size=1.2) +
+		ggtitle(sprintf("%d 5yr ACS Direct Estimates", year)) +
+		labs(x = "Direct Estimate", y = "Model-Based Estimate") +
+		theme_bw()
+	scatter.list[[idx]] <- g
+}
+marrangeGrob(scatter.list, nrow = 3, ncol = 2)
+
+idx.outlier2014 <- which.max(acs5_2014$DirectEst)
+idx.missing2017 <- which(is.na(acs5_2017$DirectEst))
 
 #' Plot neighborhood areas (target supports) among ACS 5-year direct estimates;
 #' this gives a sense of whether the model-based esimtates are reasonable.
@@ -373,11 +310,11 @@ Central <- neighbs[1,]
 East <- neighbs[2,]
 North <- neighbs[3,]
 Paris <- neighbs[4,]
-Outlier <- acs5.2015[idx,]
-Missing1 <- dat.missing[[4]][1,]
-Missing2 <- dat.missing[[4]][2,]
-Missing3 <- dat.missing[[4]][3,]
-Missing4 <- dat.missing[[4]][4,]
+Outlier <- acs5_2014[idx.outlier2014,]
+Missing1 <- acs5_2017[idx.missing2017[1],]
+Missing2 <- acs5_2017[idx.missing2017[2],]
+Missing3 <- acs5_2017[idx.missing2017[3],]
+Missing4 <- acs5_2017[idx.missing2017[4],]
 
 # Prevent `sf` package warnings like "st_centroid assumes attributes are
 # constant over geometries of x"
@@ -401,10 +338,10 @@ Missing2.coord <- st_coordinates(st_centroid(Missing2))
 Missing3.coord <- st_coordinates(st_centroid(Missing3))
 Missing4.coord <- st_coordinates(st_centroid(Missing4))
 
-g <- ggplot(acs5.2015) +
+g <- ggplot(acs5_2017) +
 	geom_sf(colour = "black", size = 0.05, aes(fill = DirectEst)) +
 	ggtitle("Median Household Income for Boone County",
-		subtitle = "ACS 2015 5yr Direct Estimates") +
+		subtitle = "ACS 2017 5yr Direct Estimates") +
 	scale_fill_distiller("DirectEst", palette = "RdYlBu", limits = lim.est) +
 	geom_sf(data = neighbs, fill = "black") +
 	geom_label_repel(data = st_centroid(East), nudge_x = 20000, nudge_y = 130000,
