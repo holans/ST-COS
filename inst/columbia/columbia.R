@@ -160,11 +160,13 @@ library(coda)
 #' Fit MLE; this will serve as an initial value for MCMC.
 K <- solve(K.inv)
 mle.out <- mle.stcos(
-	z.scaled[idx.nonmissing],
-	v.scaled[idx.nonmissing],
-	H[idx.nonmissing,],
-	S.reduced[idx.nonmissing,],
-	K, init = list(sig2K = 1, sig2xi = 1))
+	z = z.scaled[idx.nonmissing],
+	v = v.scaled[idx.nonmissing],
+	H = H[idx.nonmissing,],
+	S = S.reduced[idx.nonmissing,],
+	K = K,
+	init = list(sig2K = 1, sig2xi = 1)
+)
 init <- list(
 	sig2K = mle.out$sig2K.hat,
     sig2xi = mle.out$sig2xi.hat,
@@ -173,11 +175,12 @@ init <- list(
 
 #' Run the Gibbs sampler.
 gibbs.out <- gibbs.stcos.raw(
-	z.scaled[idx.nonmissing],
-	v.scaled[idx.nonmissing],
-	H[idx.nonmissing,],
-	S.reduced[idx.nonmissing,],
-	K.inv, R = 10000, report.period = 2000, burn = 2000, thin = 10, init = init)
+	z = z.scaled[idx.nonmissing],
+	v = v.scaled[idx.nonmissing],
+	H = H[idx.nonmissing,],
+	S = S.reduced[idx.nonmissing,],
+	K.inv = K.inv,
+	R = 10000, report.period = 2000, burn = 2000, thin = 10, init = init)
 print(gibbs.out)
 
 #' Show some trace plots to assess convergence of the sampler.
@@ -196,66 +199,25 @@ plot(varcomps.mcmc)
 #' #  Produce Results on target supports
 #' Compute `H` and `S` matrices and get summaries of posterior distribution for E(Y).
 #' Use 90% significance for all credible intervals and MOEs.
+append_results <- function(dat_sf, period, geo_name, alpha = 0.10) {
+	out <- sp$domain2model(dat_sf, period = period, geo_name = geo_name)
+	E.hat.scaled <- fitted(gibbs.out, out$H, out$S.reduced)
+	E.hat <- z.sd * E.hat.scaled + z.mean                      # Uncenter and unscale
+	dat_sf$E.mean <- colMeans(E.hat)                           # Point estimates
+	dat_sf$E.sd <- apply(E.hat, 2, sd)                         # SDs
+	dat_sf$E.lo <- apply(E.hat, 2, quantile, prob = alpha/2)   # Credible interval lo
+	dat_sf$E.hi <- apply(E.hat, 2, quantile, prob = 1-alpha/2) # Credible interval hi
+	dat_sf$E.median <- apply(E.hat, 2, median)                 # Median
+	dat_sf$E.moe <- apply(E.hat, 2, sd) * qnorm(1-alpha/2)     # MOE
+	return(dat_sf)
+}
 
-targ.src <- sp$domain2model(acs5_2013, period = 2009:2013, geo_name = "geoid")
-E.hat.scaled <- fitted(gibbs.out, targ.src$H, targ.src$S.reduced)
-E.hat <- z.sd * E.hat.scaled + z.mean                     # Uncenter and unscale
-acs5_2013$E.mean <- colMeans(E.hat)                       # Point estimates
-acs5_2013$E.sd <- apply(E.hat, 2, sd)                     # SDs
-acs5_2013$E.lo <- apply(E.hat, 2, quantile, prob = 0.05)  # Credible interval lo
-acs5_2013$E.hi <- apply(E.hat, 2, quantile, prob = 0.95)  # Credible interval hi
-acs5_2013$E.median <- apply(E.hat, 2, median)             # Median
-acs5_2013$E.moe <- apply(E.hat, 2, sd) * qnorm(0.95)      # MOE
-
-targ.src <- sp$domain2model(acs5_2014, period = 2010:2014, geo_name = "geoid")
-E.hat.scaled <- fitted(gibbs.out, targ.src$H, targ.src$S.reduced)
-E.hat <- z.sd * E.hat.scaled + z.mean                     # Uncenter and unscale
-acs5_2014$E.mean <- colMeans(E.hat)                       # Point estimates
-acs5_2014$E.sd <- apply(E.hat, 2, sd)                     # SDs
-acs5_2014$E.lo <- apply(E.hat, 2, quantile, prob = 0.05)  # Credible interval lo
-acs5_2014$E.hi <- apply(E.hat, 2, quantile, prob = 0.95)  # Credible interval hi
-acs5_2014$E.median <- apply(E.hat, 2, median)             # Median
-acs5_2014$E.moe <- apply(E.hat, 2, sd) * qnorm(0.95)      # MOE
-
-targ.src <- sp$domain2model(acs5_2015, period = 2011:2015, geo_name = "geoid")
-E.hat.scaled <- fitted(gibbs.out, targ.src$H, targ.src$S.reduced)
-E.hat <- z.sd * E.hat.scaled + z.mean                     # Uncenter and unscale
-acs5_2015$E.mean <- colMeans(E.hat)                       # Point estimates
-acs5_2015$E.sd <- apply(E.hat, 2, sd)                     # SDs
-acs5_2015$E.lo <- apply(E.hat, 2, quantile, prob = 0.05)  # Credible interval lo
-acs5_2015$E.hi <- apply(E.hat, 2, quantile, prob = 0.95)  # Credible interval hi
-acs5_2015$E.median <- apply(E.hat, 2, median)             # Median
-acs5_2015$E.moe <- apply(E.hat, 2, sd) * qnorm(0.95)      # MOE
-
-targ.src <- sp$domain2model(acs5_2016, period = 2012:2016, geo_name = "geoid")
-E.hat.scaled <- fitted(gibbs.out, targ.src$H, targ.src$S.reduced)
-E.hat <- z.sd * E.hat.scaled + z.mean                     # Uncenter and unscale
-acs5_2016$E.mean <- colMeans(E.hat)                       # Point estimates
-acs5_2016$E.sd <- apply(E.hat, 2, sd)                     # SDs
-acs5_2016$E.lo <- apply(E.hat, 2, quantile, prob = 0.05)  # Credible interval lo
-acs5_2016$E.hi <- apply(E.hat, 2, quantile, prob = 0.95)  # Credible interval hi
-acs5_2016$E.median <- apply(E.hat, 2, median)             # Median
-acs5_2016$E.moe <- apply(E.hat, 2, sd) * qnorm(0.95)      # MOE
-
-targ.src <- sp$domain2model(acs5_2017, period = 2013:2017, geo_name = "geoid")
-E.hat.scaled <- fitted(gibbs.out, targ.src$H, targ.src$S.reduced)
-E.hat <- z.sd * E.hat.scaled + z.mean                     # Uncenter and unscale
-acs5_2017$E.mean <- colMeans(E.hat)                       # Point estimates
-acs5_2017$E.sd <- apply(E.hat, 2, sd)                     # SDs
-acs5_2017$E.lo <- apply(E.hat, 2, quantile, prob = 0.05)  # Credible interval lo
-acs5_2017$E.hi <- apply(E.hat, 2, quantile, prob = 0.95)  # Credible interval hi
-acs5_2017$E.median <- apply(E.hat, 2, median)             # Median
-acs5_2017$E.moe <- apply(E.hat, 2, sd) * qnorm(0.95)      # MOE
-
-targ.neighbs <- sp$domain2model(neighbs, period = 2013:2017, geo_name = "Region")
-E.hat.scaled <- fitted(gibbs.out, targ.neighbs$H, targ.neighbs$S.reduced)
-E.hat <- z.sd * E.hat.scaled + z.mean                     # Uncenter and unscale
-neighbs$E.mean <- apply(E.hat, 2, mean)                   # Point estimates
-neighbs$E.sd <- apply(E.hat, 2, sd)                       # SDs
-neighbs$E.lo <- apply(E.hat, 2, quantile, prob = 0.05)    # Credible interval lo
-neighbs$E.hi <- apply(E.hat, 2, quantile, prob = 0.95)    # Credible interval hi
-neighbs$E.median <- apply(E.hat, 2, median)               # Median
-neighbs$E.moe <- apply(E.hat, 2, sd) * qnorm(0.95)        # MOE
+acs5_2013 <- append_results(acs5_2013, period = 2009:2013, geo_name = "geoid")
+acs5_2014 <- append_results(acs5_2014, period = 2010:2014, geo_name = "geoid")
+acs5_2015 <- append_results(acs5_2015, period = 2011:2015, geo_name = "geoid")
+acs5_2016 <- append_results(acs5_2016, period = 2012:2016, geo_name = "geoid")
+acs5_2017 <- append_results(acs5_2017, period = 2013:2017, geo_name = "geoid")
+neighbs <- append_results(neighbs, 2013:2017, geo_name = "Region")
 
 #' The objective of our analysis - predictions on the four target neighborhoods.
 print(neighbs)
@@ -299,7 +261,6 @@ for (idx in 1:length(years)) {
 }
 marrangeGrob(scatter.list, nrow = 3, ncol = 2)
 
-idx.outlier2014 <- which.max(acs5_2014$DirectEst)
 idx.missing2017 <- which(is.na(acs5_2017$DirectEst))
 
 #' Plot neighborhood areas (target supports) among ACS 5-year direct estimates;
@@ -310,7 +271,6 @@ Central <- neighbs[1,]
 East <- neighbs[2,]
 North <- neighbs[3,]
 Paris <- neighbs[4,]
-Outlier <- acs5_2014[idx.outlier2014,]
 Missing1 <- acs5_2017[idx.missing2017[1],]
 Missing2 <- acs5_2017[idx.missing2017[2],]
 Missing3 <- acs5_2017[idx.missing2017[3],]
@@ -322,7 +282,6 @@ st_agr(Central) <- "constant"
 st_agr(East) <- "constant"
 st_agr(North) <- "constant"
 st_agr(Paris) <- "constant"
-st_agr(Outlier) <- "constant"
 st_agr(Missing1) <- "constant"
 st_agr(Missing2) <- "constant"
 st_agr(Missing3) <- "constant"
@@ -332,7 +291,6 @@ Central.coord <- st_coordinates(st_centroid(Central))
 East.coord <- st_coordinates(st_centroid(East))
 North.coord <- st_coordinates(st_centroid(North))
 Paris.coord <- st_coordinates(st_centroid(Paris))
-Outlier.coord <- st_coordinates(st_centroid(Outlier))
 Missing1.coord <- st_coordinates(st_centroid(Missing1))
 Missing2.coord <- st_coordinates(st_centroid(Missing2))
 Missing3.coord <- st_coordinates(st_centroid(Missing3))
@@ -352,8 +310,6 @@ g <- ggplot(acs5_2017) +
 		aes(x=North.coord[1], y=North.coord[2], label="North")) +
 	geom_label_repel(data = st_centroid(Paris), nudge_x = 10000, nudge_y = 100000,
 		aes(x=Paris.coord[1], y=Paris.coord[2], label="Paris")) +
-	geom_label_repel(data = st_centroid(Outlier), nudge_x = 0, nudge_y = -50000,
-		aes(x=Outlier.coord[1], y=Outlier.coord[2], label="Outlier")) +
 	geom_label_repel(data = st_centroid(Missing1), nudge_x = 100000, nudge_y = -50000,
 		aes(x=Missing1.coord[1], y=Missing1.coord[2], label="Missing1")) +
 	geom_label_repel(data = st_centroid(Missing2), nudge_x = 100000, nudge_y = -36000,
