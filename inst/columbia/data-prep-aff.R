@@ -32,7 +32,8 @@ for (idx in 1:length(years)) {
 		mutate(county = substr(geoid, 3, 5)) %>%
 		mutate(tract = substr(geoid, 6, 11)) %>%
 		mutate(blockgroup = substr(geoid, 12, 12)) %>%
-		select(geoid, state, county, tract, blockgroup, DirectEst, DirectMOE, DirectVar)
+		select(geoid, state, county, tract, blockgroup, DirectEst, DirectMOE, DirectVar) %>%
+		arrange(tract, blockgroup)
 
 	my_shp <- block_groups(state = '29', county = '019', year = year) %>%
 		st_as_sf() %>%

@@ -50,7 +50,10 @@ for (idx in 1:length(year.levels)) {
 		mutate(blockgroup = as.character(blockgroup)) %>%
 		mutate(DirectEst = as.numeric(as.character(DirectEst))) %>%
 		mutate(DirectMOE = as.numeric(as.character(DirectMOE))) %>%
-		mutate(DirectVar = (DirectMOE / qnorm(0.95))^2)
+		mutate(DirectEst = replace(DirectEst, DirectEst < 0, NA)) %>%
+		mutate(DirectMOE = replace(DirectMOE, DirectMOE < 0, NA)) %>%
+		mutate(DirectVar = (DirectMOE / qnorm(0.95))^2) %>%
+		arrange(tract, blockgroup)
 
 	my_shp <- block_groups(state = '29', county = '019', year = year) %>%
 		st_as_sf() %>%
