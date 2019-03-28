@@ -24,6 +24,9 @@ set.seed(1234)
 #' Convert it to an `sf` object, and transform to the projection with EPSG
 #' code 3857.
 #+ message=FALSE
+library(tigris)
+library(ggplot2)
+library(dplyr)
 options(tigris_use_cache = TRUE)
 options(tigris_refresh = FALSE)
 dom.fine <- block_groups(state = '29', county = '019', year = 2017) %>%
