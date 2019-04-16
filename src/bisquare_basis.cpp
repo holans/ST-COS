@@ -5,22 +5,21 @@
 // [[Rcpp::export]]
 arma::sp_mat compute_basis_sp(const arma::mat& X, const arma::mat& cc, double w)
 {
-	size_t N = X.n_rows;
-	size_t r = cc.n_rows;
+	unsigned int N = X.n_rows;
+	unsigned int r = cc.n_rows;
 
 	// We want to return an arma::sp_mat at the end, but the obvious way of
 	// constructing one - initializing it to all zeros and setting the elements
 	// one-by-one - becomes extremely slow. Instead, we'll do a bit more work
 	// to use the batch insertion method.
-	std::vector<int> ind_row;
-	std::vector<int> ind_col;
+	std::vector<unsigned int> ind_row;
+	std::vector<unsigned int> ind_col;
 	std::vector<double> vals;
 
 	double w2 = w*w;
 
-	for (size_t i = 0; i < N; i++) {
-		for (size_t j = 0; j < r; j++) {
-			// Rprintf("compute_basis: i=%d, j=%d\n", i, j);
+	for (unsigned int i = 0; i < N; i++) {
+		for (unsigned int j = 0; j < r; j++) {
 			double ds1 = X.at(i,0) - cc.at(j,0);
 			double ds2 = X.at(i,1) - cc.at(j,1);
 			double norm2 = ds1*ds1 + ds2*ds2;
@@ -48,22 +47,22 @@ arma::sp_mat compute_basis_sp(const arma::mat& X, const arma::mat& cc, double w)
 // [[Rcpp::export]]
 arma::sp_mat compute_basis_spt(const arma::mat& X, const arma::mat& cc, double w_s, double w_t)
 {
-	size_t N = X.n_rows;
-	size_t r = cc.n_rows;
+	unsigned int N = X.n_rows;
+	unsigned int r = cc.n_rows;
 
 	// We want to return an arma::sp_mat at the end, but the obvious way of
 	// constructing one - initializing it to all zeros and setting the elements
 	// one-by-one - becomes extremely slow. Instead, we'll do a bit more work
 	// to use the batch insertion method.
-	std::vector<size_t> ind_row;
-	std::vector<size_t> ind_col;
+	std::vector<unsigned int> ind_row;
+	std::vector<unsigned int> ind_col;
 	std::vector<double> vals;
 
 	double w2_s = w_s * w_s;
 	double w2_t = w_t * w_t;
 
-	for (size_t i = 0; i < N; i++) {
-		for (size_t j = 0; j < r; j++) {
+	for (unsigned int i = 0; i < N; i++) {
+		for (unsigned int j = 0; j < r; j++) {
 			double ds1 = X.at(i,0) - cc.at(j,0);
 			double ds2 = X.at(i,1) - cc.at(j,1);
 			double dt = X.at(i,2) - cc.at(j,2);

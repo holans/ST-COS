@@ -280,8 +280,8 @@ STCOSPrep <- R6Class("STCOSPrep",
 			G <- private$geo_list[[1]]
 			L <- private$L
 
-			warning("THIS MAY NOT BE COLLAPSEABLE!!")
-			for (l in seq_int_ordered(2, L)) {
+			# Note: this may not be something that should be collapsed. Revisit...
+			for (l in setdiff(1:L, 1)) {
 				G <- rbind(G, private$geo_list[[l]])
 			}
 
