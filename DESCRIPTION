@@ -13,6 +13,7 @@ Author: Andrew M. Raim [aut, cre],
 	Jonathan R. Bradley [aut, res],
 	Christopher K. Wikle [aut, res]
 Maintainer: Andrew M. Raim <andrew.raim@gmail.com>
+URL: https://github.com/holans/ST-COS
 Description: An R Package for Space-Time Change of Support (STCOS) modeling based on the paper <doi: 10.1002/sta4.94>. 
 License: GPL (>= 2)
 Imports: R6
