@@ -7,7 +7,8 @@
 #' 
 #' @section Usage:
 #' \preformatted{
-#' sp <- STCOSPrep$new(fine_domain, fine_domain_geo_name, basis, basis_mc_reps = 500, report_period = 100)
+#' sp <- STCOSPrep$new(fine_domain, fine_domain_geo_name, basis, basis_mc_reps = 500,
+#'                     report_period = 100)
 #' 
 #' sp$add_obs(domain, period, estimate_name, variance_name, geo_name)
 #' 
