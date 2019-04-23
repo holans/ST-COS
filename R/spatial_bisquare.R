@@ -37,14 +37,29 @@
 #' @name SpatialBisquareBasis
 #' 
 #' @examples
-#' \dontrun{
-#' basis <- SpaceTimeBisquareBasis$new(knots.x, knots.y, w = 1)
-#' basis$compute(x, y, time)
+#' set.seed(1234)
+#' seq.x <- seq(0, 1, length.out = 3)
+#' seq.y <- seq(0, 1, length.out = 3)
+#' knots = merge(seq.x, seq.y)
+#' x <- runif(50)
+#' y <- runif(50)
+#' 
+#' basis <- SpatialBisquareBasis$new(knots[,1], knots[,2], w = 0.5)
+#' basis$compute(x, y)
 #' basis$get_dim()
 #' basis$get_cutpoints()
 #' basis$get_rl()
 #' basis$get_w()
-#' }
+#' 
+#' # Plot the knots and the points at which we evaluated the basis
+#' plot(knots[,1], knots[,2], pch = 4, cex = 1.5, col = "red")
+#' points(x, y, cex = 0.5)
+#' 
+#' # Draw a circle representing the basis' radius around one of the knot points
+#' tseq <- seq(0, 2*pi, length=100) 
+#' rad <- basis$get_rl()
+#' coords <- cbind(rad * cos(tseq) + seq.x[2], rad * sin(tseq) + seq.y[2])
+#' lines(coords, col = "red")
 NULL
 
 #' @export

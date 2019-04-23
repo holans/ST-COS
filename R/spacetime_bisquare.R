@@ -43,16 +43,32 @@
 #' @name SpaceTimeBisquareBasis
 #' 
 #' @examples
-#' \dontrun{
-#' basis <- SpaceTimeBisquareBasis$new(knots.x, knots.y, knots.t,
-#'     w.s, w.t)
-#' basis$compute(x, y, time)
+#' set.seed(1234)
+#' seq.x <- seq(0, 1, length.out = 3)
+#' seq.y <- seq(0, 1, length.out = 3)
+#' seq.t <- seq(0, 1, length.out = 3)
+#' knots = expand.grid(seq.x, seq.y, seq.t)
+#' x <- runif(50)
+#' y <- runif(50)
+#' t <- sample(1:3, size = 50, replace = TRUE)
+#' 
+#' basis <- SpaceTimeBisquareBasis$new(knots[,1], knots[,2], knots[,3], w.s = 0.5, w.t = 1)
+#' basis$compute(x, y, t)
 #' basis$get_dim()
 #' basis$get_cutpoints()
 #' basis$get_rl()
 #' basis$get_ws()
 #' basis$get_wt()
-#' }
+#' 
+#' # Plot the (spatial) knots and the points at which we evaluated the basis
+#' plot(knots[,1], knots[,2], pch = 4, cex = 1.5, col = "red")
+#' text(x, y, labels = t, cex = 0.75)
+#' 
+#' # Draw a circle representing the basis' radius around one of the knot points
+#' tseq <- seq(0, 2*pi, length=100) 
+#' rad <- basis$get_rl()
+#' coords <- cbind(rad * cos(tseq) + seq.x[2], rad * sin(tseq) + seq.y[2])
+#' lines(coords, col = "red")
 NULL
 
 #' @export
