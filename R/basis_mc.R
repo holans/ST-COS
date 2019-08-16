@@ -1,3 +1,4 @@
+#' @export
 compute_sp_basis_mc <- function(basis, domain, R, report.period = 100)
 {
 	n <- nrow(domain)
@@ -17,6 +18,7 @@ compute_sp_basis_mc <- function(basis, domain, R, report.period = 100)
 	return(S / R)
 }
 
+#' @export
 compute_spt_basis_mc <- function(basis, domain, R, period, report.period = 100)
 {
 	n <- nrow(domain)

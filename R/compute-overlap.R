@@ -1,6 +1,7 @@
 # Compute the overlap between two sets of areas (sf objects): D and G.
 # geo.name.D and geo.name.G should be strings that identify the names of
 # columns that uniquely identify the geography, for D and G respectively.
+#' @export
 compute.overlap <- function(D, G, geo.name.D, geo.name.G)
 {
 	nd <- nrow(D)

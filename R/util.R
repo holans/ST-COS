@@ -1,14 +1,17 @@
+#' @export
 printf <- function(msg, ...)
 {
 	cat(sprintf(msg, ...))
 }
 
+#' @export
 logger <- function(msg, ...)
 {
 	sys.time <- as.character(Sys.time())
 	cat(sys.time, "-", sprintf(msg, ...))
 }
 
+#' @export
 normalize <- function(x)
 {
 	if (sum(x < 0) > 0) {
