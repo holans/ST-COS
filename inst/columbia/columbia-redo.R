@@ -104,17 +104,22 @@ print(g)
 #' Build components for STCOS model
 area_list = list(acs5_2013, acs5_2014, acs5_2015, acs5_2016, acs5_2017)
 period_list = list(2009:2013, 2010:2014, 2011:2015, 2012:2016, 2013:2017)
+times_all = 2009:2017
 L = length(area_list)
 
 # Compute overlap matrix H
 # TBD: Should we normalize in compute.overlap?
 # TBD: Should we rename function to overlap or overlap_matrix or cos_matrix?
 # TBD: maybe we should set this up so we don't need the awkward transpose?
-H = Matrix(0, 0, nrow(dom.fine))
+# TBD: Can we avoid even having this function at all?
+# set_agr("constant") suppresses unhelpful warnings when calling st_intersection
+H = Matrix(0, 0, n)
 for (l in 1:L) {
 	logger("Computing overlap matrix for domain %d\n", l)
-	H.prime = compute.overlap(dom.fine, area_list[[l]],	geo.name.D = "geoid", geo.name.G = "geoid")
-	H = rbind(H, t(Matrix(apply(H.prime, 2, normalize))))
+	H_l = intersection_matrix(area_list[[l]], dom.fine)
+	
+	# TBD: Make sure this is normalized and transposed correctly...
+	H = rbind(H, apply(H_l, 1, normalize))
 }
 
 # Compute basis function matrix S
@@ -123,16 +128,17 @@ for (l in 1:L) {
 S = Matrix(0, 0, nrow(knots))
 for (l in 1:L) {
 	logger("Computing basis matrix for domain %d\n", l)
-	S_prime = compute_spt_basis_mc(basis = basis, domain = area_list[[l]],
-		R = 500, period = period_list[[l]], report.period = 100)
-	S = rbind(S, S_prime)
+	S_l = compute_spt_basis_mc(basis = basis, domain = area_list[[l]],
+		R = 50, period = period_list[[l]], report.period = 100)
+	S = rbind(S, S_l)
 }
 
 #' Do a PCA reduction on S to reduce its dimension
 # TBD: Do we want to use package to return limited number of eigencomponents?
 eig = eigen(t(S) %*% S)
 idx.S = which(cumsum(eig$values) / sum(eig$values) < 0.65)
-S.reduced = eig$vectors[,idx.S]
+Tx = eig$vectors[,idx.S]
+S_reduced = S %*% Tx
 
 #' Plot the proportion of variation captured by our selection of PCA components.
 eigprops = cumsum(eig$values) / sum(eig$values)
@@ -143,7 +149,8 @@ abline(h = eigprops[max(idx.S)], lty = 2)
 # Record the dimensions for model components
 N = nrow(H)
 n = nrow(dom.fine)
-r = ncol(S.reduced)
+r = ncol(S_reduced)
+T = length(times_all)
 
 # Extract the direct estimates and variance estimates
 z = numeric(0)
@@ -153,41 +160,92 @@ for (l in 1:L) {
 	v = c(v, area_list[[l]]$DirectVar)
 }
 
-idx.missing = which(is.na(z))
-idx.nonmissing = which(!is.na(z))
+idx_missing = which(is.na(z))
+idx_nonmissing = which(!is.na(z))
+
+S_fine = Matrix(0, 0, nrow(knots))
+for (l in 1:length(times_all)) {
+	logger("Computing basis matrix for fine-level domain, time %d\n", times_all[l])
+	S_l = compute_spt_basis_mc(basis = basis, domain = dom.fine,
+		R = 50, period = times_all[l], report.period = 100)
+	S_fine = rbind(S_fine, S_l)
+}
+S_fine_reduced = S_fine %*% Tx
+
+# Compute adjacency matrix for fine-level support
+out = st_touches(dom.fine, dom.fine)
+A = adjList2Matrix(out)
+countAdj = Matrix(0, nrow(A), ncol(A))
+s = rowSums(A)
+for (j in 1:n) {
+	if (s[j] > 0) {
+		countAdj[j,] = A[j,] / s[j]
+	}
+}
+Q = Diagonal(n,1) - 0.9*countAdj
+Qinv = solve(Q)
 
 #' Pick a covariance structure for random coefficients of basis expansion.
-if (FALSE) {
-	# Moran’s I Basis
-	K.inv = sp$get_Kinv(2009:2017, method = "moran")
-} else if (FALSE) {
+method = "moran"
+
+if (method == "moran") {
+	# Assume covariance structure with M computed via Moran's I basis
+	K_inv = sp$get_Kinv(2009:2017, method = "moran")
+
+	# Create an X matrix using spatial-only basis
+	basis_sp = SpatialBisquareBasis$new(knots.sp[,1], knots.sp[,2], w = 1)
+	X_full = compute_sp_basis_mc(basis = basis_sp, domain = dom.fine,
+		R = 500, report.period = 100)
+	eig = eigen(t(X_full) %*% X_full)
+	cumsum(eig$values) / sum(eig$values)
+	X = X_full %*% eig$vectors[,1:10]
+
+	P_perp = Diagonal(nrow(X),1) - X %*% solve(t(X) %*% X, t(X))
+	eig = eigen(P_perp, symmetric = TRUE)
+	M = Re(eig$vectors)
+	M = (M + t(M)) / 2
+	Sigma = sptcovar.vectautoreg(Qinv, M, S_fine_reduced, lag_max = T)
+
+	# TBD: I don't think this is right... the sptcovar functions are already returning the minimizer K ...
+	# The "covariance_approximant" function I have now is doing some kind of pseudo-inverse ...
+	K_inv = covariance_approximant(Sigma, S_fine_reduced)
+} else if (method == "randomwalk") {
 	# Random Walk
-	K.inv = sp$get_Kinv(2009:2017, method = "randomwalk")
-} else if (FALSE) {
+	# Assume covariance structure with M as identity matrix
+	M = Diagonal(n,1)
+	Sigma = sptcovar.randwalk(Qinv, M, S_fine_reduced, lag_max = T)
+
+	# TBD: Is this right??
+	K_inv = covariance_approximant(Sigma, S_fine_reduced)
+} else if (method == "car") {
 	# Spatial-only (CAR)
-	K.inv = sp$get_Kinv(2009:2017, method = "car")
-} else if (TRUE) {
+	# Assume covariance structure without dependence over time
+	Sigma = sptcovar.indep(Qinv, S_fine_reduced, lag_max = T)
+	
+	# TBD: Is this right??
+	K_inv = covariance_approximant(Sigma, S_fine_reduced)
+} else if (method == "independence") {
 	# Independence
-	K.inv = sp$get_Kinv(2009:2017, method = "independence")
+	K_inv = Diagonal(n = N)
 }
 
 #' Standardize observations before running MCMC.
-z.mean = mean(z, na.rm = TRUE)
-z.sd = sd(z, na.rm = TRUE)
-z.scaled = (z - z.mean) / z.sd
-v.scaled = v / z.sd^2
+z_mean = mean(z, na.rm = TRUE)
+z_sd = sd(z, na.rm = TRUE)
+z_scaled = (z - z_mean) / z_sd
+v_scaled = v / z_sd^2
 
 #' # Fit the Model
 #+ message=FALSE
 library(coda)
 
 #' Fit MLE; this will serve as an initial value for MCMC.
-K = solve(K.inv)
+K = solve(K_inv)
 mle.out = mle.stcos(
-	z = z.scaled[idx.nonmissing],
-	v = v.scaled[idx.nonmissing],
-	H = H[idx.nonmissing,],
-	S = S.reduced[idx.nonmissing,],
+	z = z_scaled[idx_nonmissing],
+	v = v_scaled[idx_nonmissing],
+	H = H[idx_nonmissing,],
+	S = S_reduced[idx_nonmissing,],
 	K = K,
 	init = list(sig2K = 1, sig2xi = 1)
 )
@@ -199,11 +257,11 @@ init = list(
 
 #' Run the Gibbs sampler.
 gibbs.out = gibbs.stcos.raw(
-	z = z.scaled[idx.nonmissing],
-	v = v.scaled[idx.nonmissing],
-	H = H[idx.nonmissing,],
-	S = S.reduced[idx.nonmissing,],
-	K.inv = K.inv,
+	z = z.scaled[idx_nonmissing],
+	v = v.scaled[idx_nonmissing],
+	H = H[idx_nonmissing,],
+	S = S_reduced[idx_nonmissing,],
+	K.inv = K_inv,
 	R = 10000, report.period = 2000, burn = 2000, thin = 10, init = init)
 print(gibbs.out)
 
@@ -223,9 +281,15 @@ plot(varcomps.mcmc)
 #' #  Produce Results on target supports
 #' Compute `H` and `S` matrices and get summaries of posterior distribution for E(Y).
 #' Use 90% significance for all credible intervals and MOEs.
-append_results = function(dat_sf, period, geo_name, alpha = 0.10) {
-	out = sp$domain2model(dat_sf, period = period, geo_name = geo_name)
-	E.hat.scaled = fitted(gibbs.out, out$H, out$S.reduced)
+append_results = function(dat_sf, period, alpha = 0.10) {
+	H_raw = intersection_matrix(dat_sf, dom.fine)
+	H_new = Matrix(apply(H_raw, 1, normalize))
+
+	S_new = compute_spt_basis_mc(basis = basis, domain = dat_sf,
+		R = 50, period = period, report.period = 100)
+	S_new_reduced = S_new %*% Tx
+
+	E.hat.scaled = fitted(gibbs.out, H_new, S_new_reduced)
 	E.hat = z.sd * E.hat.scaled + z.mean                      # Uncenter and unscale
 	dat_sf$E.mean = colMeans(E.hat)                           # Point estimates
 	dat_sf$E.sd = apply(E.hat, 2, sd)                         # SDs
@@ -236,12 +300,12 @@ append_results = function(dat_sf, period, geo_name, alpha = 0.10) {
 	return(dat_sf)
 }
 
-acs5_2013 = append_results(acs5_2013, period = 2009:2013, geo_name = "geoid")
-acs5_2014 = append_results(acs5_2014, period = 2010:2014, geo_name = "geoid")
-acs5_2015 = append_results(acs5_2015, period = 2011:2015, geo_name = "geoid")
-acs5_2016 = append_results(acs5_2016, period = 2012:2016, geo_name = "geoid")
-acs5_2017 = append_results(acs5_2017, period = 2013:2017, geo_name = "geoid")
-neighbs = append_results(neighbs, 2013:2017, geo_name = "Region")
+acs5_2013 = append_results(acs5_2013, period = 2009:2013)
+acs5_2014 = append_results(acs5_2014, period = 2010:2014)
+acs5_2015 = append_results(acs5_2015, period = 2011:2015)
+acs5_2016 = append_results(acs5_2016, period = 2012:2016)
+acs5_2017 = append_results(acs5_2017, period = 2013:2017)
+neighbs = append_results(neighbs, period = 2013:2017)
 
 #' The objective of our analysis - predictions on the four target neighborhoods.
 print(neighbs)
@@ -285,7 +349,7 @@ for (idx in 1:length(years)) {
 }
 marrangeGrob(scatter.list, nrow = 3, ncol = 2)
 
-idx.missing2017 = which(is.na(acs5_2017$DirectEst))
+idx_missing2017 = which(is.na(acs5_2017$DirectEst))
 
 #' Plot neighborhood areas (target supports) among ACS 5-year direct estimates;
 #' this gives a sense of whether the model-based esimtates are reasonable.
@@ -295,10 +359,10 @@ Central = neighbs[1,]
 East = neighbs[2,]
 North = neighbs[3,]
 Paris = neighbs[4,]
-Missing1 = acs5_2017[idx.missing2017[1],]
-Missing2 = acs5_2017[idx.missing2017[2],]
-Missing3 = acs5_2017[idx.missing2017[3],]
-Missing4 = acs5_2017[idx.missing2017[4],]
+Missing1 = acs5_2017[idx_missing2017[1],]
+Missing2 = acs5_2017[idx_missing2017[2],]
+Missing3 = acs5_2017[idx_missing2017[3],]
+Missing4 = acs5_2017[idx_missing2017[4],]
 
 # Prevent `sf` package warnings like "st_centroid assumes attributes are
 # constant over geometries of x"

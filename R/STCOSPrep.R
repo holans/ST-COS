@@ -7,12 +7,12 @@
 #' 
 #' @section Usage:
 #' \preformatted{
-#' sp <- STCOSPrep$new(fine_domain, fine_domain_geo_name, basis, basis_mc_reps = 500,
+#' sp = STCOSPrep$new(fine_domain, fine_domain_geo_name, basis, basis_mc_reps = 500,
 #'                     report_period = 100)
 #' 
 #' sp$add_obs(domain, period, estimate_name, variance_name, geo_name)
 #' 
-#' S <- sp$get_S()
+#' S = sp$get_S()
 #'
 #' sp$set_basis_reduction(f)
 #' 
@@ -80,7 +80,7 @@
 #' 
 #' @examples
 #' \dontrun{
-#' sp <- STCOSPrep$new(dom.fine, "GEO_ID", basis, 500)
+#' sp = STCOSPrep$new(dom.fine, "GEO_ID", basis, 500)
 #' 
 #' # Add source support data
 #' sp$add_obs(acs1.2015, 2015, "DirectEst", "DirectVar", "GEO_ID")
@@ -88,21 +88,21 @@
 #' sp$add_obs(acs5.2015, 2011:2015, "DirectEst", "DirectVar", "GEO_ID")
 #' 
 #' # Reduce dimension of the design matrix with basis expansion
-#' S <- sp$get_S()
-#' eig <- eigen(t(S) %*% S)
-#' idx.S <- which(cumsum(eig$values) / sum(eig$values) < 0.75)
-#' Tx.S <- t(eig$vectors[idx.S,])
-#' f <- function(S) { S %*% Tx.S }
+#' S = sp$get_S()
+#' eig = eigen(t(S) %*% S)
+#' idx.S = which(cumsum(eig$values) / sum(eig$values) < 0.75)
+#' Tx.S = t(eig$vectors[idx.S,])
+#' f = function(S) { S %*% Tx.S }
 #' sp$set_basis_reduction(f)
 #' 
 #' # Get quantities needed for MCMC
-#' S.reduced <- sp$get_reduced_S()
-#' z <- sp$get_z()
-#' v <- sp$get_v()
-#' H <- sp$get_H()
+#' S.reduced = sp$get_reduced_S()
+#' z = sp$get_z()
+#' v = sp$get_v()
+#' H = sp$get_H()
 #'
 #' # compute K.inv matrix using Random-Walk method
-#' K.inv <- sp$get_Kinv(2011:2015)
+#' K.inv = sp$get_Kinv(2011:2015)
 #' 
 #' # Retrieve some of the source supports
 #' sp$get_obs(idx = c(2,4,7))
@@ -117,7 +117,7 @@ NULL
 
 #' @export
 #' @docType class
-STCOSPrep <- R6Class("STCOSPrep",
+STCOSPrep = R6Class("STCOSPrep",
 	lock_objects = TRUE,
 	lock_class = TRUE,
 	private = list(
@@ -141,19 +141,19 @@ STCOSPrep <- R6Class("STCOSPrep",
 			stopifnot(inherits(basis, "SpaceTimeBisquareBasis"))
 			stopifnot(fine_domain_geo_name %in% colnames(fine_domain))
 
-			private$fine_domain <- fine_domain
-			private$H_list <- list()
-			private$S_list <- list()
-			private$z_list <- list()
-			private$v_list <- list()
-			private$geo_list <- list()
-			private$N <- 0
-			private$L <- 0
-			private$basis_mc_reps <- basis_mc_reps
-			private$basis <- basis
-			private$basis_reduction <- identity
-			private$report_period <- report_period
-			private$fine_domain_geo_name <- fine_domain_geo_name
+			private$fine_domain = fine_domain
+			private$H_list = list()
+			private$S_list = list()
+			private$z_list = list()
+			private$v_list = list()
+			private$geo_list = list()
+			private$N = 0
+			private$L = 0
+			private$basis_mc_reps = basis_mc_reps
+			private$basis = basis
+			private$basis_reduction = identity
+			private$report_period = report_period
+			private$fine_domain_geo_name = fine_domain_geo_name
 		},
 		add_obs = function(domain, period, estimate_name, variance_name, geo_name)
 		{
@@ -162,34 +162,34 @@ STCOSPrep <- R6Class("STCOSPrep",
 			stopifnot(geo_name %in% colnames(domain))
 
 			logger("Begin adding observed space-time domain\n")
-			out <- self$domain2model(domain, period, geo_name)
+			out = self$domain2model(domain, period, geo_name)
 
 			logger("Extracting direct estimates from field '%s'", estimate_name)
 			printf(" and variance estimates from field '%s'\n", variance_name)
-			z <- domain[[estimate_name]]
-			v <- domain[[variance_name]]
+			z = domain[[estimate_name]]
+			v = domain[[variance_name]]
 
 			# Update internal state
-			private$N <- private$N + nrow(domain)
-			private$L <- private$L + 1
-			private$z_list[[private$L]] <- z
-			private$v_list[[private$L]] <- v
-			private$H_list[[private$L]] <- out$H
-			private$S_list[[private$L]] <- out$S
-			geo <- out$geo
-			geo$obs <- private$L
-			private$geo_list[[private$L]] <- geo
+			private$N = private$N + nrow(domain)
+			private$L = private$L + 1
+			private$z_list[[private$L]] = z
+			private$v_list[[private$L]] = v
+			private$H_list[[private$L]] = out$H
+			private$S_list[[private$L]] = out$S
+			geo = out$geo
+			geo$obs = private$L
+			private$geo_list[[private$L]] = geo
 
 			logger("Finished adding observed space-time domain\n")
 		},
 		get_obs = function(idx = 1:private$L)
 		{
-			z <- private$z_list[idx]
-			v <- private$v_list[idx]
-			H <- private$H_list[idx]
-			S <- private$S_list[idx]
-			geo <- private$geo_list[idx]
-			S.reduced <- lapply(S, private$basis_reduction)
+			z = private$z_list[idx]
+			v = private$v_list[idx]
+			H = private$H_list[idx]
+			S = private$S_list[idx]
+			geo = private$geo_list[idx]
+			S.reduced = lapply(S, private$basis_reduction)
 
 			list(z = z, v = v, H = H, S = S, geo = geo, S.reduced = S.reduced)
 		},
@@ -201,73 +201,73 @@ STCOSPrep <- R6Class("STCOSPrep",
 			stopifnot(class(geo_name) == "character")
 
 			logger("Computing overlap matrix using field '%s'\n", geo_name)
-			H.prime <- compute.overlap(private$fine_domain, domain,
+			H.prime = compute.overlap(private$fine_domain, domain,
 				geo.name.D = private$fine_domain_geo_name, geo.name.G = geo_name)
-			H <- t(Matrix(apply(H.prime, 2, normalize)))
+			H = t(Matrix(apply(H.prime, 2, normalize)))
 
 			logger("Computing basis functions\n")
-			S <- compute_spt_basis_mc(basis = private$basis, domain = domain,
+			S = compute_spt_basis_mc(basis = private$basis, domain = domain,
 				R = private$basis_mc_reps, period = period,
 				report.period = private$report_period)
-			S.reduced <- private$basis_reduction(S)
+			S.reduced = private$basis_reduction(S)
 
-			geo <- data.frame(row = 1:nrow(domain), geo_id = domain[[geo_name]])
+			geo = data.frame(row = 1:nrow(domain), geo_id = domain[[geo_name]])
 			list(H = H, S = S, S.reduced = S.reduced, geo = geo)
 		},
 		get_z = function()
 		{
-			n <- nrow(private$fine_domain)
-			z <- numeric(private$N)
-			L <- private$L
-			cnt <- 0
+			n = nrow(private$fine_domain)
+			z = numeric(private$N)
+			L = private$L
+			cnt = 0
 
 			for (l in 1:L) {
-				idx <- 1:length(private$z_list[[l]]) + cnt
-				z[idx] <- private$z_list[[l]]
-				cnt <- cnt + length(idx)
+				idx = 1:length(private$z_list[[l]]) + cnt
+				z[idx] = private$z_list[[l]]
+				cnt = cnt + length(idx)
 			}
 
 			return(z)
 		},
 		get_v = function()
 		{
-			n <- nrow(private$fine_domain)
-			v <- numeric(private$N)
-			L <- private$L
-			cnt <- 0
+			n = nrow(private$fine_domain)
+			v = numeric(private$N)
+			L = private$L
+			cnt = 0
 
 			for (l in 1:L) {
-				idx <- 1:length(private$v_list[[l]]) + cnt
-				v[idx] <- private$v_list[[l]]
-				cnt <- cnt + length(idx)
+				idx = 1:length(private$v_list[[l]]) + cnt
+				v[idx] = private$v_list[[l]]
+				cnt = cnt + length(idx)
 			}
 
 			return(v)
 		},
 		get_H = function()
 		{
-			n <- nrow(private$fine_domain)
-			H <- Matrix(0, 0, n)
-			L <- private$L
-			cnt <- 0
+			n = nrow(private$fine_domain)
+			H = Matrix(0, 0, n)
+			L = private$L
+			cnt = 0
 
 			for (l in 1:L) {
-				H <- rbind(H, private$H_list[[l]])
-				cnt <- cnt + ncol(private$H_list[[l]])
+				H = rbind(H, private$H_list[[l]])
+				cnt = cnt + ncol(private$H_list[[l]])
 			}
 
 			return(H)
 		},
 		get_S = function()
 		{
-			r <- private$basis$get_dim()
-			S <- Matrix(0, 0, r)
-			L <- private$L
-			cnt <- 0
+			r = private$basis$get_dim()
+			S = Matrix(0, 0, r)
+			L = private$L
+			cnt = 0
 
 			for (l in 1:L) {
-				S <- rbind(S, private$S_list[[l]])
-				cnt <- cnt + nrow(private$S_list[[l]])
+				S = rbind(S, private$S_list[[l]])
+				cnt = cnt + nrow(private$S_list[[l]])
 			}
 
 			return(S)
@@ -278,12 +278,12 @@ STCOSPrep <- R6Class("STCOSPrep",
 		},
 		get_geo = function()
 		{
-			G <- private$geo_list[[1]]
-			L <- private$L
+			G = private$geo_list[[1]]
+			L = private$L
 
 			# Note: this may not be something that should be collapsed. Revisit...
 			for (l in setdiff(1:L, 1)) {
-				G <- rbind(G, private$geo_list[[l]])
+				G = rbind(G, private$geo_list[[l]])
 			}
 
 			return(G)
@@ -291,7 +291,7 @@ STCOSPrep <- R6Class("STCOSPrep",
 		set_basis_reduction = function(f = identity)
 		{
 			stopifnot(is.function(f))
-			private$basis_reduction <- f
+			private$basis_reduction = f
 		},
 		get_basis = function()
 		{
@@ -311,86 +311,86 @@ STCOSPrep <- R6Class("STCOSPrep",
 		},
 		get_Kinv = function(times, X = NULL, method = c("moran", "randomwalk", "car", "independence"))
 		{
-			ll <- max(times) - min(times) + 1
+			ll = max(times) - min(times) + 1
 			if (length(times) != ll) {
 				stop("times must contain consecutive integers")
 			}
 
-			T <- length(times)
-			n <- nrow(private$fine_domain)
-			r <- private$basis$get_dim()
+			T = length(times)
+			n = nrow(private$fine_domain)
+			r = private$basis$get_dim()
 
 			if (method == "independence") {
 				return(Diagonal(n = ncol(self$get_reduced_S())))
 			}
 
 			# Compute basis function for fine-level process
-			Sconnector <- Matrix(0, 0, r)
+			Sconnector = Matrix(0, 0, r)
 			for (t in 1:T) {
-				idx <- 1:n + (t-1)*n
+				idx = 1:n + (t-1)*n
 				logger("Constructing S matrix for fine-scale at time %d of %d\n", t, T)
-				S <- compute_spt_basis_mc(basis = private$basis, domain = private$fine_domain,
+				S = compute_spt_basis_mc(basis = private$basis, domain = private$fine_domain,
 					R = private$basis_mc_reps, period = times[t], report.period = private$report_period)
 
 				# rbind usually slows performance, but here it's a lot faster
-				# than doing Sconnector[idx,] <- S
-				Sconnector <- rbind(Sconnector, S)
+				# than doing Sconnector[idx,] = S
+				Sconnector = rbind(Sconnector, S)
 			}
 
 			# Reduction should be same as the one used on S matrix for the observations
-			Sconnectorf <- private$basis_reduction(Sconnector)
+			Sconnectorf = private$basis_reduction(Sconnector)
 
 			# Compute adjacency matrix
 			logger("Computing adjacency matrix\n")
-			out <- st_touches(private$fine_domain, private$fine_domain)
-			A <- adjList2Matrix(out)
-			countAdj <- Matrix(0, nrow(A), ncol(A))
-			s <- rowSums(A)
+			out = st_touches(private$fine_domain, private$fine_domain)
+			A = adjList2Matrix(out)
+			countAdj = Matrix(0, nrow(A), ncol(A))
+			s = rowSums(A)
 			for (j in 1:n) {
 				if (s[j] > 0) {
 					countAdj[j,] = A[j,] / s[j]
 				}
 			}
-			Q <- Diagonal(n,1) - 0.9*countAdj
-			Qinv <- solve(Q)
+			Q = Diagonal(n,1) - 0.9*countAdj
+			Qinv = solve(Q)
 
 			# Target covariance
 			logger("Computing target covariance\n")
 			if (method == "car") {
 				# Assume covariance structure without dependence over time
-				K <- sptcovar.indep(Qinv, Sconnectorf, lag_max = T)
+				K = sptcovar.indep(Qinv, Sconnectorf, lag_max = T)
 			} else if (method == "randomwalk") {
 				# Assume covariance structure with M as identity matrix
-				M <- Diagonal(n,1)
-				K <- sptcovar.randwalk(Qinv, M, Sconnectorf, lag_max = T)
+				M = Diagonal(n,1)
+				K = sptcovar.randwalk(Qinv, M, Sconnectorf, lag_max = T)
 			} else if (method == "moran") {
 				# Assume covariance structure with M computed via Moran's I basis
 				if (is.null(X)) {
-					knots.sp <- unique(private$basis$get_cutpoints()[,1:2])
-					w.sp <- private$basis$get_ws()
-					basis.sp <- SpatialBisquareBasis$new(knots.sp[,1], knots.sp[,2], w.sp)
-					X <- compute_sp_basis_mc(basis = basis.sp, domain = private$fine_domain,
+					knots.sp = unique(private$basis$get_cutpoints()[,1:2])
+					w.sp = private$basis$get_ws()
+					basis.sp = SpatialBisquareBasis$new(knots.sp[,1], knots.sp[,2], w.sp)
+					X = compute_sp_basis_mc(basis = basis.sp, domain = private$fine_domain,
 						R = private$basis_mc_reps, report.period = private$report_period)
 				} else {
 					stopifnot(nrow(X) == nrow(Sconnectorf))
 				}
 
-				P_perp <- Diagonal(nrow(X),1) - X %*% solve(t(X) %*% X, t(X))
-				eig <- eigen(P_perp, symmetric = TRUE)
-				M <- Re(eig$vectors)
-				M <- (M + t(M)) / 2
-				K <- sptcovar.vectautoreg(Qinv, M, Sconnectorf, lag_max = T)
+				P_perp = Diagonal(nrow(X),1) - X %*% solve(t(X) %*% X, t(X))
+				eig = eigen(P_perp, symmetric = TRUE)
+				M = Re(eig$vectors)
+				M = (M + t(M)) / 2
+				K = sptcovar.vectautoreg(Qinv, M, Sconnectorf, lag_max = T)
 			} else {
 				stop("Invalid argument for method")
 			}
 
-			eig <- eigen(K)
-			P <- Re(eig$vectors)
-			D <- Re(eig$values)
-			D[D < 0] <- 0
-			Dinv <- D
-			Dinv[D > 0] <- 1 / D[D > 0]
-			Kinv <- P %*% (Dinv * t(P))
+			eig = eigen(K)
+			P = Re(eig$vectors)
+			D = Re(eig$values)
+			D[D < 0] = 0
+			Dinv = D
+			Dinv[D > 0] = 1 / D[D > 0]
+			Kinv = P %*% (Dinv * t(P))
 
 			return(Kinv)
 		}

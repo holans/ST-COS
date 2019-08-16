@@ -6,6 +6,7 @@
 # We don't need to construct FullCovar in its entirety to do this operation.
 #
 # K minimizes || FullCovar - S X S^T ||_Frob over symmetric psd matrices X
+#' @export
 sptcovar.vectautoreg <- function(Qinv, M, S, lag_max)
 {
 	n <- nrow(Qinv)
@@ -41,6 +42,7 @@ sptcovar.vectautoreg <- function(Qinv, M, S, lag_max)
 	return(SpSinv %*% C %*% SpSinv)
 }
 
+#' @export
 sptcovar.randwalk <- function(Qinv, M, S, lag_max)
 {
 	n <- nrow(Qinv)
@@ -66,6 +68,7 @@ sptcovar.randwalk <- function(Qinv, M, S, lag_max)
 	return(SpSinv %*% C %*% SpSinv)
 }
 
+#' @export
 sptcovar.indep <- function(Qinv, S, lag_max)
 {
 	n <- nrow(Qinv)
