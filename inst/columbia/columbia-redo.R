@@ -4,7 +4,7 @@
 #' date: "Last Updated: `r format(Sys.time(), '%B %d, %Y')`"
 #' output:
 #'   html_document:
-#'     number_sections: true
+#'	 number_sections: true
 #' ---
 
 #' Let's try to redo the Columbia example without the STCOSPrep class. This may
@@ -34,14 +34,15 @@ library(ggplot2)
 library(dplyr)
 options(tigris_use_cache = TRUE)
 options(tigris_refresh = FALSE)
-dom.fine = block_groups(state = '29', county = '019', year = 2017) %>%
+dom_fine = block_groups(state = '29', county = '019', year = 2017) %>%
 	st_as_sf() %>%
 	st_transform(crs = 3857) %>%
 	mutate(geoid = GEOID) %>%
 	select(-GEOID)
+n = nrow(dom_fine)
 
 #' A quick plot of the fine-level domain.
-ggplot(dom.fine) +
+ggplot(dom_fine) +
 	geom_sf(colour = "black", size = 0.05) +
 	ggtitle("Boone County, Missouri") +
 	theme_bw()
@@ -59,7 +60,7 @@ ggplot(acs5_2017) +
 #' Make sure to transform to the same projection as the fine-level support.
 data(columbia_neighbs)
 neighbs = columbia_neighbs %>%
-	st_transform(crs = st_crs(dom.fine))
+	st_transform(crs = st_crs(dom_fine))
 
 #' A quick plot of the neighborhoods.
 ggplot(neighbs) +
@@ -75,61 +76,59 @@ library(ggforce)
 #' Select spatial knots via space-filling design. Start with uniformly
 #' drawn points from the fine-level geography and use `cover.design`
 #' to select a subset of those points for knots.
-u = st_sample(dom.fine, size = 2000)
+u = st_sample(dom_fine, size = 2000)
 M = matrix(unlist(u), length(u), 2, byrow = TRUE)
 out = cover.design(M, 500)
-knots.sp = out$design
+knots_sp = out$design
 
 #' Select temporal knots to be evenly spaced over the years relevant
 #' to the source support years.
-knots.t = seq(2009, 2017, by = 0.5)
+knots_t = seq(2009, 2017, by = 0.5)
 
 #' Use Cartesian join of spatial and temporal knots to obtain spatio-temporal knots.
-knots = merge(knots.sp, knots.t)
-basis = SpaceTimeBisquareBasis$new(knots[,1], knots[,2], knots[,3], w.s = 1, w.t = 1)
+knots = merge(knots_sp, knots_t)
+
+#' Create an ArealSpaceTimeBisquareBasis object with our knot points
+basis1 = ArealSpaceTimeBisquareBasis$new(knots[,1], knots[,2], knots[,3],
+	w_s = 1, w_t = 1, mc_reps = 200)
 
 #' Here is a plot of the spatial knots. We plot a circle around one of the
 #' points to illustrate the choice of the `w.s` argument.
-knots.sp.dat = data.frame(x = knots.sp[,1], y = knots.sp[,2], r = basis$get_rl())
-g = ggplot(dom.fine) +
+rad = basis1$get_basis_spt()$get_rl()
+knots_sp_dat = data.frame(x = knots_sp[,1], y = knots_sp[,2], r = rad)
+g = ggplot(dom_fine) +
 	geom_sf(colour = "black", size = 0.25, fill = NA) +
-	geom_point(data = knots.sp.dat, aes(x, y), lwd = 1, col = "red") +
-	geom_point(data = knots.sp.dat[1,], aes(x, y), lwd = 3, col = "blue") +
-	geom_circle(data = knots.sp.dat[1,], aes(x0=x, y0=y, r=r), fill = NA,
+	geom_point(data = knots_sp_dat, aes(x, y), lwd = 1, col = "red") +
+	geom_point(data = knots_sp_dat[1,], aes(x, y), lwd = 3, col = "blue") +
+	geom_circle(data = knots_sp_dat[1,], aes(x0=x, y0=y, r=r), fill = NA,
 		lwd = 0.5, col = "blue") +
 	labs(x = "", y = "") +
 	theme_bw()
 print(g)
 
 #' Build components for STCOS model
+#' The elements in `period_list` correspond to `area_list`, so that
+#' `period_list[[l]]` describes the lookback period for `area_list[[l]]`.
 area_list = list(acs5_2013, acs5_2014, acs5_2015, acs5_2016, acs5_2017)
 period_list = list(2009:2013, 2010:2014, 2011:2015, 2012:2016, 2013:2017)
-times_all = 2009:2017
+times_seq = 2009:2017
 L = length(area_list)
+T = length(times_seq)
 
 # Compute overlap matrix H
-# TBD: Should we normalize in compute.overlap?
-# TBD: Should we rename function to overlap or overlap_matrix or cos_matrix?
-# TBD: maybe we should set this up so we don't need the awkward transpose?
-# TBD: Can we avoid even having this function at all?
-# set_agr("constant") suppresses unhelpful warnings when calling st_intersection
 H = Matrix(0, 0, n)
 for (l in 1:L) {
-	logger("Computing overlap matrix for domain %d\n", l)
-	H_l = intersection_matrix(area_list[[l]], dom.fine)
-	
-	# TBD: Make sure this is normalized and transposed correctly...
-	H = rbind(H, apply(H_l, 1, normalize))
+	logger("Computing overlap matrix for domain %d of %d\n", l, L)
+	H_l = overlap_matrix(area_list[[l]], dom_fine)
+	H = rbind(H, H_l)
 }
+N = nrow(H)
 
 # Compute basis function matrix S
-# TBD: Maybe areal basis functions should be classes? Does it make sense?
-# Or over-engineered?
 S = Matrix(0, 0, nrow(knots))
 for (l in 1:L) {
-	logger("Computing basis matrix for domain %d\n", l)
-	S_l = compute_spt_basis_mc(basis = basis, domain = area_list[[l]],
-		R = 50, period = period_list[[l]], report.period = 100)
+	logger("Computing basis matrix for domain %d of %d\n", l, L)
+	S_l = basis1$compute(area_list[[l]], period_list[[l]])
 	S = rbind(S, S_l)
 }
 
@@ -137,20 +136,15 @@ for (l in 1:L) {
 # TBD: Do we want to use package to return limited number of eigencomponents?
 eig = eigen(t(S) %*% S)
 idx.S = which(cumsum(eig$values) / sum(eig$values) < 0.65)
-Tx = eig$vectors[,idx.S]
-S_reduced = S %*% Tx
+Ts = eig$vectors[,idx.S]
+S_reduced = S %*% Ts
+r = ncol(S_reduced)
 
 #' Plot the proportion of variation captured by our selection of PCA components.
 eigprops = cumsum(eig$values) / sum(eig$values)
 plot(eigprops[1:200], xlab = "Dimension", ylab = "Proportion of Variation")
 abline(v = max(idx.S), lty = 2)
 abline(h = eigprops[max(idx.S)], lty = 2)
-
-# Record the dimensions for model components
-N = nrow(H)
-n = nrow(dom.fine)
-r = ncol(S_reduced)
-T = length(times_all)
 
 # Extract the direct estimates and variance estimates
 z = numeric(0)
@@ -163,39 +157,30 @@ for (l in 1:L) {
 idx_missing = which(is.na(z))
 idx_nonmissing = which(!is.na(z))
 
-S_fine = Matrix(0, 0, nrow(knots))
-for (l in 1:length(times_all)) {
-	logger("Computing basis matrix for fine-level domain, time %d\n", times_all[l])
-	S_l = compute_spt_basis_mc(basis = basis, domain = dom.fine,
-		R = 50, period = times_all[l], report.period = 100)
-	S_fine = rbind(S_fine, S_l)
+S_fine_full = Matrix(0, 0, nrow(knots))
+for (l in 1:length(times_seq)) {
+	logger("Computing basis matrix for fine-level domain, time %d\n", times_seq[l])
+	S_l = basis1$compute(dom_fine, times_seq[l])
+	S_fine_full = rbind(S_fine_full, S_l)
 }
-S_fine_reduced = S_fine %*% Tx
+S_fine = S_fine_full %*% Ts
 
 # Compute adjacency matrix for fine-level support
-out = st_touches(dom.fine, dom.fine)
-A = adjList2Matrix(out)
-countAdj = Matrix(0, nrow(A), ncol(A))
-s = rowSums(A)
-for (j in 1:n) {
-	if (s[j] > 0) {
-		countAdj[j,] = A[j,] / s[j]
-	}
-}
-Q = Diagonal(n,1) - 0.9*countAdj
+A = adjacency_matrix(dom_fine)
+W = 1/rowSums(A) * A
+Q = Diagonal(n,1) - 0.9*W
 Qinv = solve(Q)
 
 #' Pick a covariance structure for random coefficients of basis expansion.
-method = "moran"
+method = "independence"
 
 if (method == "moran") {
 	# Assume covariance structure with M computed via Moran's I basis
-	K_inv = sp$get_Kinv(2009:2017, method = "moran")
+	# This method requires an X matrix. Create an X matrix using spatial-only basis.
+	# We need to reduce its dimension, just as we did with S
+	basis2 = ArealSpatialBisquareBasis$new(knots_sp[,1], knots_sp[,2], w = 1, mc_reps = 200)
+	X_full = basis2$compute(dom_fine)
 
-	# Create an X matrix using spatial-only basis
-	basis_sp = SpatialBisquareBasis$new(knots.sp[,1], knots.sp[,2], w = 1)
-	X_full = compute_sp_basis_mc(basis = basis_sp, domain = dom.fine,
-		R = 500, report.period = 100)
 	eig = eigen(t(X_full) %*% X_full)
 	cumsum(eig$values) / sum(eig$values)
 	X = X_full %*% eig$vectors[,1:10]
@@ -204,29 +189,34 @@ if (method == "moran") {
 	eig = eigen(P_perp, symmetric = TRUE)
 	M = Re(eig$vectors)
 	M = (M + t(M)) / 2
-	Sigma = sptcovar.vectautoreg(Qinv, M, S_fine_reduced, lag_max = T)
+	Sigma = sptcovar.vectautoreg(Qinv, M, S_fine, lag_max = T)
 
 	# TBD: I don't think this is right... the sptcovar functions are already returning the minimizer K ...
 	# The "covariance_approximant" function I have now is doing some kind of pseudo-inverse ...
-	K_inv = covariance_approximant(Sigma, S_fine_reduced)
+	K_inv = covariance_approximant(Sigma, S_fine)
 } else if (method == "randomwalk") {
 	# Random Walk
 	# Assume covariance structure with M as identity matrix
 	M = Diagonal(n,1)
-	Sigma = sptcovar.randwalk(Qinv, M, S_fine_reduced, lag_max = T)
+	Sigma = sptcovar.randwalk(Qinv, M, S_fine, lag_max = T)
 
-	# TBD: Is this right??
-	K_inv = covariance_approximant(Sigma, S_fine_reduced)
+	# TBD
+	K_inv = covariance_approximant(Sigma, S_fine)
+
+	K = (Sigma + t(Sigma)) / 2
+	K = K / tail(eigen(K)$values, 1)
+	K_inv = solve(K)
 } else if (method == "car") {
 	# Spatial-only (CAR)
 	# Assume covariance structure without dependence over time
-	Sigma = sptcovar.indep(Qinv, S_fine_reduced, lag_max = T)
+	Sigma = sptcovar.indep(Qinv, S_fine, lag_max = T)
 	
-	# TBD: Is this right??
-	K_inv = covariance_approximant(Sigma, S_fine_reduced)
+	# TBD
+	K_inv = covariance_approximant(Sigma, S_fine)
 } else if (method == "independence") {
 	# Independence
-	K_inv = Diagonal(n = N)
+	K = Diagonal(n = r)
+	K_inv = Diagonal(n = r)
 }
 
 #' Standardize observations before running MCMC.
@@ -236,12 +226,35 @@ z_scaled = (z - z_mean) / z_sd
 v_scaled = v / z_sd^2
 
 #' # Fit the Model
+
+#' Fit the model with Stan
+library(rstan)
+stan_dat = list(
+	N = length(idx_nonmissing), n = n, r = r,
+	z = z_scaled[idx_nonmissing], v = v_scaled[idx_nonmissing],
+	H = as.matrix(H[idx_nonmissing,]), S = as.matrix(S_reduced[idx_nonmissing,]),
+	K = as.matrix(K),
+	alpha_K = 1, beta_K = 2, alpha_xi = 1, beta_xi = 2, alpha_mu = 1, beta_mu = 2
+)
+fit = stan(file = "stcos.stan", data = stan_dat, iter = 2000, chains = 1,
+	verbose = TRUE, sample_file = "stan_draws.csv")
+print(fit, par = c("eta", "sig2mu", "sig2xi", "sig2K"))
+
+traceplot(fit, par = c("sig2mu", "sig2xi", "sig2K"), nrow = 3, ncol = 1)
+traceplot(fit, par = sprintf("mu[%d]", 1:6))
+traceplot(fit, par = c("eta"))
+traceplot(fit, par = c("lp__"))
+
+stan_hist(fit, par = c("sig2mu", "sig2xi", "sig2K"), bins = 30, nrow = 3, ncol = 1)
+stan_hist(fit, par = sprintf("mu[%d]", 1:6), bins = 30)
+stan_hist(fit, par = c("eta"), bins = 30)
+stan_hist(fit, par = c("lp__"), bins = 30)
+
 #+ message=FALSE
 library(coda)
 
 #' Fit MLE; this will serve as an initial value for MCMC.
-K = solve(K_inv)
-mle.out = mle.stcos(
+mle_out = mle_stcos(
 	z = z_scaled[idx_nonmissing],
 	v = v_scaled[idx_nonmissing],
 	H = H[idx_nonmissing,],
@@ -250,53 +263,52 @@ mle.out = mle.stcos(
 	init = list(sig2K = 1, sig2xi = 1)
 )
 init = list(
-	sig2K = mle.out$sig2K.hat,
-    sig2xi = mle.out$sig2xi.hat,
-    mu_B = mle.out$mu.hat
+	sig2K = mle_out$sig2K.hat,
+	sig2xi = mle_out$sig2xi.hat,
+	muB = mle_out$mu.hat
 )
+hyper = list(a.sig2K = 1, b.sig2K = 2, a.sig2xi = 1, b.sig2xi = 2,
+	a.sig2mu = 1, b.sig2mu = 2)
 
 #' Run the Gibbs sampler.
-gibbs.out = gibbs.stcos.raw(
-	z = z.scaled[idx_nonmissing],
-	v = v.scaled[idx_nonmissing],
+gibbs_out = gibbs_stcos_raw(
+	z = z_scaled[idx_nonmissing],
+	v = v_scaled[idx_nonmissing],
 	H = H[idx_nonmissing,],
 	S = S_reduced[idx_nonmissing,],
-	K.inv = K_inv,
-	R = 10000, report.period = 2000, burn = 2000, thin = 10, init = init)
-print(gibbs.out)
+	K_inv = K_inv,
+	R = 10000, report_period = 2000, burn = 2000, thin = 10, init = init, hyper = hyper)
+print(gibbs_out)
 
 #' Show some trace plots to assess convergence of the sampler.
-plot((mu_B.mcmc = mcmc(gibbs.out$mu_B.hist))[,1:3])
-plot((xi.mcmc = mcmc(gibbs.out$xi.hist))[,1:3])
-plot((eta.mcmc = mcmc(gibbs.out$eta.hist))[,1:3])
+plot((muB_mcmc = mcmc(gibbs_out$muB_hist))[,1:3])
+plot((xi_mcmc = mcmc(gibbs_out$xi_hist))[,1:3])
+plot((eta_mcmc = mcmc(gibbs_out$eta_hist))[,1:3])
 
-varcomps.mcmc = mcmc(cbind(
-	gibbs.out$sig2mu.hist,
-	gibbs.out$sig2xi.hist,
-	gibbs.out$sig2K.hist
+varcomps_mcmc = mcmc(cbind(
+	gibbs_out$sig2mu_hist,
+	gibbs_out$sig2xi_hist,
+	gibbs_out$sig2K_hist
 ))
-colnames(varcomps.mcmc) = c("sig2mu", "sig2xi", "sig2K")
-plot(varcomps.mcmc)
+colnames(varcomps_mcmc) = c("sig2mu", "sig2xi", "sig2K")
+plot(varcomps_mcmc)
 
 #' #  Produce Results on target supports
 #' Compute `H` and `S` matrices and get summaries of posterior distribution for E(Y).
 #' Use 90% significance for all credible intervals and MOEs.
 append_results = function(dat_sf, period, alpha = 0.10) {
-	H_raw = intersection_matrix(dat_sf, dom.fine)
-	H_new = Matrix(apply(H_raw, 1, normalize))
+	H_new = overlap_matrix(dat_sf, dom_fine)
+	S_new_full = basis1$compute(dat_sf, period)
+	S_new = S_new_full %*% Ts
 
-	S_new = compute_spt_basis_mc(basis = basis, domain = dat_sf,
-		R = 50, period = period, report.period = 100)
-	S_new_reduced = S_new %*% Tx
-
-	E.hat.scaled = fitted(gibbs.out, H_new, S_new_reduced)
-	E.hat = z.sd * E.hat.scaled + z.mean                      # Uncenter and unscale
-	dat_sf$E.mean = colMeans(E.hat)                           # Point estimates
-	dat_sf$E.sd = apply(E.hat, 2, sd)                         # SDs
-	dat_sf$E.lo = apply(E.hat, 2, quantile, prob = alpha/2)   # Credible interval lo
-	dat_sf$E.hi = apply(E.hat, 2, quantile, prob = 1-alpha/2) # Credible interval hi
-	dat_sf$E.median = apply(E.hat, 2, median)                 # Median
-	dat_sf$E.moe = apply(E.hat, 2, sd) * qnorm(1-alpha/2)     # MOE
+	E_hat_scaled = fitted(gibbs_out, H_new, S_new)
+	E_hat = z_sd * E_hat_scaled + z_mean					  # Uncenter and unscale
+	dat_sf$E_mean = colMeans(E_hat)						      # Point estimates
+	dat_sf$E_sd = apply(E_hat, 2, sd)						  # SDs
+	dat_sf$E_lo = apply(E_hat, 2, quantile, prob = alpha/2)   # Credible interval lo
+	dat_sf$E_hi = apply(E_hat, 2, quantile, prob = 1-alpha/2) # Credible interval hi
+	dat_sf$E_median = apply(E_hat, 2, median)				  # Median
+	dat_sf$E_moe = apply(E_hat, 2, sd) * qnorm(1-alpha/2)	  # MOE
 	return(dat_sf)
 }
 
@@ -316,38 +328,38 @@ library(gridExtra)
 library(ggrepel)
 
 #' Maps of direct and model-based 2017 5-year estimates.
-lim.est = range(acs5_2017$DirectEst, acs5_2017$E.mean)
+lim_est = range(acs5_2017$DirectEst, acs5_2017$E_mean)
 g = ggplot(acs5_2017) +
 	geom_sf(colour = "black", size = 0.05, aes(fill = DirectEst)) +
 	ggtitle("Median Household Income\nfor Boone County",
 		subtitle = "2017 5yr ACS Direct Estimates") +
-	scale_fill_distiller("DirectEst", palette = "RdYlBu", limits = lim.est) +
+	scale_fill_distiller("DirectEst", palette = "RdYlBu", limits = lim_est) +
 	theme_bw()
 h = ggplot(acs5_2017) +
-	geom_sf(colour = "black", size = 0.05, aes(fill = E.mean)) +
+	geom_sf(colour = "black", size = 0.05, aes(fill = E_mean)) +
 	ggtitle("Median Household Income\nfor Boone County",
 		subtitle = "2017 5yr Model Estimates") +
-	scale_fill_distiller("E.mean", palette = "RdYlBu", limits = lim.est) +
+	scale_fill_distiller("E_mean", palette = "RdYlBu", limits = lim_est) +
 	theme_bw()
-k = grid.arrange(g,h, ncol = 2)
+k = grid.arrange(g, h, ncol = 2)
 
 #' Scatter plots comparing direct and model-based 5-year estimates for
 #' 2013, ..., 2017.
-scatter.list = list()
+scatter_list = list()
 years = 2013:2017
 for (idx in 1:length(years)) {
 	year = years[idx]
 	obj = get(sprintf("acs5_%d", year))
-	g = ggplot(obj, aes(x=DirectEst, y=E.mean)) +
+	g = ggplot(obj, aes(x=DirectEst, y=E_mean)) +
 		geom_point(size = 2) +
 		geom_abline(intercept = 0, slope = 1, color="red",
 			linetype="dashed", size=1.2) +
 		ggtitle(sprintf("%d 5yr ACS Direct Estimates", year)) +
 		labs(x = "Direct Estimate", y = "Model-Based Estimate") +
 		theme_bw()
-	scatter.list[[idx]] = g
+	scatter_list[[idx]] = g
 }
-marrangeGrob(scatter.list, nrow = 3, ncol = 2)
+marrangeGrob(scatter_list, nrow = 3, ncol = 2)
 
 idx_missing2017 = which(is.na(acs5_2017$DirectEst))
 
@@ -375,37 +387,37 @@ st_agr(Missing2) = "constant"
 st_agr(Missing3) = "constant"
 st_agr(Missing4) = "constant"
 
-Central.coord = st_coordinates(st_centroid(Central))
-East.coord = st_coordinates(st_centroid(East))
-North.coord = st_coordinates(st_centroid(North))
-Paris.coord = st_coordinates(st_centroid(Paris))
-Missing1.coord = st_coordinates(st_centroid(Missing1))
-Missing2.coord = st_coordinates(st_centroid(Missing2))
-Missing3.coord = st_coordinates(st_centroid(Missing3))
-Missing4.coord = st_coordinates(st_centroid(Missing4))
+Central_coord = st_coordinates(st_centroid(Central))
+East_coord = st_coordinates(st_centroid(East))
+North_coord = st_coordinates(st_centroid(North))
+Paris_coord = st_coordinates(st_centroid(Paris))
+Missing1_coord = st_coordinates(st_centroid(Missing1))
+Missing2_coord = st_coordinates(st_centroid(Missing2))
+Missing3_coord = st_coordinates(st_centroid(Missing3))
+Missing4_coord = st_coordinates(st_centroid(Missing4))
 
 g = ggplot(acs5_2017) +
 	geom_sf(colour = "black", size = 0.05, aes(fill = DirectEst)) +
 	ggtitle("Median Household Income for Boone County",
 		subtitle = "ACS 2017 5yr Direct Estimates") +
-	scale_fill_distiller("DirectEst", palette = "RdYlBu", limits = lim.est) +
+	scale_fill_distiller("DirectEst", palette = "RdYlBu", limits = lim_est) +
 	geom_sf(data = neighbs, fill = "black") +
 	geom_label_repel(data = st_centroid(East), nudge_x = 20000, nudge_y = 130000,
-		aes(x=East.coord[1], y=East.coord[2], label="East")) +
+		aes(x=East_coord[1], y=East_coord[2], label="East")) +
 	geom_label_repel(data = st_centroid(Central), nudge_x = -10000, nudge_y = 130000,
-		aes(x=Central.coord[1], y=Central.coord[2], label="Central")) +
+		aes(x=Central_coord[1], y=Central_coord[2], label="Central")) +
 	geom_label_repel(data = st_centroid(North), nudge_x = 0, nudge_y = 100000,
-		aes(x=North.coord[1], y=North.coord[2], label="North")) +
+		aes(x=North_coord[1], y=North_coord[2], label="North")) +
 	geom_label_repel(data = st_centroid(Paris), nudge_x = 10000, nudge_y = 100000,
-		aes(x=Paris.coord[1], y=Paris.coord[2], label="Paris")) +
+		aes(x=Paris_coord[1], y=Paris_coord[2], label="Paris")) +
 	geom_label_repel(data = st_centroid(Missing1), nudge_x = 100000, nudge_y = -50000,
-		aes(x=Missing1.coord[1], y=Missing1.coord[2], label="Missing1")) +
+		aes(x=Missing1_coord[1], y=Missing1_coord[2], label="Missing1")) +
 	geom_label_repel(data = st_centroid(Missing2), nudge_x = 100000, nudge_y = -36000,
-		aes(x=Missing2.coord[1], y=Missing2.coord[2], label="Missing2")) +
+		aes(x=Missing2_coord[1], y=Missing2_coord[2], label="Missing2")) +
 	geom_label_repel(data = st_centroid(Missing3), nudge_x = -100000, nudge_y = -50000,
-		aes(x=Missing3.coord[1], y=Missing3.coord[2], label="Missing3")) +
+		aes(x=Missing3_coord[1], y=Missing3_coord[2], label="Missing3")) +
 	geom_label_repel(data = st_centroid(Missing4), nudge_x = -100000, nudge_y = -38000,
-		aes(x=Missing4.coord[1], y=Missing4.coord[2], label="Missing4")) +
+		aes(x=Missing4_coord[1], y=Missing4_coord[2], label="Missing4")) +
 	xlab(NULL) +
 	ylab(NULL) +
 	theme_bw()

@@ -1,4 +1,4 @@
-#' Spatial Bisquare Basis
+#' Areal Spatial Bisquare Basis
 #' 
 #' An \code{\link{R6Class}} representing the spatial bisquare basis.
 #' 
@@ -34,7 +34,7 @@
 #' \item \code{compute} Evaluate this basis on specific points.
 #' }
 #'
-#' @name SpatialBisquareBasis
+#' @name ArealSpatialBisquareBasis
 #' 
 #' @examples
 #' set.seed(1234)
@@ -64,44 +64,49 @@ NULL
 
 #' @export
 #' @docType class
-SpatialBisquareBasis <- R6Class("SpatialBisquareBasis",
+ArealSpatialBisquareBasis = R6Class("ArealSpatialBisquareBasis",
 	lock_objects = TRUE,
 	lock_class = TRUE,
 	private = list(
-		r = NULL,
-		cutpoints = NULL,
-		w = NULL,
-		rl = NULL
+		mc_reps = NULL,
+		report_period = NULL,
+		basis_sp = NULL
 	),
 	public = list(
-		initialize = function(knots_x, knots_y, w) {
-			r <- length(knots_x)
-			stopifnot(length(knots_y) == r)
-			private$cutpoints <- cbind(knots_x, knots_y)
-			private$w <- w
-			private$r <- r
+		initialize = function(knots_x, knots_y, w, mc_reps, report_period = mc_reps + 1) {
+			private$mc_reps = mc_reps
+			private$report_period = report_period
+			private$basis_sp = SpatialBisquareBasis$new(knots_x, knots_y, w = w)
+		},
+		get_mc_reps = function() {
+			private$mc_reps
+		},
+		get_report_period = function() {
+			private$report_period
+		},
+		get_basis_sp = function() {
+			private$basis_sp
+		},
+		compute = function(dom) {
+			basis = private$basis_sp
+			R = private$mc_reps
 
-			# Jon's code computes basis with rl instead of w.s
-			# Use type 1 quantile algorithm to match Matlab 
-			G <- dist(private$cutpoints)
-			private$rl <- as.numeric(w * quantile(G[G > 0], prob = 0.05, type = 1))
-		},
-		get_dim = function() {
-			private$r
-		},
-		get_cutpoints = function() {
-			private$cutpoints
-		},
-		get_rl = function() {
-			private$rl
-		},
-		get_w = function() {
-			private$w
-		},
-		compute = function(x, y) {
-			X <- cbind(x, y)
-			S <- compute_basis_sp(X, private$cutpoints, private$rl)
-			return(S)
+			n = nrow(dom)
+			r = basis$get_dim()
+			S = Matrix(0, n, r)
+			report_period = private$report_period
+
+			for (j in 1:n) {
+				if (j %% report_period == 0) {
+					logger("Computing basis for area %d of %d\n", j, n)
+				}
+
+				# Request a few more samples than we'll need, to prevent the loop in rArea.
+				P = rArea(R, dom[j,], blocksize = ceiling(1.2*R))
+				S[j,] = S[j,] + colSums(basis$compute(P[,1], P[,2]))
+			}
+
+			return(S / R)
 		}
 	)
 )

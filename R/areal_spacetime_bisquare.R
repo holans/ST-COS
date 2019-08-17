@@ -1,11 +1,11 @@
-#' SpaceTime Bisquare Basis
+#' Areal SpaceTime Bisquare Basis
 #' 
 #' An \code{\link{R6Class}} representing the space-time bisquare basis.
 #' 
 #' @section Usage:
 #' \preformatted{
 #' basis = SpaceTimeBisquareBasis$new(knots.x, knots.y, knots.t,
-#'     w_s, w_t)
+#'     w.s, w.t)
 #' basis$compute(x, y, time)
 #' basis$get_dim()
 #' basis$get_cutpoints()
@@ -19,8 +19,8 @@
 #' \item \code{knots.x} x-coordinate of knot points.
 #' \item \code{knots.y} y-coordinate of knot points.
 #' \item \code{knots.t} time coordinate of knot points.
-#' \item \code{w_s} (Original, before transformation) spatial radius.
-#' \item \code{w_t} Temporal radius.
+#' \item \code{w.s} (Original, before transformation) spatial radius.
+#' \item \code{w.t} Temporal radius.
 #' \item \code{x} Vector of x-coordinates for points on which to evaluate the basis.
 #' \item \code{y} Vector of y-coordinates for points on which to evaluate the basis.
 #' \item \code{time} Vector of time coordinates for points on which to evaluate the basis.
@@ -52,7 +52,7 @@
 #' y = runif(50)
 #' t = sample(1:3, size = 50, replace = TRUE)
 #' 
-#' basis = SpaceTimeBisquareBasis$new(knots[,1], knots[,2], knots[,3], w_s = 0.5, w_t = 1)
+#' basis = SpaceTimeBisquareBasis$new(knots[,1], knots[,2], knots[,3], w.s = 0.5, w.t = 1)
 #' basis$compute(x, y, t)
 #' basis$get_dim()
 #' basis$get_cutpoints()
@@ -73,50 +73,59 @@ NULL
 
 #' @export
 #' @docType class
-SpaceTimeBisquareBasis = R6Class("SpaceTimeBisquareBasis",
+ArealSpaceTimeBisquareBasis = R6Class("ArealSpaceTimeBisquareBasis",
 	lock_objects = TRUE,
 	lock_class = TRUE,
 	private = list(
-		r = NULL,
-		cutpoints = NULL,
-		w_s = NULL,
-		w_t = NULL,
-		rl = NULL
+		mc_reps = NULL,
+		report_period = NULL,
+		basis_spt = NULL
 	),
 	public = list(
-		initialize = function(knots_x, knots_y, knots_t, w_s, w_t) {
-			r = length(knots_x)
-			stopifnot(length(knots_y) == r)
-			stopifnot(length(knots_t) == r)
-			private$cutpoints = cbind(knots_x, knots_y, knots_t)
-			private$w_s = w_s
-			private$w_t = w_t
-			private$r = r
+		initialize = function(knots_x, knots_y, knots_t, w_s, w_t, mc_reps, report_period = mc_reps + 1) {
+			private$mc_reps = mc_reps
+			private$report_period = report_period
+			private$basis_spt = SpaceTimeBisquareBasis$new(knots_x, knots_y, knots_t, w_s = w_s, w_t = w_t)
+		},
+		get_mc_reps = function() {
+			private$mc_reps
+		},
+		get_report_period = function() {
+			private$report_period
+		},
+		get_basis_spt = function() {
+			private$basis_spt
+		},
+		compute = function(dom, period) {
+			# X = cbind(x, y, time)
+			# S = compute_basis_spt(X, private$cutpoints, private$rl, private$w.t)
+			# return(S)
+			
+			basis = private$basis_spt
+			R = private$mc_reps
 
-			# Jon's code computes basis with rl instead of w_s
-			# Use type 1 quantile algorithm to match Matlab 
-			G = dist(private$cutpoints)
-			private$rl = as.numeric(w_s * quantile(G[G > 0], prob = 0.05, type = 1))
-		},
-		get_dim = function() {
-			private$r
-		},
-		get_cutpoints = function() {
-			private$cutpoints
-		},
-		get_rl = function() {
-			private$rl
-		},
-		get_ws = function() {
-			private$w_s
-		},
-		get_wt = function() {
-			private$w_t
-		},
-		compute = function(x, y, time) {
-			X = cbind(x, y, time)
-			S = compute_basis_spt(X, private$cutpoints, private$rl, private$w_t)
-			return(S)
+			n = nrow(dom)
+			r = basis$get_dim()
+			S = Matrix(0, n, r)
+			T = length(period)
+			report_period = private$report_period
+
+			for (j in 1:n) {
+				if (j %% report_period == 0) {
+					logger("Computing basis for area %d of %d\n", j, n)
+				}
+
+				# Drawing samples from an area seems more time consuming than computing
+				# basis function. Let's reuse samples over multiple lookbacks.
+				# Request a few more samples than we'll need, to prevent the loop in rArea.
+				P = rArea(R, dom[j,], blocksize = ceiling(1.2*R))
+
+				for (t in 1:T) {
+					S[j,] = S[j,] + colSums(basis$compute(P[,1], P[,2], period[t]))
+				}
+			}
+
+			return( S / (R*T) )
 		}
 	)
 )
