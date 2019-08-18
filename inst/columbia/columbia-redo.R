@@ -67,6 +67,35 @@ ggplot(neighbs) +
 	geom_sf(colour = "black", size = 0.05) +
 	theme_bw()
 
+#' Gather the data for source supports
+#' The elements in `period_list` correspond to `source_list`, so that
+#' `period_list[[l]]` describes the lookback period for `source_list[[l]]`.
+source_list = list(
+	acs5_2013 %>% filter(!is.na(DirectEst)) %>% filter(!is.na(DirectVar)),
+	acs5_2014 %>% filter(!is.na(DirectEst)) %>% filter(!is.na(DirectVar)),
+	acs5_2015 %>% filter(!is.na(DirectEst)) %>% filter(!is.na(DirectVar)),
+	acs5_2016 %>% filter(!is.na(DirectEst)) %>% filter(!is.na(DirectVar)),
+	acs5_2017 %>% filter(!is.na(DirectEst)) %>% filter(!is.na(DirectVar))
+)
+period_list = list(2009:2013, 2010:2014, 2011:2015, 2012:2016, 2013:2017)
+times_seq = 2009:2017
+L = length(source_list)
+T = length(times_seq)
+
+# TBD: No non-NA observation intersects with some particular areas
+# I think we need to drop them from the analysis
+# Does this help with the MLE issue?
+U = rbind(
+	overlap_matrix(source_list[[1]], dom_fine, proportion = FALSE),
+	overlap_matrix(source_list[[2]], dom_fine, proportion = FALSE),
+	overlap_matrix(source_list[[3]], dom_fine, proportion = FALSE),
+	overlap_matrix(source_list[[4]], dom_fine, proportion = FALSE),
+	overlap_matrix(source_list[[5]], dom_fine, proportion = FALSE)
+)
+idx = which(colSums(U) < 10)
+dom_fine = dom_fine[-idx,]
+n = nrow(dom_fine)
+
 #' # Prepare to fit the model
 #+ message=FALSE
 library(fields)
@@ -78,7 +107,8 @@ library(ggforce)
 #' to select a subset of those points for knots.
 u = st_sample(dom_fine, size = 2000)
 M = matrix(unlist(u), length(u), 2, byrow = TRUE)
-out = cover.design(M, 500)
+# out = cover.design(M, 500)
+out = cover.design(M, 200)
 knots_sp = out$design
 
 #' Select temporal knots to be evenly spaced over the years relevant
@@ -107,38 +137,35 @@ g = ggplot(dom_fine) +
 print(g)
 
 #' Build components for STCOS model
-#' The elements in `period_list` correspond to `area_list`, so that
-#' `period_list[[l]]` describes the lookback period for `area_list[[l]]`.
-area_list = list(acs5_2013, acs5_2014, acs5_2015, acs5_2016, acs5_2017)
-period_list = list(2009:2013, 2010:2014, 2011:2015, 2012:2016, 2013:2017)
-times_seq = 2009:2017
-L = length(area_list)
-T = length(times_seq)
 
 # Compute overlap matrix H
 H = Matrix(0, 0, n)
 for (l in 1:L) {
 	logger("Computing overlap matrix for domain %d of %d\n", l, L)
-	H_l = overlap_matrix(area_list[[l]], dom_fine)
+	H_l = overlap_matrix(source_list[[l]], dom_fine)
 	H = rbind(H, H_l)
 }
 N = nrow(H)
 
 # Compute basis function matrix S
-S = Matrix(0, 0, nrow(knots))
+S_full = Matrix(0, 0, nrow(knots))
 for (l in 1:L) {
 	logger("Computing basis matrix for domain %d of %d\n", l, L)
-	S_l = basis1$compute(area_list[[l]], period_list[[l]])
-	S = rbind(S, S_l)
+	S_l = basis1$compute(source_list[[l]], period_list[[l]])
+	S_full = rbind(S_full, S_l)
 }
+
+# Extract the direct estimates and variance estimates
+z = unlist(Map(function(x) { x$DirectEst }, source_list))
+v = unlist(Map(function(x) { x$DirectVar }, source_list))
 
 #' Do a PCA reduction on S to reduce its dimension
 # TBD: Do we want to use package to return limited number of eigencomponents?
-eig = eigen(t(S) %*% S)
+eig = eigen(t(S_full) %*% S_full)
 idx.S = which(cumsum(eig$values) / sum(eig$values) < 0.65)
 Ts = eig$vectors[,idx.S]
-S_reduced = S %*% Ts
-r = ncol(S_reduced)
+S = S_full %*% Ts
+r = ncol(S)
 
 #' Plot the proportion of variation captured by our selection of PCA components.
 eigprops = cumsum(eig$values) / sum(eig$values)
@@ -146,17 +173,8 @@ plot(eigprops[1:200], xlab = "Dimension", ylab = "Proportion of Variation")
 abline(v = max(idx.S), lty = 2)
 abline(h = eigprops[max(idx.S)], lty = 2)
 
-# Extract the direct estimates and variance estimates
-z = numeric(0)
-v = numeric(0)
-for (l in 1:L) {
-	z = c(z, area_list[[l]]$DirectEst)
-	v = c(v, area_list[[l]]$DirectVar)
-}
-
-idx_missing = which(is.na(z))
-idx_nonmissing = which(!is.na(z))
-
+#' Compute basis function on fine-level domain, which is required for some
+#' structures of K.
 S_fine_full = Matrix(0, 0, nrow(knots))
 for (l in 1:length(times_seq)) {
 	logger("Computing basis matrix for fine-level domain, time %d\n", times_seq[l])
@@ -168,7 +186,8 @@ S_fine = S_fine_full %*% Ts
 # Compute adjacency matrix for fine-level support
 A = adjacency_matrix(dom_fine)
 W = 1/rowSums(A) * A
-Q = Diagonal(n,1) - 0.9*W
+tau = 0.9
+Q = Diagonal(n,1) - tau*W
 Qinv = solve(Q)
 
 #' Pick a covariance structure for random coefficients of basis expansion.
@@ -210,18 +229,27 @@ if (method == "moran") {
 	# Spatial-only (CAR)
 	# Assume covariance structure without dependence over time
 	Sigma = sptcovar.indep(Qinv, S_fine, lag_max = T)
-	
+
 	# TBD
 	K_inv = covariance_approximant(Sigma, S_fine)
+
+	K = (Sigma + t(Sigma)) / 2
+	K = K / tail(eigen(K)$values, 1)
+	K_inv = solve(K)
 } else if (method == "independence") {
 	# Independence
 	K = Diagonal(n = r)
 	K_inv = Diagonal(n = r)
+
+	# TBD: What about this one?
+	K = t(S) %*% S 
+	K = K / tail(eigen(K)$values, 1)
+	K_inv = solve(K)
 }
 
 #' Standardize observations before running MCMC.
-z_mean = mean(z, na.rm = TRUE)
-z_sd = sd(z, na.rm = TRUE)
+z_mean = mean(z)
+z_sd = sd(z)
 z_scaled = (z - z_mean) / z_sd
 v_scaled = v / z_sd^2
 
@@ -230,10 +258,8 @@ v_scaled = v / z_sd^2
 #' Fit the model with Stan
 library(rstan)
 stan_dat = list(
-	N = length(idx_nonmissing), n = n, r = r,
-	z = z_scaled[idx_nonmissing], v = v_scaled[idx_nonmissing],
-	H = as.matrix(H[idx_nonmissing,]), S = as.matrix(S_reduced[idx_nonmissing,]),
-	K = as.matrix(K),
+	N = N, n = n, r = r, z = z_scaled, v = v_scaled, H = as.matrix(H),
+	S = as.matrix(S), K = as.matrix(K),
 	alpha_K = 1, beta_K = 2, alpha_xi = 1, beta_xi = 2, alpha_mu = 1, beta_mu = 2
 )
 fit = stan(file = "stcos.stan", data = stan_dat, iter = 2000, chains = 1,
@@ -254,30 +280,20 @@ stan_hist(fit, par = c("lp__"), bins = 30)
 library(coda)
 
 #' Fit MLE; this will serve as an initial value for MCMC.
-mle_out = mle_stcos(
-	z = z_scaled[idx_nonmissing],
-	v = v_scaled[idx_nonmissing],
-	H = H[idx_nonmissing,],
-	S = S_reduced[idx_nonmissing,],
-	K = K,
-	init = list(sig2K = 1, sig2xi = 1)
-)
+mle_out = mle_stcos(z = z_scaled, v = v_scaled, H = H, S = S, K = K,
+	init = list(sig2K = 1, sig2xi = 1))
 init = list(
-	sig2K = mle_out$sig2K.hat,
-	sig2xi = mle_out$sig2xi.hat,
-	muB = mle_out$mu.hat
+	sig2K = mle_out$sig2K_hat,
+	sig2xi = mle_out$sig2xi_hat,
+	muB = mle_out$mu_hat
 )
-hyper = list(a.sig2K = 1, b.sig2K = 2, a.sig2xi = 1, b.sig2xi = 2,
-	a.sig2mu = 1, b.sig2mu = 2)
+hyper = list(a_sig2K = 1, b_sig2K = 2, a_sig2xi = 1, b_sig2xi = 2,
+	a_sig2mu = 1, b_sig2mu = 2)
 
 #' Run the Gibbs sampler.
-gibbs_out = gibbs_stcos_raw(
-	z = z_scaled[idx_nonmissing],
-	v = v_scaled[idx_nonmissing],
-	H = H[idx_nonmissing,],
-	S = S_reduced[idx_nonmissing,],
-	K_inv = K_inv,
-	R = 10000, report_period = 2000, burn = 2000, thin = 10, init = init, hyper = hyper)
+gibbs_out = gibbs_stcos_raw(z = z_scaled, v = v_scaled, H = H, S = S,
+	K_inv = K_inv, R = 10000, report_period = 2000, burn = 2000,
+	thin = 10, init = init, hyper = hyper)
 print(gibbs_out)
 
 #' Show some trace plots to assess convergence of the sampler.

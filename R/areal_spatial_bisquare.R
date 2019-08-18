@@ -73,28 +73,35 @@ ArealSpatialBisquareBasis = R6Class("ArealSpatialBisquareBasis",
 		basis_sp = NULL
 	),
 	public = list(
-		initialize = function(knots_x, knots_y, w, mc_reps, report_period = mc_reps + 1) {
+		initialize = function(knots_x, knots_y, w, mc_reps) {
 			private$mc_reps = mc_reps
-			private$report_period = report_period
 			private$basis_sp = SpatialBisquareBasis$new(knots_x, knots_y, w = w)
 		},
 		get_mc_reps = function() {
 			private$mc_reps
 		},
-		get_report_period = function() {
-			private$report_period
-		},
 		get_basis_sp = function() {
 			private$basis_sp
 		},
-		compute = function(dom) {
+		get_dim = function() {
+			private$basis_sp$r
+		},
+		get_cutpoints = function() {
+			private$basis_sp$cutpoints
+		},
+		get_rl = function() {
+			private$basis_sp$rl
+		},
+		get_w = function() {
+			private$basis_sp$w
+		},
+		compute = function(dom, report_period = nrow(dom) + 1) {
 			basis = private$basis_sp
 			R = private$mc_reps
 
 			n = nrow(dom)
 			r = basis$get_dim()
 			S = Matrix(0, n, r)
-			report_period = private$report_period
 
 			for (j in 1:n) {
 				if (j %% report_period == 0) {

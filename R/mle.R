@@ -10,7 +10,7 @@
 #' @param init A list containing the following initial values for the MCMC:
 #' 	      \code{sig2xi}. If not specified, we select an arbitrary initial
 #' 	      value.
-#' @param optim.control This is passed as the \code{control} argument to
+#' @param optim_control This is passed as the \code{control} argument to
 #'        \code{optim}. Note that the value \code{fnscale} is ignored if
 #'        specified.
 #'
@@ -24,51 +24,52 @@
 #' S.reduced = sp$get_reduced_S() 
 #' K_inv = sp$get_Kinv(2005:2015)
 #' 
-#' mle.out = mle_stcos(z, v, S.reduced, H, K_inv)
+#' mle.out = mle_stcos(z, v, S.reduced, H, solve(K_inv))
 #' 
 #' sig2K_hat = mle.out$sig2K_hat
 #' sig2xi_hat = mle.out$sig2xi_hat
 #' mu_hat = mle.out$mu_hat
 #' }
 #' @export
-mle_stcos = function(z, v, H, S, K_inv, init = NULL,
-	optim.control = list())
+mle_stcos = function(z, v, H, S, K, init = NULL,
+	optim_control = list())
 {
+	N = nrow(H)
 	n = ncol(H)
 	r = ncol(S)
-	K = solve(K_inv)
 
 	# Initial values
 	if (is.null(init)) { init = list() }
 	if (is.null(init$sig2K)) { init$sig2K = 1 }
 	if (is.null(init$sig2xi)) { init$sig2xi = 1 }
 
-	loglik = function(theta) {
-		sig2K = exp(theta[1])
-		sig2xi = exp(theta[2])
+	loglik = function(par) {
+		sig2K = exp(par[1])
+		sig2xi = exp(par[2])
 
-		Sigma = sig2K * (S %*% K %*% t(S)) + diag(x = sig2xi + v)
-		Sigma_inv_H = solve(Sigma, H)
-		mu_hat = pinv(as.matrix(t(H) %*% Sigma_inv_H)) %*% (t(Sigma_inv_H) %*% z)
+		Delta = sig2K * S %*% K %*% t(S) + Diagonal(x = sig2xi + v)
+		Delta_inv_H = solve(Delta, H)
+		mu_hat = pinv(as.matrix(t(H) %*% Delta_inv_H)) %*% (t(Delta_inv_H) %*% z)
+		z_hat = H %*% mu_hat
 
-		logdet = determinant(Sigma)
-		z_star = z - H %*% mu_hat
-		as.numeric(-n/2 * log(2*pi) - (1/2) * logdet$modulus -
-			(1/2) * t(z_star) %*% solve(Sigma, z_star))
+		logdet = as.numeric( determinant(Delta)$modulus )
+		ll = -N/2 * log(2*pi) - logdet / 2 - sum((z - z_hat) * solve(Delta, z - z_hat)) / 2
+		print(ll)
+		return(ll)
 	}
 
-	optim.control$fnscale = -1
+	optim_control$fnscale = -1
 	st = Sys.time()
 	par_init = c(log(init$sig2K), log(init$sig2xi))
 	res = optim(par = par_init, loglik, method = "L-BFGS-B",
-		control = optim.control)
+		control = optim_control)
 	elapsed_sec = as.numeric(Sys.time() - st, unit = "secs")
 
 	sig2K_hat = exp(res$par[1])
 	sig2xi_hat = exp(res$par[2])
-	Sigma_hat = (sig2K_hat * S %*% K %*% t(S)) + diag(x = sig2xi_hat + v)
-	Sigma_inv_H_hat = solve(Sigma_hat, H)
-	mu_hat = pinv(as.matrix(t(H) %*% Sigma_inv_H_hat)) %*% (t(Sigma_inv_H_hat) %*% z)
+	Delta_hat = sig2K_hat * S %*% K %*% t(S) + Diagonal(x = sig2xi_hat + v)
+	Delta_inv_H_hat = solve(Delta_hat, H)
+	mu_hat = pinv(as.matrix(t(H) %*% Delta_inv_H_hat)) %*% (t(Delta_inv_H_hat) %*% z)
 
 	list(sig2K_hat = sig2K_hat, sig2xi_hat = sig2xi_hat,
 		mu_hat = mu_hat, res = res, elapsed_sec = elapsed_sec)

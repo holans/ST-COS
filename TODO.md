@@ -6,3 +6,7 @@ Make sure its safe to remove these:
 
 The functions related to K need work.
 
+Why is MLE function giving weird answers?
+- I think there are a few area at the fine level with no intersection...
+
+

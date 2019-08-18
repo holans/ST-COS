@@ -82,33 +82,38 @@ ArealSpaceTimeBisquareBasis = R6Class("ArealSpaceTimeBisquareBasis",
 		basis_spt = NULL
 	),
 	public = list(
-		initialize = function(knots_x, knots_y, knots_t, w_s, w_t, mc_reps, report_period = mc_reps + 1) {
+		initialize = function(knots_x, knots_y, knots_t, w_s, w_t, mc_reps) {
 			private$mc_reps = mc_reps
-			private$report_period = report_period
 			private$basis_spt = SpaceTimeBisquareBasis$new(knots_x, knots_y, knots_t, w_s = w_s, w_t = w_t)
 		},
 		get_mc_reps = function() {
 			private$mc_reps
 		},
-		get_report_period = function() {
-			private$report_period
-		},
 		get_basis_spt = function() {
 			private$basis_spt
 		},
-		compute = function(dom, period) {
-			# X = cbind(x, y, time)
-			# S = compute_basis_spt(X, private$cutpoints, private$rl, private$w.t)
-			# return(S)
-			
+		get_dim = function() {
+			private$basis_sp$r
+		},
+		get_cutpoints = function() {
+			private$basis_spt$cutpoints
+		},
+		get_rl = function() {
+			private$basis_spt$get_rl()
+		},
+		get_ws = function() {
+			private$basis_spt$w_s
+		},
+		get_wt = function() {
+			private$basis_spt$w_t
+		},
+		compute = function(dom, period, report_period = nrow(dom) + 1) {
 			basis = private$basis_spt
 			R = private$mc_reps
-
 			n = nrow(dom)
 			r = basis$get_dim()
 			S = Matrix(0, n, r)
 			T = length(period)
-			report_period = private$report_period
 
 			for (j in 1:n) {
 				if (j %% report_period == 0) {
