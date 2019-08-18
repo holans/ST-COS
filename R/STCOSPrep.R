@@ -362,7 +362,7 @@ STCOSPrep = R6Class("STCOSPrep",
 			} else if (method == "randomwalk") {
 				# Assume covariance structure with M as identity matrix
 				M = Diagonal(n,1)
-				K = sptcovar.randwalk(Qinv, M, Sconnectorf, lag_max = T)
+				K = sptcovar.randwalk(Qinv, Sconnectorf, lag_max = T)
 			} else if (method == "moran") {
 				# Assume covariance structure with M computed via Moran's I basis
 				if (is.null(X)) {

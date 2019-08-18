@@ -39,20 +39,15 @@ dinvgamma = function (x, shape, rate, scale = 1/rate, log = FALSE)
 	exp(log_f)
 }
 
-#' @export
-covariance_approximant = function(Sigma, S) {
-	eig = eigen(Sigma)
-	P = Re(eig$vectors)
-	D = Re(eig$values)
-	D[D < 0] = 0
-	Dinv = D
-	Dinv[D > 0] = 1 / D[D > 0]
-	Kinv = P %*% (Dinv * t(P))
-	return(Kinv)
-}
-
-#' @export
-precision_approximant = function(Sigma, S) {
-	stop("TBD: Implement me")
-}
-
+# Code to compute an inverse for a non-pd matrix
+# Do we still need this?
+#my_inverse = function(Sigma, S) {
+#	eig = eigen(Sigma)
+#	P = Re(eig$vectors)
+#	D = Re(eig$values)
+#	D[D < 0] = 0
+#	Dinv = D
+#	Dinv[D > 0] = 1 / D[D > 0]
+#	Kinv = P %*% (Dinv * t(P))
+#	return(Kinv)
+#}

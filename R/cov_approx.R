@@ -1,16 +1,14 @@
-# Computes 
-#   K = SpSinvSp %*% FullCovar %*% t(SpSinvSp)
+# Return K which minimizes || Sigma - S X S^T ||_F over symmetric psd matrices X
+# where Sigma is symmetric and pd. This gives
+#   K = SpSinvSp %*% Sigma %*% t(SpSinvSp)
 # where
 #   SpSinvSp = solve(t(S) %*% S) %*% t(S)
-#   FullCovar is the autocovariance of VAR(1), the first lag_max blocks
-# We don't need to construct FullCovar in its entirety to do this operation.
-#
-# K minimizes || FullCovar - S X S^T ||_Frob over symmetric psd matrices X
+#   Sigma is the autocovariance of VAR(1), the first lag_max blocks
+# We don't need to construct Sigma in its entirety to do this operation.
 #' @export
-sptcovar.vectautoreg = function(Qinv, M, S, lag_max)
+cov_approx_moran = function(Qinv, X, S, lag_max)
 {
 	n = nrow(Qinv)
-	d = nrow(S)
 	r = ncol(S)
 
 	SpS = t(S) %*% S
@@ -19,9 +17,14 @@ sptcovar.vectautoreg = function(Qinv, M, S, lag_max)
 	}
 	SpSinv = pinv(as.matrix(SpS))
 
-	# Get all the the autocovariances we'll need
-	G = covVAR1(M, Qinv, lag_max = lag_max)
+	# Create VAR coefficient matrix from X
+	P_perp = Diagonal(n,1) - X %*% solve(t(X) %*% X, t(X))
+	eig = eigen(P_perp, symmetric = TRUE)
+	M = Re(eig$vectors)
+	M = (M + t(M)) / 2
 
+	# Get all the autocovariances we'll need
+	G = autocov_VAR1(M, Qinv, lag_max)
 	Gamma = function(h) {
 		if (h >= 0) {
 			G[,,h+1]
@@ -39,17 +42,17 @@ sptcovar.vectautoreg = function(Qinv, M, S, lag_max)
 		}
 	}
 
-	return(SpSinv %*% C %*% SpSinv)
+	K = SpSinv %*% C %*% SpSinv
+	return((K + t(K)) / 2)
 }
 
 #' @export
-sptcovar.randwalk = function(Qinv, M, S, lag_max)
+cov_approx_randwalk = function(Qinv, S, lag_max)
 {
 	n = nrow(Qinv)
-	d = nrow(S)
 	r = ncol(S)
-	SpS = t(S) %*% S
 
+	SpS = t(S) %*% S
 	if (rankMatrix(SpS) < r) {
 		warning("The matrix (S' S) is rank-deficient. Consider reducing the dimension of S")
 	}
@@ -60,22 +63,21 @@ sptcovar.randwalk = function(Qinv, M, S, lag_max)
 		for (j in 1:lag_max) {
 			idx_i = seq(n*(i-1)+1, n*i)
 			idx_j = seq(n*(j-1)+1, n*j)
-			B = min(i,j)*Qinv
-			C = C + t(S[idx_i,]) %*% B %*% S[idx_j,]
+			C = C + t(S[idx_i,]) %*% (min(i,j)*Qinv) %*% S[idx_j,]
 		}
 	}
 
-	return(SpSinv %*% C %*% SpSinv)
+	K = SpSinv %*% C %*% SpSinv
+	return((K + t(K)) / 2)
 }
 
 #' @export
-sptcovar.indep = function(Qinv, S, lag_max)
+cov_approx_blockdiag = function(Qinv, S, lag_max)
 {
 	n = nrow(Qinv)
-	d = nrow(S)
 	r = ncol(S)
+
 	SpS = t(S) %*% S
-	
 	if (rankMatrix(SpS) < r) {
 		warning("The matrix (S' S) is rank-deficient. Consider reducing the dimension of S")
 	}
@@ -87,5 +89,6 @@ sptcovar.indep = function(Qinv, S, lag_max)
 		C = C + t(S[idx,]) %*% Qinv %*% S[idx,]
 	}
 
-	return(SpSinv %*% C %*% SpSinv)
+	K = SpSinv %*% C %*% SpSinv
+	return((K + t(K)) / 2)
 }

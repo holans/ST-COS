@@ -199,53 +199,22 @@ if (method == "moran") {
 	# We need to reduce its dimension, just as we did with S
 	basis2 = ArealSpatialBisquareBasis$new(knots_sp[,1], knots_sp[,2], w = 1, mc_reps = 200)
 	X_full = basis2$compute(dom_fine)
-
-	eig = eigen(t(X_full) %*% X_full)
-	cumsum(eig$values) / sum(eig$values)
-	X = X_full %*% eig$vectors[,1:10]
-
-	P_perp = Diagonal(nrow(X),1) - X %*% solve(t(X) %*% X, t(X))
-	eig = eigen(P_perp, symmetric = TRUE)
-	M = Re(eig$vectors)
-	M = (M + t(M)) / 2
-	Sigma = sptcovar.vectautoreg(Qinv, M, S_fine, lag_max = T)
-
-	# TBD: I don't think this is right... the sptcovar functions are already returning the minimizer K ...
-	# The "covariance_approximant" function I have now is doing some kind of pseudo-inverse ...
-	K_inv = covariance_approximant(Sigma, S_fine)
+	eig2 = eigen(t(X_full) %*% X_full)
+	cumsum(eig2$values) / sum(eig2$values)
+	X = X_full %*% eig2$vectors[,1:10]
+	K = cov_approx_moran(Qinv, X, S_fine, lag_max = T)
 } else if (method == "randomwalk") {
 	# Random Walk
-	# Assume covariance structure with M as identity matrix
-	M = Diagonal(n,1)
-	Sigma = sptcovar.randwalk(Qinv, M, S_fine, lag_max = T)
-
-	# TBD
-	K_inv = covariance_approximant(Sigma, S_fine)
-
-	K = (Sigma + t(Sigma)) / 2
-	K = K / tail(eigen(K)$values, 1)
-	K_inv = solve(K)
+	K = cov_approx_randwalk(Qinv, S_fine, lag_max = T)
 } else if (method == "car") {
 	# Spatial-only (CAR)
 	# Assume covariance structure without dependence over time
-	Sigma = sptcovar.indep(Qinv, S_fine, lag_max = T)
-
-	# TBD
-	K_inv = covariance_approximant(Sigma, S_fine)
-
-	K = (Sigma + t(Sigma)) / 2
-	K = K / tail(eigen(K)$values, 1)
-	K_inv = solve(K)
+	K = cov_approx_blockdiag(Qinv, S_fine, lag_max = T)
 } else if (method == "independence") {
 	# Independence
 	K = Diagonal(n = r)
-	K_inv = Diagonal(n = r)
-
-	# TBD: What about this one?
-	K = t(S) %*% S 
-	K = K / tail(eigen(K)$values, 1)
-	K_inv = solve(K)
 }
+K_inv = solve(K)
 
 #' Standardize observations before running MCMC.
 z_mean = mean(z)

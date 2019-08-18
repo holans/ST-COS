@@ -32,7 +32,7 @@
 #' }
 #' @export
 mle_stcos = function(z, v, H, S, K, init = NULL,
-	optim_control = list())
+	optim_control = list(), optim_method = "L-BFGS-B")
 {
 	N = nrow(H)
 	n = ncol(H)
@@ -54,14 +54,13 @@ mle_stcos = function(z, v, H, S, K, init = NULL,
 
 		logdet = as.numeric( determinant(Delta)$modulus )
 		ll = -N/2 * log(2*pi) - logdet / 2 - sum((z - z_hat) * solve(Delta, z - z_hat)) / 2
-		print(ll)
 		return(ll)
 	}
 
 	optim_control$fnscale = -1
 	st = Sys.time()
 	par_init = c(log(init$sig2K), log(init$sig2xi))
-	res = optim(par = par_init, loglik, method = "L-BFGS-B",
+	res = optim(par = par_init, loglik, method = optim_method,
 		control = optim_control)
 	elapsed_sec = as.numeric(Sys.time() - st, unit = "secs")
 
@@ -72,5 +71,5 @@ mle_stcos = function(z, v, H, S, K, init = NULL,
 	mu_hat = pinv(as.matrix(t(H) %*% Delta_inv_H_hat)) %*% (t(Delta_inv_H_hat) %*% z)
 
 	list(sig2K_hat = sig2K_hat, sig2xi_hat = sig2xi_hat,
-		mu_hat = mu_hat, res = res, elapsed_sec = elapsed_sec)
+		mu_hat = as.numeric(mu_hat), res = res, elapsed_sec = elapsed_sec)
 }
