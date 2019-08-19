@@ -32,6 +32,5 @@ model {
 	eta ~ multi_normal(rep_vector(0,r), sig2K * K);
 	mu ~ normal(0, sqrt(sig2mu));
 	xi ~ normal(0, sqrt(sig2xi));
-	// z ~ normal(to_vector(H*mu + S*eta), sqrt(v + sig2xi));
 	z ~ normal(to_vector(H*mu + S*eta + xi), sqrt(v));
 }

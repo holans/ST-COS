@@ -82,9 +82,11 @@ times_seq = 2009:2017
 L = length(source_list)
 T = length(times_seq)
 
-# TBD: No non-NA observation intersects with some particular areas
-# I think we need to drop them from the analysis
-# Does this help with the MLE issue?
+# For some areas in the fine-level domain, there is very little overlap
+# area with source supports (at least the ones having non-NA values
+# which will be used to fit the model). We will drop these areas
+# from the fine-level domain to avoid rank-deficiency issues with the
+# H matrix later.
 U = rbind(
 	overlap_matrix(source_list[[1]], dom_fine, proportion = FALSE),
 	overlap_matrix(source_list[[2]], dom_fine, proportion = FALSE),
@@ -160,7 +162,6 @@ z = unlist(Map(function(x) { x$DirectEst }, source_list))
 v = unlist(Map(function(x) { x$DirectVar }, source_list))
 
 #' Do a PCA reduction on S to reduce its dimension
-# TBD: Do we want to use package to return limited number of eigencomponents?
 eig = eigen(t(S_full) %*% S_full)
 idx.S = which(cumsum(eig$values) / sum(eig$values) < 0.65)
 Ts = eig$vectors[,idx.S]
@@ -185,7 +186,8 @@ S_fine = S_fine_full %*% Ts
 
 # Compute adjacency matrix for fine-level support
 A = adjacency_matrix(dom_fine)
-W = 1/rowSums(A) * A
+aa = rowSums(A) + (rowSums(A) == 0)
+W = 1/aa * A
 tau = 0.9
 Q = Diagonal(n,1) - tau*W
 Qinv = solve(Q)
@@ -194,13 +196,13 @@ Qinv = solve(Q)
 method = "independence"
 
 if (method == "moran") {
-	# Assume covariance structure with M computed via Moran's I basis
+	# Covariance structure computed via Moran's I basis
 	# This method requires an X matrix. Create an X matrix using spatial-only basis.
 	# We need to reduce its dimension, just as we did with S
 	basis2 = ArealSpatialBisquareBasis$new(knots_sp[,1], knots_sp[,2], w = 1, mc_reps = 200)
 	X_full = basis2$compute(dom_fine)
 	eig2 = eigen(t(X_full) %*% X_full)
-	cumsum(eig2$values) / sum(eig2$values)
+	plot(cumsum(eig2$values) / sum(eig2$values))
 	X = X_full %*% eig2$vectors[,1:10]
 	K = cov_approx_moran(Qinv, X, S_fine, lag_max = T)
 } else if (method == "randomwalk") {
@@ -213,6 +215,8 @@ if (method == "moran") {
 } else if (method == "independence") {
 	# Independence
 	K = Diagonal(n = r)
+} else {
+	stop("Invalid covariance method")
 }
 K_inv = solve(K)
 
@@ -260,7 +264,7 @@ hyper = list(a_sig2K = 1, b_sig2K = 2, a_sig2xi = 1, b_sig2xi = 2,
 	a_sig2mu = 1, b_sig2mu = 2)
 
 #' Run the Gibbs sampler.
-gibbs_out = gibbs_stcos_raw(z = z_scaled, v = v_scaled, H = H, S = S,
+gibbs_out = gibbs_stcos(z = z_scaled, v = v_scaled, H = H, S = S,
 	K_inv = K_inv, R = 10000, report_period = 2000, burn = 2000,
 	thin = 10, init = init, hyper = hyper)
 print(gibbs_out)

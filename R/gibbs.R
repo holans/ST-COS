@@ -41,9 +41,7 @@
 #' sp = STCOSPrep$new(fine_domain = dom.fine,
 #'     fine_domain_geo_name = "GEO_ID",
 #'     basis = basis, basis_mc_reps = 500)
-#' out1 = gibbs.stcos(sp, R = 10000, burn = 0, thin = 1)
-#' 
-#' out2 = gibbs.stcos.raw(z = sp$get_z(), S = sp$get_reduced_S(),
+#' out2 = gibbs_stcos(z = sp$get_z(), S = sp$get_reduced_S(),
 #'     v = sp$get_v(), K_inv = sp$get_Kinv(), H = sp$get_H(),
 #'     R = 10000, burn = 0, thin = 1)
 #' }
@@ -52,23 +50,7 @@ NULL
 
 #' @name gibbs
 #' @export
-gibbs_stcos = function(prep, R, report_period = R+1, burn = 0, thin = 1,
-	hyper = NULL, init = NULL)
-{
-	z = prep$get_z()
-	v = prep$get_v()
-	H = prep$get_H()
-	S = prep$get_reduced_S()
-	K_inv = prep$get_Kinv()
-
-	gibbs_stcos_raw(z = z, v = v, H = H, S = S, K_inv = K_inv,
-		R = R, report_period = report_period, burn = burn, thin = thin,
-		init = init, hyper = hyper)
-}
-
-#' @name gibbs
-#' @export
-gibbs_stcos_raw = function(z, v, H, S, K_inv, R, report_period = R+1,
+gibbs_stcos = function(z, v, H, S, K_inv, R, report_period = R+1,
 	burn = 0, thin = 1, init = NULL, fixed = NULL, hyper = NULL)
 {
 	timer = list(muB = 0, sig2mu = 0, eta = 0, xi = 0, sig2xi = 0, sig2K = 0,
