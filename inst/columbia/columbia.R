@@ -8,7 +8,6 @@ library(stcos)
 set.seed(1234)
 
 # ----- Load data for analysis -----
-
 # Load the fine-level support via shapefile using the `tigris` package.
 # We use the 2017 block-groups in Boone County, MO. Convert to an `sf`
 # object, and transform to the projection with EPSG code 3857.
@@ -27,8 +26,7 @@ data(acs_sf)
 # Load Target Supports
 # Make sure to transform to the same projection as the fine-level support.
 data(columbia_neighbs)
-neighbs = columbia_neighbs %>%
-	st_transform(crs = st_crs(dom_fine))
+neighbs = columbia_neighbs %>% st_transform(crs = st_crs(dom_fine))
 
 # Gather the data for source supports
 # Remove observations with NA for the direct estimate or variance.
@@ -85,7 +83,6 @@ r_full = nrow(knots)
 bs_spt = ArealSpaceTimeBisquareBasis$new(knots[,1], knots[,2], knots[,3],
 	w_s = 1, w_t = 1, mc_reps = 200)
 
-# ----- Build components for STCOS model -----
 # Compute overlap matrix H
 H = Matrix(0, 0, n)
 for (l in 1:L) {
@@ -156,14 +153,16 @@ append_results = function(dat_sf, period, alpha = 0.10) {
 	S_new_full = bs_spt$compute(dat_sf, period)
 	S_new = S_new_full %*% Ts
 
+	# Get draws of the mean E(Y), then uncenter and unscale
 	EY_scaled = stan_out$mu %*% t(H_new) + stan_out$eta %*% t(S_new)
-	EY = z_sd * EY_scaled + z_mean                         # Uncenter and unscale
-	dat_sf$E_mean = colMeans(EY)                           # Point estimates
-	dat_sf$E_sd = apply(EY, 2, sd)                         # SDs
-	dat_sf$E_lo = apply(EY, 2, quantile, prob = alpha/2)   # Credible interval lo
-	dat_sf$E_hi = apply(EY, 2, quantile, prob = 1-alpha/2) # Credible interval hi
-	dat_sf$E_median = apply(EY, 2, median)                 # Median
-	dat_sf$E_moe = apply(EY, 2, sd) * qnorm(1-alpha/2)     # MOE
+	A = z_sd * EY_scaled + z_mean
+
+	dat_sf$E_mean = colMeans(A)                           # Point estimates
+	dat_sf$E_sd = apply(A, 2, sd)                         # SDs
+	dat_sf$E_lo = apply(A, 2, quantile, prob = alpha/2)   # Credible interval lo
+	dat_sf$E_hi = apply(A, 2, quantile, prob = 1-alpha/2) # Credible interval hi
+	dat_sf$E_median = apply(A, 2, median)                 # Median
+	dat_sf$E_moe = apply(A, 2, sd) * qnorm(1-alpha/2)     # MOE
 	return(dat_sf)
 }
 
@@ -190,14 +189,16 @@ append_results = function(dat_sf, period, alpha = 0.10) {
 	S_new_full = bs_spt$compute(dat_sf, period)
 	S_new = S_new_full %*% Ts
 
-	E_hat_scaled = fitted(gibbs_out, H_new, S_new)
-	E_hat = z_sd * E_hat_scaled + z_mean					  # Uncenter and unscale
-	dat_sf$E_mean = colMeans(E_hat)						      # Point estimates
-	dat_sf$E_sd = apply(E_hat, 2, sd)						  # SDs
-	dat_sf$E_lo = apply(E_hat, 2, quantile, prob = alpha/2)   # Credible interval lo
-	dat_sf$E_hi = apply(E_hat, 2, quantile, prob = 1-alpha/2) # Credible interval hi
-	dat_sf$E_median = apply(E_hat, 2, median)				  # Median
-	dat_sf$E_moe = apply(E_hat, 2, sd) * qnorm(1-alpha/2)	  # MOE
+	# Get draws of the mean E(Y), then uncenter and unscale
+	EY_scaled = fitted(gibbs_out, H_new, S_new)
+	A = z_sd * EY_scaled + z_mean
+
+	dat_sf$E_mean = colMeans(A)                           # Point estimates
+	dat_sf$E_sd = apply(A, 2, sd)                         # SDs
+	dat_sf$E_lo = apply(A, 2, quantile, prob = alpha/2)   # Credible interval lo
+	dat_sf$E_hi = apply(A, 2, quantile, prob = 1-alpha/2) # Credible interval hi
+	dat_sf$E_median = apply(A, 2, median)                 # Median
+	dat_sf$E_moe = apply(A, 2, sd) * qnorm(1-alpha/2)     # MOE
 	return(dat_sf)
 }
 

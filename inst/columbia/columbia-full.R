@@ -121,12 +121,12 @@ knots_t = seq(2009, 2017, by = 0.5)
 knots = merge(knots_sp, knots_t)
 
 #' Create an ArealSpaceTimeBisquareBasis object with our knot points
-basis1 = ArealSpaceTimeBisquareBasis$new(knots[,1], knots[,2], knots[,3],
+bs_spt = ArealSpaceTimeBisquareBasis$new(knots[,1], knots[,2], knots[,3],
 	w_s = 1, w_t = 1, mc_reps = 200)
 
 #' Here is a plot of the spatial knots. We plot a circle around one of the
 #' points to illustrate the choice of the `w.s` argument.
-rad = basis1$get_basis_spt()$get_rl()
+rad = bs_spt$get_basis_spt()$get_rl()
 knots_sp_dat = data.frame(x = knots_sp[,1], y = knots_sp[,2], r = rad)
 g = ggplot(dom_fine) +
 	geom_sf(colour = "black", size = 0.25, fill = NA) +
@@ -153,7 +153,7 @@ N = nrow(H)
 S_full = Matrix(0, 0, nrow(knots))
 for (l in 1:L) {
 	logger("Computing basis matrix for domain %d of %d\n", l, L)
-	S_l = basis1$compute(source_list[[l]], period_list[[l]])
+	S_l = bs_spt$compute(source_list[[l]], period_list[[l]])
 	S_full = rbind(S_full, S_l)
 }
 
@@ -179,7 +179,7 @@ abline(h = eigprops[max(idx.S)], lty = 2)
 S_fine_full = Matrix(0, 0, nrow(knots))
 for (l in 1:length(times_seq)) {
 	logger("Computing basis matrix for fine-level domain, time %d\n", times_seq[l])
-	S_l = basis1$compute(dom_fine, times_seq[l])
+	S_l = bs_spt$compute(dom_fine, times_seq[l])
 	S_fine_full = rbind(S_fine_full, S_l)
 }
 S_fine = S_fine_full %*% Ts
@@ -199,8 +199,8 @@ if (method == "moran") {
 	# Covariance structure computed via Moran's I basis
 	# This method requires an X matrix. Create an X matrix using spatial-only basis.
 	# We need to reduce its dimension, just as we did with S
-	basis2 = ArealSpatialBisquareBasis$new(knots_sp[,1], knots_sp[,2], w = 1, mc_reps = 200)
-	X_full = basis2$compute(dom_fine)
+	bs_sp = ArealSpatialBisquareBasis$new(knots_sp[,1], knots_sp[,2], w = 1, mc_reps = 200)
+	X_full = bs_sp$compute(dom_fine)
 	eig2 = eigen(t(X_full) %*% X_full)
 	plot(cumsum(eig2$values) / sum(eig2$values))
 	X = X_full %*% eig2$vectors[,1:10]
@@ -287,7 +287,7 @@ plot(varcomps_mcmc)
 #' Use 90% significance for all credible intervals and MOEs.
 append_results = function(dat_sf, period, alpha = 0.10) {
 	H_new = overlap_matrix(dat_sf, dom_fine)
-	S_new_full = basis1$compute(dat_sf, period)
+	S_new_full = bs_spt$compute(dat_sf, period)
 	S_new = S_new_full %*% Ts
 
 	E_hat_scaled = fitted(gibbs_out, H_new, S_new)
