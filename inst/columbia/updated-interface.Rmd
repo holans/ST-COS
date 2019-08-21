@@ -125,10 +125,9 @@ K_inv = solve(K)
 
 - The new interface introduces `ArealSpaceTimeBisquareBasis` and `ArealSpatialBisquareBasis` classes, to expose area-level basis functions directly to users. 
 
-- The areal-level bases make use of the point-level basis functions `SpaceTimeBisquareBasis` and `SpatialBisquareBasis`, which remain exposed to users as well.
+- The areal basis function classes make use of the point-level basis function classes `SpaceTimeBisquareBasis` and `SpatialBisquareBasis`, which remain exposed to users as well.
 
-- Coordinating dimension reduction for `S` on the source and fine-level supports seems awkward in the old code. The new code asks the user to handle this part, but makes it much simpler.
-
+- Coordinating dimension reduction for `S` on the source and fine-level supports seems awkward in the old code. The new code asks the user to handle this part entirely, but makes it much simpler in my opinion.
 
 ## Fitting the model
 - With both the old and new versions of the user interface, we can leverage either our custom-written Gibbs sampler or something else like Stan.
