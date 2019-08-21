@@ -1,0 +1,227 @@
+---
+title: "Changes to stcos User Interface"
+author: "Andrew Raim"
+date: "August 21, 2019"
+output: beamer_presentation
+fontsize: 10pt
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## R Markdown
+
+- Here is a quick summary of how I thinking about changing the user interface to the `stcos` package.
+
+- I'm not sure that it's worthwhile to spend time browsing the code, but it's at <https://github.com/holans/ST-COS/tree/amr_20190816> in case you want to see it.
+
+- The package currently on CRAN seems over-engineered, and only really geared to fitting the particular model in Bradley et al (Stat, 2015). With the updated interface, we try to expose more of the useful internal functions so that they can potentially be used in other applications.
+
+## No more `STCOSPrep`
+
+- The major change is that the user no longer interfaces with the `STCOSPrep` object.
+- The next few slides show typical use of the package the old way (via `STCOSPrep`) vs. the proposed new way.
+
+## User code: OLD 1
+\footnotesize
+```{r, echo = TRUE, eval = FALSE}
+basis = SpaceTimeBisquareBasis$new(knots[,1], knots[,2], knots[,3],
+	w.s = 1, w.t = 1)
+
+sp = STCOSPrep$new(fine_domain = dom.fine, fine_domain_geo_name = "geoid",
+    basis = basis, basis_mc_reps = 500)
+sp$add_obs(acs5_2013, period = 2009:2013, estimate_name = "DirectEst",
+    variance_name = "DirectVar", geo_name = "geoid")
+...
+sp$add_obs(acs5_2017, period = 2013:2017, estimate_name = "DirectEst",
+    variance_name = "DirectVar", geo_name = "geoid")
+
+# Retrieve the objects needed for MCMC
+z = sp$get_z()
+v = sp$get_v()
+H = sp$get_H()
+S = sp$get_S()
+```
+
+## User code: OLD 2
+\footnotesize
+```{r, echo = TRUE, eval = FALSE}
+# Dimension reduction of `S` matrix via PCA.
+eig = eigen(t(S) %*% S)
+rho = eig$values
+idx.S = which(cumsum(rho) / sum(rho) < 0.65)
+Tx = eig$vectors[,idx.S]
+f = function(S) { S %*% Tx }
+sp$set_basis_reduction(f)
+S.reduced = sp$get_reduced_S()
+
+# Construct K with a "Random Walk" covariance structure.
+K.inv = sp$get_Kinv(2009:2017, method = "randomwalk")
+K = solve(K.inv)
+```
+
+## User code: NEW 1
+\footnotesize
+```{r, echo = TRUE, eval = FALSE}
+bs = ArealSpaceTimeBisquareBasis$new(knots[,1], knots[,2], knots[,3],
+    w_s = 1, w_t = 1, mc_reps = 200)
+
+H = rbind(
+    overlap_matrix(acs5_2013, dom_fine),
+    ...,
+    overlap_matrix(acs5_2017, dom_fine)
+)
+
+S_full = rbind(
+    bs$compute(acs5_2013, 2009:2013),
+	...,
+    bs$compute(acs5_2017, 2013:2017)
+)
+
+z = c(acs5_2013$DirectEst, ..., acs5_2013$DirectEst)
+v = c(acs5_2013$DirectVar, ..., acs5_2013$DirectEst)
+
+# Compute basis on fine-level domain, needed for some structures of K.
+S_fine_full = rbind(
+	bs$compute(dom_fine, 2009),
+	...,
+	bs$compute(dom_fine, 2017)
+)
+```
+
+## User code: NEW 2
+\footnotesize
+```{r, echo = TRUE, eval = FALSE}
+# Reduce the dimension of S_full using PCA
+eig = eigen(t(S_full) %*% S_full)
+idx_S = which(cumsum(eig$values) / sum(eig$values) < 0.65)
+Ts = eig$vectors[,idx_S]
+S = S_full %*% Ts
+
+# Use the same reduction on S_fine_full at fine-level.
+S_fine = S_fine_full %*% Ts
+
+# Compute adjacency matrix for fine-level support
+A = adjacency_matrix(dom_fine)
+aa = rowSums(A) + (rowSums(A) == 0)
+W = 1/aa * A
+Q = Diagonal(n,1) - 0.9*W
+Qinv = solve(Q)
+
+# Construct K with a "Random Walk" covariance structure.
+K = cov_approx_randwalk(Qinv, S_fine, lag_max = length(2009:2017))
+K_inv = solve(K)
+```
+
+## Discussion
+- The new code exposes the main functions (overlap matrix, basis functions, covariance approximations), which might be useful in other models than the Bradley et al (2015) model.
+
+- The new code introduces `ArealSpaceTimeBisquareBasis` and `ArealSpatialBisquareBasis` classes, to expose area-level basis functions directly to users. These make use of the point-level basis functions `SpaceTimeBisquareBasis` and `SpatialBisquareBasis`, but these remain exposed to users as well.
+
+- Coordinating dimension reduction for `S` on the source and fine-level supports seemed awkward in the old code. The new code asks the user to handle this part, but makes it much 
+
+
+## Fitting the model
+- With both the old and new versions of the user interface, we can leverage either our custom-written Gibbs sampler or something else like Stan.
+- I think we can emphasize this in the manuscript.
+- The next few slides show some minimal code to use the Gibbs sampler, than Stan.
+
+## Gibbs Sampler Code
+\footnotesize
+```{r, echo = TRUE, eval = FALSE}
+hyper = list(a_sig2K = 1, b_sig2K = 2, a_sig2xi = 1, b_sig2xi = 2,
+	a_sig2mu = 1, b_sig2mu = 2)
+gibbs_out = gibbs_stcos(z = z_scaled, v = v_scaled, H = H, S = S,
+	K_inv = K_inv, R = 10000, report_period = 2000, burn = 2000,
+	thin = 10, hyper = hyper)
+print(gibbs_out)
+
+append_results = function(dat_sf, period, alpha = 0.10) {
+	H_new = overlap_matrix(dat_sf, dom_fine)
+	S_new_full = bs_spt$compute(dat_sf, period)
+	S_new = S_new_full %*% Ts
+
+	# Get draws of the mean E(Y), then uncenter and unscale
+	EY_scaled = fitted(gibbs_out, H_new, S_new)
+	A = z_sd * EY_scaled + z_mean
+
+	dat_sf$E_mean = colMeans(A)                           # Point estimates
+	dat_sf$E_sd = apply(A, 2, sd)                         # SDs
+	dat_sf$E_lo = apply(A, 2, quantile, prob = alpha/2)   # Interval lo
+	dat_sf$E_hi = apply(A, 2, quantile, prob = 1-alpha/2) # Interval hi
+	dat_sf$E_median = apply(A, 2, median)                 # Median
+	dat_sf$E_moe = apply(A, 2, sd) * qnorm(1-alpha/2)     # MOE
+	return(dat_sf)
+}
+```
+
+## Stan Code
+\footnotesize
+```{r, echo = TRUE, eval = FALSE}
+stan_dat = list(
+	N = N, n = n, r = r, z = z_scaled, v = v_scaled, H = as.matrix(H),
+	S = as.matrix(S), K = as.matrix(K), alpha_K = 1, beta_K = 2,
+	alpha_xi = 1, beta_xi = 2, alpha_mu = 1, beta_mu = 2
+)
+fit = stan(file = "stcos.stan", data = stan_dat, iter = 2000, chains = 1)
+stan_out = extract(fit, pars = c("mu", "eta"))
+
+append_results = function(dat_sf, period, alpha = 0.10) {
+	H_new = overlap_matrix(dat_sf, dom_fine)
+	S_new_full = bs_spt$compute(dat_sf, period)
+	S_new = S_new_full %*% Ts
+
+	# Get draws of the mean E(Y), then uncenter and unscale
+	EY_scaled = stan_out$mu %*% t(H_new) + stan_out$eta %*% t(S_new)
+	A = z_sd * EY_scaled + z_mean
+
+	dat_sf$E_mean = colMeans(A)                           # Point estimates
+	dat_sf$E_sd = apply(A, 2, sd)                         # SDs
+	dat_sf$E_lo = apply(A, 2, quantile, prob = alpha/2)   # Interval lo
+	dat_sf$E_hi = apply(A, 2, quantile, prob = 1-alpha/2) # Interval hi
+	dat_sf$E_median = apply(A, 2, median)                 # Median
+	dat_sf$E_moe = apply(A, 2, sd) * qnorm(1-alpha/2)     # MOE
+	return(dat_sf)
+}
+```
+
+## Stan File: `stcos.stan`
+\footnotesize
+```{r, echo = TRUE, eval = FALSE, highlight = FALSE}
+data {
+	int<lower=0> N;	int<lower=0> n;	int<lower=0> r;
+	vector[N] z;	vector[N] v;	matrix[N,n] H;
+	matrix[N,r] S;	matrix[r,r] K;	real alpha_K;
+	real beta_K;	real alpha_xi;	real beta_xi;
+	real alpha_mu;	real beta_mu;
+}
+parameters {
+	vector[n] mu;
+	vector[r] eta;
+	vector[N] xi;
+	real<lower=0> sig2K;
+	real<lower=0> sig2xi;
+	real<lower=0> sig2mu;
+}
+model {
+	sig2K ~ inv_gamma(alpha_K, beta_K);
+	sig2xi ~ inv_gamma(alpha_xi, beta_xi);
+	sig2mu ~ inv_gamma(alpha_mu, beta_mu);
+	eta ~ multi_normal(rep_vector(0,r), sig2K * K);
+	mu ~ normal(0, sqrt(sig2mu));
+	xi ~ normal(0, sqrt(sig2xi));
+	z ~ normal(to_vector(H*mu + S*eta + xi), sqrt(v));
+}
+```
+
+## Stan or Gibbs: Adding results to shapefiles
+\footnotesize
+```{r, echo = TRUE, eval = FALSE}
+acs5_2013 = append_results(acs5_2013, period = 2009:2013)
+acs5_2014 = append_results(acs5_2014, period = 2010:2014)
+acs5_2015 = append_results(acs5_2015, period = 2011:2015)
+acs5_2016 = append_results(acs5_2016, period = 2012:2016)
+acs5_2017 = append_results(acs5_2017, period = 2013:2017)
+neighbs = append_results(neighbs, period = 2013:2017)
+```
