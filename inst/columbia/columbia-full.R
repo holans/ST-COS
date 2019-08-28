@@ -86,7 +86,6 @@ source_list = list(
 period_list = list(2009:2013, 2010:2014, 2011:2015, 2012:2016, 2013:2017)
 times_seq = 2009:2017
 L = length(source_list)
-T = length(times_seq)
 
 # For some areas in the fine-level domain, there is very little overlap
 # area with source supports (at least the ones having non-NA values
@@ -214,23 +213,32 @@ Qinv = solve(Q)
 #' Pick a covariance structure for random coefficients of basis expansion.
 method = "independence"
 
-if (method == "moran") {
-	# Covariance structure computed via Moran's I basis
+if (method == "varone") {
+	# VAR(1)
 	# This method requires an X matrix. Create an X matrix using spatial-only basis.
 	# We need to reduce its dimension, just as we did with S
-	bs_sp = ArealSpatialBisquareBasis$new(knots_sp[,1], knots_sp[,2], w = 1, mc_reps = 200)
+	w = 1
+	D = dist(knots_sp)
+	w_tx = w * quantile(D[D > 0], prob = 0.05, type = 1)
+	bs_sp = ArealSpatialBisquareBasis$new(knots_sp[,1], knots_sp[,2], w = w_tx, mc_reps = 200)
 	X_full = bs_sp$compute(dom_fine)
 	eig2 = eigen(t(X_full) %*% X_full)
 	plot(cumsum(eig2$values) / sum(eig2$values))
 	X = X_full %*% eig2$vectors[,1:10]
-	K = cov_approx_moran(Qinv, X, S_fine, lag_max = T)
+
+	# Create a VAR(1) coefficient matrix from X using Moran's I basis
+	P_perp = Diagonal(n,1) - X %*% solve(t(X) %*% X, t(X))
+	eig = eigen(P_perp, symmetric = TRUE)
+	M = Re(eig$vectors)
+	M = (M + t(M)) / 2
+
+	K = cov_approx_varone(Qinv, M, S_fine)
 } else if (method == "randomwalk") {
 	# Random Walk
-	K = cov_approx_randwalk(Qinv, S_fine, lag_max = T)
+	K = cov_approx_randwalk(Qinv, S_fine)
 } else if (method == "car") {
-	# Spatial-only (CAR)
-	# Assume covariance structure without dependence over time
-	K = cov_approx_blockdiag(Qinv, S_fine, lag_max = T)
+	# Spatial-only (CAR) dependence; independent between time points
+	K = cov_approx_blockdiag(Qinv, S_fine)
 } else if (method == "independence") {
 	# Independence
 	K = Diagonal(n = r)
