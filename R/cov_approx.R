@@ -1,10 +1,30 @@
 #' Best Approximation to Covariance Structure
-#' Return K which minimizes || Sigma - S X S^T ||_F over symmetric psd matrices X
-#' where Sigma is symmetric and pd. This gives
-#'   K = SpSinvSp %*% Sigma %*% t(SpSinvSp)
-#' where
-#'   SpSinvSp = solve(t(S) %*% S) %*% t(S)
-#'   Sigma is the autocovariance of VAR(1), the first lag_max blocks
+#' 
+#' Compute the best positive approximant for use in the STCOS
+#' model, under several prespecified covariance structures.
+#' 
+#' @param Qinv
+#' @param X
+#' @param S
+#' @param lag_max The number of lags to compute.
+#' 
+#' @details
+#' Let \eqn{\bm{\Sigma}} be an \eqn{N \times N} symmetric and
+#' positive-definite covariance matrix, which we would like to approximate
+#' in the STCOS model. Let \eqn{\bm{S}}
+#' be the \eqn{N \times r} design matrix of the basis function computed on \code{lag_max}
+#' time steps of the fine-level support.
+#' 
+#' The objective is to compute a symmetric positive-definite matrix
+#' \eqn{\bm{K}} which minimizes
+#' \deqn{
+#'   || \bm{\Sigma} - \bm{S} \bm{C} \bm{S}^\top {||}_\textrm{F}
+#' }
+#' This is given by 
+#' \deqn{
+#'   \bm{K} = (\bm{S}^\top \bm{S})^{-1} \bm{S}^\top \bm{\Sigma} \bm{S} (\bm{S}^\top \bm{S})^{-1} 
+#' }
+#' Sigma is the autocovariance of VAR(1), the first lag_max blocks
 #' We don't need to construct Sigma in its entirety to do this operation.
 #' @name Covariance Approximation
 #' @export
