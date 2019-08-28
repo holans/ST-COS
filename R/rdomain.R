@@ -26,7 +26,7 @@
 #' \link{ArealSpatialBisquareBasis} and \link{ArealSpaceTimeBisquareBasis},
 #' which sample repeatedly from the domain.
 #' 
-#' Another departure from \code{st_sample} is that \code{rDomain} returns an
+#' Another departure from \code{st_sample} is that \code{rdomain} returns an
 #' \code{n} by 2 matrix of coordinates rather than an \code{sf} object.
 #' 
 #' Performance will degrade when areal units have small area relative to their
@@ -37,14 +37,14 @@
 #' 
 #' @examples
 #' dom = acs5_2013[c(1,5,8,12),]
-#' pts = rDomain(10000, dom)
+#' pts = rdomain(10000, dom)
 #' 
 #' # Convert the points to an sf object if desired
 #' dat = data.frame(pts)
 #' pts_sf = st_as_sf(dat, coords = c("X1", "X2"), crs = st_crs(dom))
 #' 
 #' @export
-rDomain = function(n, dom, blocksize = n, itmax = Inf)
+rdomain = function(n, dom, blocksize = n, itmax = Inf)
 {
 	res = matrix(0, 0, 2)
 	bbox = st_bbox(dom)
@@ -61,7 +61,7 @@ rDomain = function(n, dom, blocksize = n, itmax = Inf)
 	}
 
 	if (nrow(res) < n && itr == itmax) {
-		stop("rDomain reached maximum number of iterations without accepting n points")
+		stop("Reached maximum number of iterations without accepting n points")
 	}
 
 	colnames(res) = c("x", "y")

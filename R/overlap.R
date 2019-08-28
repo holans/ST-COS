@@ -11,7 +11,7 @@
 #' 
 #' @details
 #' Returns a matrix \code{H} whose (i,j)th entry represent the area of the overlap
-#' between \code{dom1[i,]} and \code{dom2[j,]}.
+#' between areal units \code{dom1[i,]} and \code{dom2[j,]}.
 #' 
 #' @examples
 #' data("acs_sf")

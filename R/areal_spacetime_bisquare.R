@@ -113,8 +113,8 @@ ArealSpaceTimeBisquareBasis = R6Class("ArealSpaceTimeBisquareBasis",
 
 				# Drawing samples from an area seems more time consuming than computing
 				# basis function. Let's reuse samples over multiple lookbacks.
-				# Request a few more samples than we'll need, to prevent the loop in rDomain.
-				P = rDomain(R, dom[j,], blocksize = ceiling(1.2*R), itmax = R)
+				# Request a few more samples than we'll need, to prevent the loop in rdomain.
+				P = rdomain(R, dom[j,], blocksize = ceiling(1.2*R), itmax = R)
 
 				for (t in 1:T) {
 					S[j,] = S[j,] + colSums(basis$compute(P[,1], P[,2], period[t]))

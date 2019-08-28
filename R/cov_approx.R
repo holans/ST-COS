@@ -1,10 +1,15 @@
-# Return K which minimizes || Sigma - S X S^T ||_F over symmetric psd matrices X
-# where Sigma is symmetric and pd. This gives
-#   K = SpSinvSp %*% Sigma %*% t(SpSinvSp)
-# where
-#   SpSinvSp = solve(t(S) %*% S) %*% t(S)
-#   Sigma is the autocovariance of VAR(1), the first lag_max blocks
-# We don't need to construct Sigma in its entirety to do this operation.
+#' Best Approximation to Covariance Structure
+#' Return K which minimizes || Sigma - S X S^T ||_F over symmetric psd matrices X
+#' where Sigma is symmetric and pd. This gives
+#'   K = SpSinvSp %*% Sigma %*% t(SpSinvSp)
+#' where
+#'   SpSinvSp = solve(t(S) %*% S) %*% t(S)
+#'   Sigma is the autocovariance of VAR(1), the first lag_max blocks
+#' We don't need to construct Sigma in its entirety to do this operation.
+#' @name Covariance Approximation
+#' @export
+
+#' @name Covariance Approximation
 #' @export
 cov_approx_moran = function(Qinv, X, S, lag_max)
 {
@@ -46,6 +51,7 @@ cov_approx_moran = function(Qinv, X, S, lag_max)
 	return((K + t(K)) / 2)
 }
 
+#' @name Covariance Approximation
 #' @export
 cov_approx_randwalk = function(Qinv, S, lag_max)
 {
@@ -71,6 +77,7 @@ cov_approx_randwalk = function(Qinv, S, lag_max)
 	return((K + t(K)) / 2)
 }
 
+#' @name Covariance Approximation
 #' @export
 cov_approx_blockdiag = function(Qinv, S, lag_max)
 {

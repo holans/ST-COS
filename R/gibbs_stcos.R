@@ -2,11 +2,11 @@
 #'
 #' @param z Vector which represents the outcome; assumed to be direct
 #'        estimates from the survey.
-#' @param S Design matrix for basis decomposition.
 #' @param v Vector which represents direct variance estimates from the survey.
+#' @param H Matrix of overlaps between source and fine-level supports.
+#' @param S Design matrix for basis decomposition.
 #' @param K_inv Inverse of the \eqn{K} matrix, which is the covariance of the
 #'        random coefficient \eqn{\eta}
-#' @param H Matrix of overlaps between source and fine-level supports.
 #' @param init A list containing the following initial values for the MCMC:
 #' 	      \code{sig2mu}, \code{sig2xi}, \code{sig2K}, \code{muB}, \code{eta},
 #' 	      \code{xi}. Any values which are not specified are set to arbitrary
@@ -18,33 +18,46 @@
 #'        \code{eta}, or \code{xi} are specified, they should each be a vector
 #'        of indicies; the specified indices are to be treated as fixed (i.e.
 #'        not drawn).
-#' @param prep An \code{STCOSprep} object.
 #' @param R Number of MCMC reps.
 #' @param report_period Gibbs sampler will report progress each time this many
 #'        iterations are completed.
 #' @param burn Burn this many of \code{R} the draws, before saving history.
-#' @param thin After burn-ikn period, save one out of every \code{thin} draws.
+#' @param thin After burn-in period, save one out of every \code{thin} draws.
 #' @param hyper A list containing the following hyperparameter values:
 #' 	      \code{a_sig2mu}, \code{a_sig2K}, \code{a_sig2xi}, \code{b_sig2mu},
 #' 	      \code{b_sig2K}, \code{b_sig2xi}. Any hyperparameters which are not
 #' 	      specified are set to a default value of 2.
+#' @param object A result from the Gibbs sampler.
 #'
-#' @return An \code{stcos} object which contains draws from the sampler.
+#' @return \code{gibbs_stcos} returns an \code{stcos} object which contains
+#' draws from the sampler. Helper functions take this object as an input
+#' and produce various outputs (see details).
+#'
+#' @details Helper functions produce the following outputs:
+#' \itemize{
+#' \item \code{logLik} computes the log-likelihood for each saved draw.
+#' \item \code{DIC} computes the Deviance information criterion for each saved draw.
+#' \item \code{print} displays a summary of the draws.
+#' \item \code{fitted} computes the mean \eqn{E(Y_i)} for each observation
+#'       \eqn{i = 1, \ldots, n}, for each saved draw.
+#' \item \code{predict} draws \eqn{Y_i} for each observation
+#'       \eqn{i = 1, \ldots, n}, using the parameter values for each saved
+#'       Gibbs sampler draw.
+#' }
 #'
 #' @examples
 #' \dontrun{
-#' basis = SpaceTimeBisquareBasis$new(x, y, t, w.s, w.t)
-#' sp = STCOSPrep$new(fine_domain = dom.fine,
-#'     fine_domain_geo_name = "GEO_ID",
-#'     basis = basis, basis_mc_reps = 500)
-#' out2 = gibbs_stcos(z = sp$get_z(), S = sp$get_reduced_S(),
-#'     v = sp$get_v(), K_inv = sp$get_Kinv(), H = sp$get_H(),
-#'     R = 10000, burn = 0, thin = 1)
+#' out = gibbs_stcos(z, v, H, S, K_inv, R = 10000, burn = 0, thin = 1)
+#' print(out)
+#' logLik(out)
+#' DIC(out)
+#' fitted(out)
+#' predict(out)
 #' }
-#' @name gibbs
+#' @name gibbs_stcos
 NULL
 
-#' @name gibbs
+#' @name gibbs_stcos
 #' @export
 gibbs_stcos = function(z, v, H, S, K_inv, R, report_period = R+1,
 	burn = 0, thin = 1, init = NULL, fixed = NULL, hyper = NULL)
@@ -234,6 +247,8 @@ gibbs_stcos = function(z, v, H, S, K_inv, R, report_period = R+1,
 	return(ret)
 }
 
+#' @method logLik stcos_gibbs
+#' @name gibbs_stcos
 #' @export
 logLik.stcos_gibbs = function(object, ...)
 {
@@ -255,23 +270,11 @@ logLik.stcos_gibbs = function(object, ...)
 	return(loglik_mcmc)
 }
 
-#' Deviance Information Criterion
-#' 
-#' A function to compute the Deviance Information Criterion (DIC) on an
-#' \code{stcos_gibbs} object.
-#'
-#' @param object A result from the Gibbs sampler.
-#'
-#' @return DIC computed from saved draws
+#' @seealso \link{gibbs_stcos}
+#' @method DIC stcos_gibbs
+#' @name gibbs_stcos
 #' @export
-#'
-#' @examples
-#' \dontrun{
-#' out1 = gibbs_stcos(sp, R = 10000, burn = 0, thin = 1)
-#' DIC(out1)
-#' }
-#' @seealso \code{\link{gibbs_stcos}}
-DIC = function(object)
+DIC.stcos_gibbs = function(object)
 {
 	if (!is.null(object$dic)) {
 		return(object$dic)
@@ -290,6 +293,7 @@ DIC = function(object)
 }
 
 #' @method print stcos_gibbs
+#' @name gibbs_stcos
 #' @export
 print.stcos_gibbs = function (x, ...)
 {
@@ -322,6 +326,8 @@ print.stcos_gibbs = function (x, ...)
 	invisible(x)
 }
 
+#' @method fitted stcos_gibbs
+#' @name gibbs_stcos
 #' @export
 fitted.stcos_gibbs = function (object, H, S, ...)
 {
@@ -336,6 +342,8 @@ fitted.stcos_gibbs = function (object, H, S, ...)
 	return(E_mcmc)
 }
 
+#' @method predict stcos_gibbs
+#' @name gibbs_stcos
 #' @export
 predict.stcos_gibbs = function (object, H, S, ...)
 {

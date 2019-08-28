@@ -99,8 +99,8 @@ ArealSpatialBisquareBasis = R6Class("ArealSpatialBisquareBasis",
 					logger("Computing basis for area %d of %d\n", j, n)
 				}
 
-				# Request a few more samples than we'll need, to prevent the loop in rDomain.
-				P = rDomain(R, dom[j,], blocksize = ceiling(1.2*R), itmax = R)
+				# Request a few more samples than we'll need, to prevent the loop in rdomain.
+				P = rdomain(R, dom[j,], blocksize = ceiling(1.2*R), itmax = R)
 				S[j,] = S[j,] + colSums(basis$compute(P[,1], P[,2]))
 			}
 

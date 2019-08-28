@@ -15,6 +15,12 @@
 #+ echo = FALSE
 options(width = 80)
 
+#' Define a function to print the timestamp with a message
+logger = function(msg, ...) {
+	sys.time = as.character(Sys.time())
+	cat(sys.time, "-", sprintf(msg, ...))
+}
+
 #' # Overview
 #' In this example, we are given four neighborhoods in the City of Columbia in
 #' Boone County, Missouri. We would like to produce model-based estimates of
