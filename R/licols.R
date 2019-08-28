@@ -13,13 +13,13 @@
 #' \code{elapsed.sec}.
 #'
 #' @examples
-#' x <- sample(1:3, size = 20, replace = TRUE)
-#' Z <- model.matrix(~ as.factor(x) - 1)
-#' X <- cbind(1, Z)
+#' x = sample(1:3, size = 20, replace = TRUE)
+#' Z = model.matrix(~ as.factor(x) - 1)
+#' X = cbind(1, Z)
 #' licols(X)
 #' 
 #' @export
-licols <- function(X, tol = 1e-10, quiet = FALSE)
+licols = function(X, tol = 1e-10, quiet = FALSE)
 {
 	# Note: It takes a much much longer time to compute
 	# the QR decomposition than if X is sparse. The sparse QR in R seems
@@ -32,10 +32,10 @@ licols <- function(X, tol = 1e-10, quiet = FALSE)
 	# decomposition".
 
 	stopifnot(class(X) == "matrix")
-	m <- nrow(X)
-	n <- ncol(X)
+	m = nrow(X)
+	n = ncol(X)
 	if (m*n > 1e6 && !quiet) {
-		msg <- sprintf("QR for %d x %d matrix might take a while...", m, n)
+		msg = sprintf("QR for %d x %d matrix might take a while...", m, n)
 		message(msg)
 	}
 
@@ -44,13 +44,13 @@ licols <- function(X, tol = 1e-10, quiet = FALSE)
 		return(list(Xsub = matrix(NA,0,0), idx = numeric(0)))
 	}
 
-	st <- Sys.time()
-	qr.out <- qr(X, LAPACK = TRUE, tol = tol)
-	diagr <- abs(diag(qr.R(qr.out)))
-	mm <- max(diagr)
-	r <- sum(diagr >= tol*mm)
-	idx <- qr.out$pivot[1:r]
+	st = Sys.time()
+	qr.out = qr(X, LAPACK = TRUE, tol = tol)
+	diagr = abs(diag(qr.R(qr.out)))
+	mm = max(diagr)
+	r = sum(diagr >= tol*mm)
+	idx = qr.out$pivot[1:r]
 
-	elapsed.sec <- as.numeric(Sys.time() - st, units = "secs")
+	elapsed.sec = as.numeric(Sys.time() - st, units = "secs")
 	list(Xsub = X[,idx], idx = idx, elapsed.sec = elapsed.sec)
 }

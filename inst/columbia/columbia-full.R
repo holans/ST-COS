@@ -113,6 +113,12 @@ M = matrix(unlist(u), length(u), 2, byrow = TRUE)
 out = cover.design(M, 200)
 knots_sp = out$design
 
+# Evenly spaced points can also be achieved with hexagonal sampling in the sf package
+if (FALSE) {
+	pts = st_sample(dom_fine, 200, type = "hexagonal")
+	knots_sp2 = matrix(unlist(pts), length(pts), 2, byrow = TRUE)
+}
+
 #' Select temporal knots to be evenly spaced over the years relevant
 #' to the source support years.
 knots_t = seq(2009, 2017, by = 0.5)
@@ -120,13 +126,20 @@ knots_t = seq(2009, 2017, by = 0.5)
 #' Use Cartesian join of spatial and temporal knots to obtain spatio-temporal knots.
 knots = merge(knots_sp, knots_t)
 
+# Choose a spatial radius for the basis. The following choice puts
+# on a scale appropriate to the projection used in the fine-level
+# domain. Adjust w_s to scale it up or down.
+w_s = 1
+D = dist(knots)
+ws_tx = w_s * quantile(D[D > 0], prob = 0.05, type = 1)
+
 #' Create an ArealSpaceTimeBisquareBasis object with our knot points
 bs_spt = ArealSpaceTimeBisquareBasis$new(knots[,1], knots[,2], knots[,3],
-	w_s = 1, w_t = 1, mc_reps = 200)
+	w_s = ws_tx, w_t = 1, mc_reps = 200)
 
 #' Here is a plot of the spatial knots. We plot a circle around one of the
-#' points to illustrate the choice of the `w.s` argument.
-rad = bs_spt$get_basis_spt()$get_rl()
+#' points to illustrate the choice of the `w_s` argument.
+rad = bs_spt$get_basis_spt()$get_ws()
 knots_sp_dat = data.frame(x = knots_sp[,1], y = knots_sp[,2], r = rad)
 g = ggplot(dom_fine) +
 	geom_sf(colour = "black", size = 0.25, fill = NA) +

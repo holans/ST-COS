@@ -1,9 +1,5 @@
 #' Gibbs Sampler for STCOS Model
 #'
-#' Run the Gibbs sampling algorithm for the STCOS model. \code{gibbs.stcos}
-#' presents a simplified interface, while \code{gibbs.stcos.raw} allows
-#' all inputs to be specified separately.
-#'
 #' @param z Vector which represents the outcome; assumed to be direct
 #'        estimates from the survey.
 #' @param S Design matrix for basis decomposition.
@@ -228,7 +224,7 @@ gibbs_stcos = function(z, v, H, S, K_inv, R, report_period = R+1,
 		z = z, H = H, S = S, v = v, R_keep = R_keep,
 		elapsed_sec = timer
 	)
-	class(ret) = "stcos"
+	class(ret) = "stcos_gibbs"
 
 	st = Sys.time()
 	ret$loglik = logLik(ret)
@@ -239,7 +235,7 @@ gibbs_stcos = function(z, v, H, S, K_inv, R, report_period = R+1,
 }
 
 #' @export
-logLik.stcos = function(object, ...)
+logLik.stcos_gibbs = function(object, ...)
 {
 	if (!is.null(object$loglik)) {
 		return(object$loglik)
@@ -253,8 +249,8 @@ logLik.stcos = function(object, ...)
 		sig2xi = object$sig2xi_hist[r]
 		loglik_mcmc[r] = sum(
 			dnorm(object$z, as.numeric(object$H %*% muB + object$S %*% eta),
-			sqrt(object$v + sig2xi),
-			log = TRUE))
+			sqrt(object$v + sig2xi), log = TRUE)
+		)
 	}
 	return(loglik_mcmc)
 }
@@ -262,7 +258,7 @@ logLik.stcos = function(object, ...)
 #' Deviance Information Criterion
 #' 
 #' A function to compute the Deviance Information Criterion (DIC) on an
-#' \code{stcos} object.
+#' \code{stcos_gibbs} object.
 #'
 #' @param object A result from the Gibbs sampler.
 #'
@@ -271,17 +267,17 @@ logLik.stcos = function(object, ...)
 #'
 #' @examples
 #' \dontrun{
-#' out1 = gibbs.stcos(sp, R = 10000, burn = 0, thin = 1)
+#' out1 = gibbs_stcos(sp, R = 10000, burn = 0, thin = 1)
 #' DIC(out1)
 #' }
-#' @seealso \code{\link{gibbs.stcos}} \code{\link{gibbs.stcos.raw}}
+#' @seealso \code{\link{gibbs_stcos}}
 DIC = function(object)
 {
 	if (!is.null(object$dic)) {
 		return(object$dic)
 	}
 
-	loglik_mcmc = logLik.stcos(object)
+	loglik_mcmc = logLik(object)
 	muB_bar = colMeans(object$muB_hist)
 	eta_bar = colMeans(object$eta_hist)
 	sig2xi_bar = mean(object$sig2xi_hist)
@@ -293,9 +289,9 @@ DIC = function(object)
 	D_thetabar + 2*(D_bar - D_thetabar)
 }
 
-#' @method print stcos
+#' @method print stcos_gibbs
 #' @export
-print.stcos = function (x, ...)
+print.stcos_gibbs = function (x, ...)
 {
 	# We could compute summaries ourselves and remove dependency on coda ...
 	variances_mcmc = cbind(x$sig2mu_hist, x$sig2K_hist, x$sig2xi_hist)
@@ -327,7 +323,7 @@ print.stcos = function (x, ...)
 }
 
 #' @export
-fitted.stcos = function (object, H, S, ...)
+fitted.stcos_gibbs = function (object, H, S, ...)
 {
 	R_keep = object$R_keep
 	n = nrow(H)
@@ -341,7 +337,7 @@ fitted.stcos = function (object, H, S, ...)
 }
 
 #' @export
-predict.stcos = function (object, H, S, ...)
+predict.stcos_gibbs = function (object, H, S, ...)
 {
 	R_keep = object$R_keep
 	n = nrow(H)
@@ -351,7 +347,7 @@ predict.stcos = function (object, H, S, ...)
 		eta = object$eta_hist[r,]
 		xi = object$xi_hist[r,]
 		sig2xi = object$sig2xi_hist[r]
-		Y.mcmc[r,] = rnorm(n, as.numeric(H %*% muB + S %*% eta), sqrt(sig2xi))
+		Y_mcmc[r,] = rnorm(n, as.numeric(H %*% muB + S %*% eta), sqrt(sig2xi))
 	}
-	return(Y.mcmc)
+	return(Y_mcmc)
 }

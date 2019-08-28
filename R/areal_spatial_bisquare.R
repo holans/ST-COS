@@ -1,24 +1,23 @@
 #' Areal Spatial Bisquare Basis
 #' 
-#' An \code{\link{R6Class}} representing the spatial bisquare basis.
+#' An \code{R6Class} representing the spatial bisquare basis.
 #' 
 #' @section Usage:
 #' \preformatted{
-#' basis <- SpatialBisquareBasis$new(knots_x, knots_y, w)
-#' basis$compute(x, y, time)
-#' basis$get_dim()
-#' basis$get_cutpoints()
-#' basis$get_rl()
-#' basis$get_w()
+#' bs = SpatialBisquareBasis$new(knots_x, knots_y, w)
+#' bs$compute(x, y, time)
+#' bs$get_dim()
+#' bs$get_cutpoints()
+#' bs$get_w()
 #' }
 #' 
 #' @section Arguments:
 #' \itemize{
-#' \item \code{knots_x} x-coordinate of knot points.
-#' \item \code{knots_y} y-coordinate of knot points.
-#' \item \code{w} (Original, before transformation) radius.
-#' \item \code{x} Vector of x-coordinates for points on which to evaluate the basis.
-#' \item \code{y} Vector of y-coordinates for points on which to evaluate the basis.
+#' \item \code{knots_x} numeric vector; x-coordinates of knot points.
+#' \item \code{knots_y} numeric vector; y-coordinates of knot points.
+#' \item \code{w} Get the radius used to construct this basis.
+#' \item \code{x} numeric vector; x-coordinates for points to evaluate.
+#' \item \code{y} numeric vector; y-coordinates for points to evaluate.
 #' }
 #' 
 #' @section Methods:
@@ -26,11 +25,7 @@
 #' \item \code{new} Create a new \code{SpatialBisquareBasis} object.
 #' \item \code{get_dim} Get the number of cutpoints used to construct this basis.
 #' \item \code{get_cutpoints} Get the cutpoints used to construct this basis.
-#' \item \code{get_rl} Get the transformed spatial radius. The transformation is
-#' based on quantiles of distances between knots.
-#' \item \code{get_w} Get the original radius used to construct this
-#' basis. This is transformed before it is applied to account for the geography
-#' being used.
+#' \item \code{get_w} Get the radius used to construct this basis.
 #' \item \code{compute} Evaluate this basis on specific points.
 #' }
 #'
@@ -38,27 +33,26 @@
 #' 
 #' @examples
 #' set.seed(1234)
-#' seq_x <- seq(0, 1, length.out = 3)
-#' seq_y <- seq(0, 1, length.out = 3)
+#' seq_x = seq(0, 1, length.out = 3)
+#' seq_y = seq(0, 1, length.out = 3)
 #' knots = merge(seq_x, seq_y)
-#' x <- runif(50)
-#' y <- runif(50)
+#' x = runif(50)
+#' y = runif(50)
 #' 
-#' basis <- SpatialBisquareBasis$new(knots[,1], knots[,2], w = 0.5)
-#' basis$compute(x, y)
-#' basis$get_dim()
-#' basis$get_cutpoints()
-#' basis$get_rl()
-#' basis$get_w()
+#' bs = SpatialBisquareBasis$new(knots[,1], knots[,2], w = 0.5)
+#' bs$compute(x, y)
+#' bs$get_dim()
+#' bs$get_cutpoints()
+#' bs$get_w()
 #' 
 #' # Plot the knots and the points at which we evaluated the basis
 #' plot(knots[,1], knots[,2], pch = 4, cex = 1.5, col = "red")
 #' points(x, y, cex = 0.5)
 #' 
 #' # Draw a circle representing the basis' radius around one of the knot points
-#' tseq <- seq(0, 2*pi, length=100) 
-#' rad <- basis$get_rl()
-#' coords <- cbind(rad * cos(tseq) + seq_x[2], rad * sin(tseq) + seq_y[2])
+#' tseq = seq(0, 2*pi, length=100) 
+#' rad = bs$get_w()
+#' coords = cbind(rad * cos(tseq) + seq_x[2], rad * sin(tseq) + seq_y[2])
 #' lines(coords, col = "red")
 NULL
 
@@ -89,9 +83,6 @@ ArealSpatialBisquareBasis = R6Class("ArealSpatialBisquareBasis",
 		get_cutpoints = function() {
 			private$basis_sp$cutpoints
 		},
-		get_rl = function() {
-			private$basis_sp$rl
-		},
 		get_w = function() {
 			private$basis_sp$w
 		},
@@ -108,8 +99,8 @@ ArealSpatialBisquareBasis = R6Class("ArealSpatialBisquareBasis",
 					logger("Computing basis for area %d of %d\n", j, n)
 				}
 
-				# Request a few more samples than we'll need, to prevent the loop in rArea.
-				P = rArea(R, dom[j,], blocksize = ceiling(1.2*R))
+				# Request a few more samples than we'll need, to prevent the loop in rDomain.
+				P = rDomain(R, dom[j,], blocksize = ceiling(1.2*R), itmax = R)
 				S[j,] = S[j,] + colSums(basis$compute(P[,1], P[,2]))
 			}
 

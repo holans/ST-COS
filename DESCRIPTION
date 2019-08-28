@@ -1,8 +1,8 @@
 Package: stcos
 Type: Package
 Title: Space-Time Change of Support
-Version: 0.1.0
-Date: 2019-04-23
+Version: 0.2.0
+Date: 2019-08-28
 Authors@R: c(
 	person(c("Andrew", "M."), "Raim", email = "andrew.raim@gmail.com", role = c("aut", "cre")),
 	person(c("Scott", "H."), "Holan", role = c("aut", "res")),
@@ -20,7 +20,7 @@ Description: Spatio-temporal change of support (STCOS) methods are designed for 
 	Gaussian outcomes introduced by Bradley, Wikle, and Holan <doi:10.1002/sta4.94>.
 License: GPL (>= 2)
 Imports: R6
-Depends: R (>= 3.3), Rcpp, Matrix, sf
+Depends: R (>= 3.3), Rcpp, Matrix, sf, dplyr
 LinkingTo: Rcpp, RcppArmadillo
 RoxygenNote: 6.1.1
 Encoding: UTF-8
