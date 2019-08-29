@@ -9,6 +9,7 @@
 #' @importFrom stats dgamma dnorm logLik optim rgamma rnorm runif quantile sd
 #' @importFrom R6 R6Class
 #' @importFrom Rcpp evalCpp
+#' @importFrom dplyr mutate row_number
 #' 
 #' @details Supports building and running STCOS and related models. A guide
 #' on package use is given in <arXiv:1904.12092>.

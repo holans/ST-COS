@@ -29,6 +29,8 @@
 #' 	      \code{b_sig2K}, \code{b_sig2xi}. Any hyperparameters which are not
 #' 	      specified are set to a default value of 2.
 #' @param object A result from \code{gibbs_stcos}.
+#' @param x A result from \code{gibbs_stcos}.
+#' @param ... Additional arguments.
 #'
 #' @return \code{gibbs_stcos} returns an \code{stcos} object which contains
 #' draws from the sampler. Helper functions take this object as an input
@@ -70,12 +72,12 @@
 #' \dontrun{
 #' demo = prepare_stcos_demo()
 #' out = gibbs_stcos(demo$z, demo$v, demo$H, demo$S, solve(demo$K),
-#'     R = 10000, burn = 0, thin = 1)
+#'     R = 100, burn = 0, thin = 1)
 #' print(out)
 #' logLik(out)
 #' DIC(out)
-#' fitted(out)
-#' predict(out)
+#' fitted(out, demo$H, demo$S)
+#' predict(out, demo$H, demo$S)
 #' }
 #' @name gibbs_stcos
 NULL
@@ -234,8 +236,6 @@ gibbs_stcos = function(z, v, H, S, K_inv, R, report_period = R+1,
 		timer$Y = timer$Y + as.numeric(Sys.time() - st, units = "secs")
 
 		# Save history
-		# TBD: This can be very expensive to keep in memory. We should be able to
-		# transparently store it on disk, if the user wishes
 		if ((tt > burn) & (tt %% thin == 0)) {
 			tt_keep = tt_keep + 1
 			muB_hist[tt_keep,] = as.numeric(muB)
@@ -270,7 +270,6 @@ gibbs_stcos = function(z, v, H, S, K_inv, R, report_period = R+1,
 	return(ret)
 }
 
-#' @method logLik stcos_gibbs
 #' @name gibbs_stcos
 #' @export
 logLik.stcos_gibbs = function(object, ...)
@@ -293,11 +292,25 @@ logLik.stcos_gibbs = function(object, ...)
 	return(loglik_mcmc)
 }
 
-#' @seealso \link{gibbs_stcos}
-#' @method DIC stcos_gibbs
-#' @name gibbs_stcos
+#' Deviance Information Criterion
+#' 
+#' Generic function to calculate Deviance Information Criterion (DIC) for a
+#' given model object.
+#'
+#' @param object A fitted model object.
+#' @param ... Additional arguments.
+#'
+#' @return A numeric value of the DIC.
 #' @export
-DIC.stcos_gibbs = function(object)
+DIC = function(object, ...)
+{
+	UseMethod("DIC")
+}
+
+#' @name gibbs_stcos
+#' @method DIC stcos_gibbs
+#' @export
+DIC.stcos_gibbs = function(object, ...)
 {
 	if (!is.null(object$dic)) {
 		return(object$dic)
@@ -315,12 +328,11 @@ DIC.stcos_gibbs = function(object)
 	D_thetabar + 2*(D_bar - D_thetabar)
 }
 
-#' @method print stcos_gibbs
 #' @name gibbs_stcos
+#' @method print stcos_gibbs
 #' @export
-print.stcos_gibbs = function (x, ...)
+print.stcos_gibbs = function(x, ...)
 {
-	# We could compute summaries ourselves and remove dependency on coda ...
 	variances_mcmc = cbind(x$sig2mu_hist, x$sig2K_hist, x$sig2xi_hist)
 	colnames(variances_mcmc) = c("sig2mu", "sig2K", "sig2xi")
 	summary_mcmc = data.frame(
@@ -349,10 +361,9 @@ print.stcos_gibbs = function (x, ...)
 	invisible(x)
 }
 
-#' @method fitted stcos_gibbs
 #' @name gibbs_stcos
 #' @export
-fitted.stcos_gibbs = function (object, H, S, ...)
+fitted.stcos_gibbs = function(object, H, S, ...)
 {
 	R_keep = object$R_keep
 	n = nrow(H)
@@ -365,14 +376,14 @@ fitted.stcos_gibbs = function (object, H, S, ...)
 	return(E_mcmc)
 }
 
-#' @method predict stcos_gibbs
+# @method predict stcos_gibbs
 #' @name gibbs_stcos
 #' @export
-predict.stcos_gibbs = function (object, H, S, ...)
+predict.stcos_gibbs = function(object, H, S, ...)
 {
 	R_keep = object$R_keep
 	n = nrow(H)
-	Y.mcmc = matrix(NA, R_keep, n)
+	Y_mcmc = matrix(NA, R_keep, n)
 	for (r in 1:R_keep) {
 		muB = object$muB_hist[r,]
 		eta = object$eta_hist[r,]
