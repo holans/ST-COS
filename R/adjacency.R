@@ -6,6 +6,11 @@
 #' @param dom An \code{sf} object representing a domain of areal units.
 #' @return An adjacency matrix
 #' 
+#' @details 
+#' Returns a matrix \code{A} whose (i,j)th entry contains a 1 if
+#' areal units \code{dom[i,]} and \code{dom[j,]} are adjacent;
+#' 0 otherwise.
+#' 
 #' @examples
 #' data("acs_sf")
 #' dom = acs5_2013[1:4,]
