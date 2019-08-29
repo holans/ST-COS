@@ -10,6 +10,9 @@
 #' @importFrom R6 R6Class
 #' @importFrom Rcpp evalCpp
 #' 
+#' @details Supports building and running STCOS and related models. A guide
+#' on package use is given in <arXiv:1904.12092>.
+#' 
 #' @references
 #' Jonathan R. Bradley, Christopher K. Wikle, and Scott H. Holan (2015).
 #' Spatio-temporal change of support with application to American Community
@@ -20,6 +23,10 @@
 #' Wikle (2017). A model selection study for spatio-temporal change of
 #' support. In JSM Proceedings, Government Statistics Section. Alexandria,
 #' VA: American Statistical Association, pp.1524-1540.
+#' 
+#' Andrew M. Raim, Scott H. Holan, Jonathan R. Bradley, and Christopher K.
+#' Wikle (2019+). An R package for spatio-temporal change of support.
+#' \url{https://arxiv.org/abs/1904.12092}.
 #' 
 #' @docType package
 #' @name stcos

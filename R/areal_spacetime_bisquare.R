@@ -18,8 +18,8 @@
 #' \item \code{knots_x} numeric vector; x-coordinates of knot points.
 #' \item \code{knots_y} numeric vector; y-coordinates of knot points.
 #' \item \code{knots_t} numeric vector; time coordinate of knot points.
-#' \item \code{w_s} (Original, before transformation) spatial radius.
-#' \item \code{w_t} Temporal radius.
+#' \item \code{w_s} numeric; spatial radius for the basis.
+#' \item \code{w_t} numeric; temporal radius for the basis.
 #' \item \code{x} numeric vector; x-coordinates for points to evaluate.
 #' \item \code{y} numeric vector; y-coordinates for points to evaluate.
 #' \item \code{time} numeric vector; time coordinates for points to evaluate.

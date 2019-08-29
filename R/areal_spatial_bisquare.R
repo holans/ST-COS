@@ -15,7 +15,7 @@
 #' \itemize{
 #' \item \code{knots_x} numeric vector; x-coordinates of knot points.
 #' \item \code{knots_y} numeric vector; y-coordinates of knot points.
-#' \item \code{w} Get the radius used to construct this basis.
+#' \item \code{w} numeric; radius for the basis.
 #' \item \code{x} numeric vector; x-coordinates for points to evaluate.
 #' \item \code{y} numeric vector; y-coordinates for points to evaluate.
 #' }

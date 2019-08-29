@@ -5,8 +5,8 @@
 #' @param v Vector which represents direct variance estimates from the survey.
 #' @param H Matrix of overlaps between source and fine-level supports.
 #' @param S Design matrix for basis decomposition.
-#' @param K_inv Inverse of the \eqn{K} matrix, which is the covariance of the
-#'        random coefficient \eqn{\eta}
+#' @param K_inv The precision matrix \eqn{\bm{K}^{-1}} of the
+#'        random coefficient \eqn{\bm{\eta}}
 #' @param init A list containing the following initial values for the MCMC:
 #' 	      \code{sig2mu}, \code{sig2xi}, \code{sig2K}, \code{muB}, \code{eta},
 #' 	      \code{xi}. Any values which are not specified are set to arbitrary
@@ -21,19 +21,40 @@
 #' @param R Number of MCMC reps.
 #' @param report_period Gibbs sampler will report progress each time this many
 #'        iterations are completed.
-#' @param burn Burn this many of \code{R} the draws, before saving history.
+#' @param burn Number of the \code{R} draws to discard at the beginning of the
+#'        chain.
 #' @param thin After burn-in period, save one out of every \code{thin} draws.
 #' @param hyper A list containing the following hyperparameter values:
 #' 	      \code{a_sig2mu}, \code{a_sig2K}, \code{a_sig2xi}, \code{b_sig2mu},
 #' 	      \code{b_sig2K}, \code{b_sig2xi}. Any hyperparameters which are not
 #' 	      specified are set to a default value of 2.
-#' @param object A result from the Gibbs sampler.
+#' @param object A result from \code{gibbs_stcos}.
 #'
 #' @return \code{gibbs_stcos} returns an \code{stcos} object which contains
 #' draws from the sampler. Helper functions take this object as an input
 #' and produce various outputs (see details).
 #'
-#' @details Helper functions produce the following outputs:
+#' @details 
+#' Fits the model
+#' \deqn{
+#'   \bm{Z} = \bm{H} \bm{\mu}_B + \bm{S} \bm{\eta} + \bm{\xi} + \bm{\varepsilon}, \quad
+#'   \bm{\varepsilon} \sim \textrm{N}(0, \bm{V}),
+#' }
+#' \deqn{
+#'   \bm{\eta} \sim \textrm{N}(\bm{0}, \sigma_K^2 \bm{K}), \quad
+#'   \bm{\xi} \sim \textrm{N}(0, \sigma_{\xi}^2 \bm{I}),
+#' }
+#' \deqn{
+#' \bm{\mu}_B \sim \textrm{N}(\bm{0}, \sigma_\mu^2 \bm{I}), \quad
+#' \sigma_\mu^2 \sim \textrm{IG}(a_\mu, b_\mu),
+#' }
+#' \deqn{
+#' \sigma_K^2 \sim \textrm{IG}(a_K, b_K), \quad
+#' \sigma_\xi^2 \sim \textrm{IG}(a_\xi, b_\xi),
+#' }
+#' using a Gibbs sampler with closed-form draws.
+#' 
+#' Helper functions produce the following outputs:
 #' \itemize{
 #' \item \code{logLik} computes the log-likelihood for each saved draw.
 #' \item \code{DIC} computes the Deviance information criterion for each saved draw.
@@ -47,7 +68,9 @@
 #'
 #' @examples
 #' \dontrun{
-#' out = gibbs_stcos(z, v, H, S, K_inv, R = 10000, burn = 0, thin = 1)
+#' demo = prepare_stcos_demo()
+#' out = gibbs_stcos(demo$z, demo$v, demo$H, demo$S, solve(demo$K),
+#'     R = 10000, burn = 0, thin = 1)
 #' print(out)
 #' logLik(out)
 #' DIC(out)

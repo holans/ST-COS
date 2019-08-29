@@ -1,16 +1,18 @@
 #' licols
-#'
-#' An R version of a Matlab \code{licols} function given in
-#' \url{https://www.mathworks.com/matlabcentral/answers/108835-how-to-get-only-linearly-independent-rows-in-a-matrix-or-to-remove-linear-dependency-b-w-rows-in-a-m}.
-#' Extract a linearly independent set of columns of a given matrix \code{X}.
+#' 
+#' Extract a linearly independent set of columns of a matrix.
 #'
 #' @param X A matrix.
 #' @param tol A tolerance for rank estimation. Default is 1e-10.
-#' @param quiet A boolean; if FALSE, print a warning about computation time if \code{X} is large.
+#' @param quiet logical; if FALSE, print a warning about computation time if \code{X} is large.
 #'
 #' @return \code{Xsub} contains the extracted columns of \code{X} and \code{idx}
 #' contains the indices (into X) of those columns. The elapsed time is stored in
 #' \code{elapsed.sec}.
+#'
+#' @details
+#' An R version of a Matlab \code{licols} function given in
+#' \href{https://www.mathworks.com/matlabcentral/answers/108835-how-to-get-only-linearly-independent-rows-in-a-matrix-or-to-remove-linear-dependency-b-w-rows-in-a-m#answer_117458}{this MathWorks forum post}.
 #'
 #' @examples
 #' x = sample(1:3, size = 20, replace = TRUE)

@@ -3,32 +3,47 @@
 #' @param z Vector which represents the outcome; assumed to be direct
 #'        estimates from the survey.
 #' @param v Vector which represents direct variance estimates from the survey.
+#'        The diagonal of the matrix \eqn{\bm{V}} described in the details.
 #' @param H Matrix of overlaps between source and fine-level supports.
 #' @param S Design matrix for basis decomposition.
-#' @param K_inv Inverse of the \eqn{K} matrix, which is the covariance of the
-#'        random coefficient \eqn{\eta}
-#' @param init A list containing the following initial values for the MCMC:
-#' 	      \code{sig2xi}. If not specified, we select an arbitrary initial
-#' 	      value.
+#' @param K Variance of the random coefficient \eqn{\bm{\eta}}
+#' @param init A list containing the initial values in the MCMC for
+#'        \code{sig2xi} and \code{sig2K}. If not specified, we select an
+#'        arbitrary initial value.
 #' @param optim_control This is passed as the \code{control} argument to
 #'        \code{optim}. Note that the value \code{fnscale} is ignored if
 #'        specified.
+#' @param optim_method Method to be used for likelihood maximization by
+#'        \code{optim}. Default is \code{L-BFGS-B}.
 #'
 #' @return A list containing maximum likelihood estimates.
 #'
+#' @details Maximize the likelihood of the STCOS model
+#' \deqn{
+#'   f(\bm{z} \mid \bm{\mu}_B, \sigma_K^2, \sigma_\xi^2)
+#'   = \textrm{N}(\bm{z} \mid \bm{H} \bm{\mu}_B, \bm{\Delta}
+#'   ),
+#'   \quad \bm{\Delta} = \sigma_\xi^2 \bm{I} + \bm{V} + \sigma_K^2 \bm{S} \bm{K} \bm{S}^\top,
+#' }
+#' by numerical maximization of the profile likelihood
+#' \deqn{
+#'   \ell(\sigma_K^2, \sigma_\xi^2) =
+#'   -\frac{N}{2} \log(2 \pi) -\frac{1}{2} \log |\bm{\Delta}| -\frac{1}{2} (\bm{z} -
+#'   \bm{H} \hat{\bm{\mu}}_B)^\top \bm{\Delta}^{-1} (\bm{z} - \bm{H} \hat{\bm{\mu}}_B)
+#' }
+#' using
+#' \eqn{
+#'   \hat{\bm{\mu}}_B = (\bm{H}^\top \bm{\Delta}^{-1} \bm{H})^{-1}
+#'   \bm{H}^\top \bm{\Delta}^{-1} \bm{z}.
+#' }
+#'
 #' @examples
 #' \dontrun{
-#' z = sp$get_z()
-#' v = sp$get_v()
-#' H = sp$get_H()
-#' S.reduced = sp$get_reduced_S() 
-#' K_inv = sp$get_Kinv(2005:2015)
-#' 
-#' mle.out = mle_stcos(z, v, S.reduced, H, solve(K_inv))
-#' 
-#' sig2K_hat = mle.out$sig2K_hat
-#' sig2xi_hat = mle.out$sig2xi_hat
-#' mu_hat = mle.out$mu_hat
+#' demo = prepare_stcos_demo()
+#' mle_out = mle_stcos(demo$z, demo$v, demo$S, demo$H, demo$K)
+#' sig2K_hat = mle_out$sig2K_hat
+#' sig2xi_hat = mle_out$sig2xi_hat
+#' mu_hat = mle_out$mu_hat
 #' }
 #' @export
 mle_stcos = function(z, v, H, S, K, init = NULL,
