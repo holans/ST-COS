@@ -45,16 +45,19 @@ autocov_VAR1 = function(A, Sigma, lag_max)
 	eig = eigen(A)
 	V = eig$vectors
 	lambda = eig$values
-	if (any(lambda > 1 - 1e-20)) {
+	if (any(Re(lambda) > 1 - 1e-20)) {
 		warning("Unit root detected in autocov_VAR1")
 	}
 	rm(eig)
+	# The columns of V are eigenvectors of A, so V will likely not be symmetric
 	if (isSymmetric(V)) {
 		V_inv = t(V)
 	} else {
-		V_inv = pinv(V)
+		# V_inv = pinv(V)
+		V_inv = solve(V)
 	}
-	C = V_inv %*% Sigma %*% t(V_inv)
+	# C = V_inv %*% Sigma %*% t(V_inv)
+	C = V_inv %*% as.matrix(Sigma) %*% t(V_inv)
 	rm(V_inv)
 	e = matrix(1 / (1 - lambda %x% lambda), m^2, 1) * matrix(C, m^2, 1)
 	rm(C)

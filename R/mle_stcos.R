@@ -45,6 +45,7 @@
 #' sig2xi_hat = mle_out$sig2xi_hat
 #' mu_hat = mle_out$mu_hat
 #' }
+#' @name mle_stcos
 #' @export
 mle_stcos = function(z, v, H, S, K, init = NULL,
 	optim_control = list(), optim_method = "L-BFGS-B")
@@ -58,11 +59,12 @@ mle_stcos = function(z, v, H, S, K, init = NULL,
 	if (is.null(init$sig2K)) { init$sig2K = 1 }
 	if (is.null(init$sig2xi)) { init$sig2xi = 1 }
 
+	SKST = as.matrix(S %*% K %*% t(S))
 	loglik = function(par) {
 		sig2K = exp(par[1])
 		sig2xi = exp(par[2])
 
-		Delta = sig2K * S %*% K %*% t(S) + Diagonal(x = sig2xi + v)
+		Delta = sig2K * SKST + Diagonal(x = sig2xi + v)
 		Delta_inv_H = solve(Delta, H)
 		mu_hat = pinv(as.matrix(t(H) %*% Delta_inv_H)) %*% (t(Delta_inv_H) %*% z)
 		z_hat = H %*% mu_hat
@@ -86,5 +88,51 @@ mle_stcos = function(z, v, H, S, K, init = NULL,
 	mu_hat = pinv(as.matrix(t(H) %*% Delta_inv_H_hat)) %*% (t(Delta_inv_H_hat) %*% z)
 
 	list(sig2K_hat = sig2K_hat, sig2xi_hat = sig2xi_hat,
+		mu_hat = as.numeric(mu_hat), res = res, elapsed_sec = elapsed_sec)
+}
+
+
+# TBD: Remove this after testing
+#' @name mle_stcos
+#' @export
+mle_stcos_v2 = function(z, v, H, S, K, init = NULL,
+	optim_control = list(), optim_method = "L-BFGS-B")
+{
+	N = nrow(H)
+	n = ncol(H)
+	r = ncol(S)
+
+	# Initial values
+	if (is.null(init)) { init = list() }
+	if (is.null(init$sig2K)) { init$sig2K = 1 }
+
+	SKST = as.matrix(S %*% K %*% t(S))
+	loglik = function(par) {
+		sig2K = exp(par[1])
+
+		Delta = sig2K * SKST + Diagonal(x = v)
+		Delta_inv_H = solve(Delta, H)
+		mu_hat = pinv(as.matrix(t(H) %*% Delta_inv_H)) %*% (t(Delta_inv_H) %*% z)
+		z_hat = as.numeric(H %*% mu_hat)
+
+		logdet = as.numeric( determinant(Delta)$modulus )
+		ll = -N/2 * log(2*pi) - logdet / 2 - sum((z - z_hat) * solve(Delta, z - z_hat)) / 2
+		# mvtnorm::dmvnorm(t(z), t(z_hat), as.matrix(Delta), log = TRUE)
+		return(ll)
+	}
+
+	optim_control$fnscale = -1
+	st = Sys.time()
+	par_init = c(log(init$sig2K))
+	res = optim(par = par_init, loglik, method = optim_method,
+		control = optim_control)
+	elapsed_sec = as.numeric(Sys.time() - st, unit = "secs")
+
+	sig2K_hat = exp(res$par[1])
+	Delta_hat = sig2K_hat * S %*% K %*% t(S) + Diagonal(x = v)
+	Delta_inv_H_hat = solve(Delta_hat, H)
+	mu_hat = pinv(as.matrix(t(H) %*% Delta_inv_H_hat)) %*% (t(Delta_inv_H_hat) %*% z)
+
+	list(sig2K_hat = sig2K_hat,
 		mu_hat = as.numeric(mu_hat), res = res, elapsed_sec = elapsed_sec)
 }

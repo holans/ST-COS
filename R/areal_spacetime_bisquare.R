@@ -5,8 +5,8 @@
 #' @section Usage:
 #' \preformatted{
 #' bs = ArealSpaceTimeBisquareBasis$new(knots_x, knots_y, knots_t,
-#'     w_s, w_t)
-#' bs$compute(x, y, time)
+#'     w_s, w_t, mc_reps)
+#' bs$compute(dom, period)
 #' bs$get_dim()
 #' bs$get_cutpoints()
 #' bs$get_ws()
@@ -20,9 +20,8 @@
 #' \item \code{knots_t} numeric vector; time coordinate of knot points.
 #' \item \code{w_s} numeric; spatial radius for the basis.
 #' \item \code{w_t} numeric; temporal radius for the basis.
-#' \item \code{x} numeric vector; x-coordinates for points to evaluate.
-#' \item \code{y} numeric vector; y-coordinates for points to evaluate.
-#' \item \code{time} numeric vector; time coordinates for points to evaluate.
+#' \item \code{dom} an \code{sf} object; areal units to evaluate.
+#' \item \code{period} numeric vector; time coordinates for points to evaluate.
 #' }
 #' 
 #' @section Methods:
@@ -32,7 +31,7 @@
 #' \item \code{get_cutpoints} Get the cutpoints used to construct this basis.
 #' \item \code{get_ws} Get the spatial radius used to construct this basis.
 #' \item \code{get_wt} Get the temporal radius used to construct this basis.
-#' \item \code{compute} Evaluate this basis on specific points.
+#' \item \code{compute} Evaluate this basis on specific areal units and periods.
 #' }
 #'
 #' @name ArealSpaceTimeBisquareBasis
@@ -43,12 +42,24 @@
 #' seq_y = seq(0, 1, length.out = 3)
 #' seq_t = seq(0, 1, length.out = 3)
 #' knots = expand.grid(seq_x, seq_y, seq_t)
-#' x = runif(50)
-#' y = runif(50)
-#' t = sample(1:3, size = 50, replace = TRUE)
 #' 
-#' bs = SpaceTimeBisquareBasis$new(knots[,1], knots[,2], knots[,3], w_s = 0.5, w_t = 1)
-#' bs$compute(x, y, t)
+#' # Create a simple domain from rectangles
+#' shape1 = matrix(c(0.0,0.0, 0.5,0.0, 0.5,0.5, 0.0,0.5, 0.0,0.0), ncol=2, byrow=TRUE)
+#' shape2 = shape1 + cbind(rep(0.5,5), rep(0.0,5))
+#' shape3 = shape1 + cbind(rep(0.0,5), rep(0.5,5))
+#' shape4 = shape1 + cbind(rep(0.5,5), rep(0.5,5))
+#' sfc = st_sfc(
+#'    st_polygon(list(shape1)),
+#'    st_polygon(list(shape2)),
+#'    st_polygon(list(shape3)),
+#'    st_polygon(list(shape4))
+#' )
+#' dom = st_sf(data.frame(geoid = 1:length(sfc), geom = sfc))
+#' period = c(0.4, 0.7)
+#' 
+#' bs = ArealSpaceTimeBisquareBasis$new(knots[,1], knots[,2], knots[,3],
+#'     w_s = 0.5, w_t = 1, mc_reps = 200)
+#' bs$compute(dom, period)
 #' bs$get_dim()
 #' bs$get_cutpoints()
 #' bs$get_ws()
@@ -87,22 +98,22 @@ ArealSpaceTimeBisquareBasis = R6Class("ArealSpaceTimeBisquareBasis",
 			private$basis_spt
 		},
 		get_dim = function() {
-			private$basis_sp$r
+			private$basis_spt$get_dim()
 		},
 		get_cutpoints = function() {
-			private$basis_spt$cutpoints
+			private$basis_spt$get_cutpoints()
 		},
 		get_ws = function() {
-			private$basis_spt$w_s
+			private$basis_spt$get_ws()
 		},
 		get_wt = function() {
-			private$basis_spt$w_t
+			private$basis_spt$get_wt()
 		},
 		compute = function(dom, period, report_period = nrow(dom) + 1) {
-			basis = private$basis_spt
+			bs = private$basis_spt
 			R = private$mc_reps
 			n = nrow(dom)
-			r = basis$get_dim()
+			r = bs$get_dim()
 			S = Matrix(0, n, r)
 			T = length(period)
 
@@ -117,7 +128,7 @@ ArealSpaceTimeBisquareBasis = R6Class("ArealSpaceTimeBisquareBasis",
 				P = rdomain(R, dom[j,], blocksize = ceiling(1.2*R), itmax = R)
 
 				for (t in 1:T) {
-					S[j,] = S[j,] + colSums(basis$compute(P[,1], P[,2], period[t]))
+					S[j,] = S[j,] + colSums(bs$compute(P[,1], P[,2], period[t]))
 				}
 			}
 

@@ -4,8 +4,8 @@
 #' 
 #' @section Usage:
 #' \preformatted{
-#' bs = SpatialBisquareBasis$new(knots_x, knots_y, w)
-#' bs$compute(x, y, time)
+#' bs = ArealSpatialBisquareBasis$new(knots_x, knots_y, w, mc_reps)
+#' bs$compute(dom)
 #' bs$get_dim()
 #' bs$get_cutpoints()
 #' bs$get_w()
@@ -16,17 +16,16 @@
 #' \item \code{knots_x} numeric vector; x-coordinates of knot points.
 #' \item \code{knots_y} numeric vector; y-coordinates of knot points.
 #' \item \code{w} numeric; radius for the basis.
-#' \item \code{x} numeric vector; x-coordinates for points to evaluate.
-#' \item \code{y} numeric vector; y-coordinates for points to evaluate.
+#' \item \code{dom} an \code{sf} object; areal units to evaluate.
 #' }
 #' 
 #' @section Methods:
 #' \itemize{
-#' \item \code{new} Create a new \code{SpatialBisquareBasis} object.
+#' \item \code{new} Create a new \code{ArealSpatialBisquareBasis} object.
 #' \item \code{get_dim} Get the number of cutpoints used to construct this basis.
 #' \item \code{get_cutpoints} Get the cutpoints used to construct this basis.
 #' \item \code{get_w} Get the radius used to construct this basis.
-#' \item \code{compute} Evaluate this basis on specific points.
+#' \item \code{compute} Evaluate this basis on specific areal units.
 #' }
 #'
 #' @name ArealSpatialBisquareBasis
@@ -36,11 +35,23 @@
 #' seq_x = seq(0, 1, length.out = 3)
 #' seq_y = seq(0, 1, length.out = 3)
 #' knots = merge(seq_x, seq_y)
-#' x = runif(50)
-#' y = runif(50)
 #' 
-#' bs = SpatialBisquareBasis$new(knots[,1], knots[,2], w = 0.5)
-#' bs$compute(x, y)
+#' # Create a simple domain from rectangles
+#' shape1 = matrix(c(0.0,0.0, 0.5,0.0, 0.5,0.5, 0.0,0.5, 0.0,0.0), ncol=2, byrow=TRUE)
+#' shape2 = shape1 + cbind(rep(0.5,5), rep(0.0,5))
+#' shape3 = shape1 + cbind(rep(0.0,5), rep(0.5,5))
+#' shape4 = shape1 + cbind(rep(0.5,5), rep(0.5,5))
+#' sfc = st_sfc(
+#'    st_polygon(list(shape1)),
+#'    st_polygon(list(shape2)),
+#'    st_polygon(list(shape3)),
+#'    st_polygon(list(shape4))
+#' )
+#' dom = st_sf(data.frame(geoid = 1:length(sfc), geom = sfc))
+#' 
+#' bs = ArealSpatialBisquareBasis$new(knots[,1], knots[,2], w = 0.5,
+#'     mc_reps = 200)
+#' bs$compute(dom)
 #' bs$get_dim()
 #' bs$get_cutpoints()
 #' bs$get_w()
@@ -78,13 +89,13 @@ ArealSpatialBisquareBasis = R6Class("ArealSpatialBisquareBasis",
 			private$basis_sp
 		},
 		get_dim = function() {
-			private$basis_sp$r
+			private$basis_sp$get_dim()
 		},
 		get_cutpoints = function() {
-			private$basis_sp$cutpoints
+			private$basis_sp$get_cutpoints()
 		},
 		get_w = function() {
-			private$basis_sp$w
+			private$basis_sp$get_w()
 		},
 		compute = function(dom, report_period = nrow(dom) + 1) {
 			basis = private$basis_sp
