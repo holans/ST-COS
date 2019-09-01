@@ -5,7 +5,7 @@
 #' @param v Vector which represents direct variance estimates from the survey.
 #' @param H Matrix of overlaps between source and fine-level supports.
 #' @param S Design matrix for basis decomposition.
-#' @param K_inv The precision matrix \eqn{\bm{K}^{-1}} of the
+#' @param Kinv The precision matrix \eqn{\bm{K}^{-1}} of the
 #'        random coefficient \eqn{\bm{\eta}}
 #' @param init A list containing the following initial values for the MCMC:
 #' 	      \code{sig2mu}, \code{sig2xi}, \code{sig2K}, \code{muB}, \code{eta},
@@ -84,7 +84,7 @@ NULL
 
 #' @name gibbs_stcos
 #' @export
-gibbs_stcos = function(z, v, H, S, K_inv, R, report_period = R+1,
+gibbs_stcos = function(z, v, H, S, Kinv, R, report_period = R+1,
 	burn = 0, thin = 1, init = NULL, fixed = NULL, hyper = NULL)
 {
 	timer = list(muB = 0, sig2mu = 0, eta = 0, xi = 0, sig2xi = 0, sig2K = 0,
@@ -121,7 +121,7 @@ gibbs_stcos = function(z, v, H, S, K_inv, R, report_period = R+1,
 	if (is.null(init$sig2K)) { init$sig2K = 1 }
 	if (is.null(init$muB)) { init$muB = rnorm(n_mu, 0, sqrt(init$sig2mu)) }
 	if (is.null(init$eta)) {
-		eig = eigen(K_inv)
+		eig = eigen(Kinv)
 		ee = eig$values
 		ee[ee <= 0] = min(ee[ee > 0])
 		ee[ee > 0] = 1 / ee[ee > 0]
@@ -197,14 +197,14 @@ gibbs_stcos = function(z, v, H, S, K_inv, R, report_period = R+1,
 
 		# Draw from [sig2K | ---]
 		st = Sys.time()
-		scale = as.numeric(0.5 * t(eta) %*% K_inv %*% eta)
+		scale = as.numeric(0.5 * t(eta) %*% Kinv %*% eta)
 		sig2K_new = 1 / rgamma(1, r/2 + hyper$a_sig2K, hyper$b_sig2K + scale)
 		if (!fixed$sig2K) { sig2K = sig2K_new }
 		timer$sig2K = timer$sig2K + as.numeric(Sys.time() - st, units = "secs")
 
 		# Draw from [eta | ---]
 		st = Sys.time()
-		V_eta = solve(as.matrix((1/sig2K * K_inv) + SpinvVS))
+		V_eta = solve(as.matrix((1/sig2K * Kinv) + SpinvVS))
 		mean_eta = V_eta %*% (SpinvV %*% (z - H %*% muB - xi))
 		eta_new = mean_eta + chol(V_eta) %*% rnorm(r)
 		idx = setdiff(1:r, fixed$eta)

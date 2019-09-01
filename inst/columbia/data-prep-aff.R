@@ -13,14 +13,14 @@ library(dplyr)
 # analysis. We merge data with shapefiles, which are requested from the Census Bureau's
 # TIGER/Line service via the `tigris` package.
 
-years <- 2013:2017
-sf.list <- list()
+year_levels = 2013:2017
+sf_list = list()
 
-for (idx in 1:length(years)) {
-	year <- years[idx]
-	acs.file <- sprintf("ACS_%s_5YR_B19013_with_ann.csv", substr(year,3,4))
+for (idx in 1:length(year_levels)) {
+	year = year_levels[idx]
+	acs_file = sprintf("ACS_%s_5YR_B19013_with_ann.csv", substr(year,3,4))
 
-	my_dat <- read_csv(acs.file) %>%
+	my_dat = read_csv(acs_file) %>%
 		slice(-1) %>%
 		mutate(geoid = GEO.id2) %>%
 		mutate(HD01_VD01 = replace(HD01_VD01, HD01_VD01 == '-', NA)) %>%
@@ -35,25 +35,25 @@ for (idx in 1:length(years)) {
 		select(geoid, state, county, tract, blockgroup, DirectEst, DirectMOE, DirectVar) %>%
 		arrange(tract, blockgroup)
 
-	my_shp <- block_groups(state = '29', county = '019', year = year) %>%
+	my_shp = block_groups(state = '29', county = '019', year = year) %>%
 		st_as_sf() %>%
 		st_transform(crs = 3857)
 
-	my_sf <- my_shp %>%
+	my_sf = my_shp %>%
 		inner_join(my_dat, by = c('STATEFP' = 'state', 'COUNTYFP' = 'county',
 			'TRACTCE' = 'tract', 'BLKGRPCE' = 'blockgroup')) %>%
 		select(geoid = GEOID, state = STATEFP, county = COUNTYFP,
 			tract = TRACTCE, blockgroup = BLKGRPCE,
 			DirectEst, DirectMOE, DirectVar)
 
-	sf.list[[idx]] <- my_sf
+	sf_list[[idx]] = my_sf
 }
 
 # Our assembled source supports are now `acs5_2013`, ..., `acs5_2017`
-acs5_2013 <- sf.list[[1]]
-acs5_2014 <- sf.list[[2]]
-acs5_2015 <- sf.list[[3]]
-acs5_2016 <- sf.list[[4]]
-acs5_2017 <- sf.list[[5]]
+acs5_2013 = sf_list[[1]]
+acs5_2014 = sf_list[[2]]
+acs5_2015 = sf_list[[3]]
+acs5_2016 = sf_list[[4]]
+acs5_2017 = sf_list[[5]]
 save(acs5_2013, acs5_2014, acs5_2015, acs5_2016, acs5_2017, file="data/acs_sf.rda")
 

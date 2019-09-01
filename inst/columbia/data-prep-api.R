@@ -18,28 +18,28 @@ library(ggplot2)
 # slightly different call through the API - there we need to specify which
 # tract(s) we are interested in, as well.
 
-year.levels <- 2015:2017
-sf.list <- list()
-# dat.missing <- list()
+year_levels = 2015:2017
+sf_list = list()
+# dat.missing = list()
 
-for (idx in 1:length(year.levels)) {
-	year <- year.levels[idx]
+for (idx in 1:length(year_levels)) {
+	year = year_levels[idx]
 
-	est_url <- paste('https://api.census.gov/data/', year,
+	est_url = paste('https://api.census.gov/data/', year,
 		'/acs/acs5?get=NAME,B19013_001E&for=block%20group:*&in=state:29+county:019',
 		sep = '')
-	json_data <- fromJSON(est_url)
-	est_dat <- data.frame(json_data[-1,])
-	colnames(est_dat) <- json_data[1,]
+	json_data = fromJSON(est_url)
+	est_dat = data.frame(json_data[-1,])
+	colnames(est_dat) = json_data[1,]
 
-	moe_url <- paste('https://api.census.gov/data/', year,
+	moe_url = paste('https://api.census.gov/data/', year,
 		'/acs/acs5?get=NAME,B19013_001M&for=block%20group:*&in=state:29+county:019',
 		sep = '')
-	json_data <- fromJSON(moe_url)
-	moe_dat <- data.frame(json_data[-1,])
-	colnames(moe_dat) <- json_data[1,]
+	json_data = fromJSON(moe_url)
+	moe_dat = data.frame(json_data[-1,])
+	colnames(moe_dat) = json_data[1,]
 
-	my_dat <- est_dat %>%
+	my_dat = est_dat %>%
 		inner_join(moe_dat, by = c('state' = 'state', 'county' = 'county',
 			'tract' = 'tract', 'block group' = 'block group')) %>%
 		select(state, county, tract, blockgroup = `block group`,
@@ -55,28 +55,22 @@ for (idx in 1:length(year.levels)) {
 		mutate(DirectVar = (DirectMOE / qnorm(0.95))^2) %>%
 		arrange(tract, blockgroup)
 
-	my_shp <- block_groups(state = '29', county = '019', year = year) %>%
+	my_shp = block_groups(state = '29', county = '019', year = year) %>%
 		st_as_sf() %>%
 		st_transform(crs = 3857)
 
-	my_sf <- my_shp %>%
+	my_sf = my_shp %>%
 		inner_join(my_dat, by = c('STATEFP' = 'state', 'COUNTYFP' = 'county',
 			'TRACTCE' = 'tract', 'BLKGRPCE' = 'blockgroup')) %>%
 		select(geoid = GEOID, state = STATEFP, county = COUNTYFP,
 			tract = TRACTCE, blockgroup = BLKGRPCE,
 			DirectEst, DirectMOE, DirectVar)
 
-	sf.list[[idx]] <- my_sf
-
-	# sf.list[[idx]] <- my_sf %>%
-	#	filter(!is.na(DirectEst))
-
-	# dat.missing[[idx]] <- my_sf %>%
-	#	filter(is.na(DirectEst))
+	sf_list[[idx]] = my_sf
 }
 
 # Our assembled source supports are now `acs5_2015`, ..., `acs5_2017`
-acs5_2015 <- sf.list[[1]]
-acs5_2016 <- sf.list[[2]]
-acs5_2017 <- sf.list[[3]]
-rm(sf.list)
+acs5_2015 = sf_list[[1]]
+acs5_2016 = sf_list[[2]]
+acs5_2017 = sf_list[[3]]
+rm(sf_list)
