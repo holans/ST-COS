@@ -2,16 +2,17 @@
 #include <RcppArmadillo.h>
 #include <vector>
 
+// As of the last time I checked, the batch insertion method for arma::sp_mat
+// still appears to be a bit faster than initializing S to zeros and then
+// setting non-zero elements. We'll keep using batch insertion for now, and
+// revisit later...
+
 // [[Rcpp::export]]
 arma::sp_mat compute_basis_sp(const arma::mat& X, const arma::mat& cc, double w)
 {
 	unsigned int N = X.n_rows;
 	unsigned int r = cc.n_rows;
 
-	// We want to return an arma::sp_mat at the end, but the obvious way of
-	// constructing one - initializing it to all zeros and setting the elements
-	// one-by-one - becomes extremely slow. Instead, we'll do a bit more work
-	// to use the batch insertion method.
 	std::vector<unsigned int> ind_row;
 	std::vector<unsigned int> ind_col;
 	std::vector<double> vals;
@@ -33,13 +34,11 @@ arma::sp_mat compute_basis_sp(const arma::mat& X, const arma::mat& cc, double w)
 		}
 	}
 
-	// Convert to a format that can be used to initialize sp_mat efficiently
 	arma::vec values = arma::conv_to<arma::vec>::from(vals);
 	arma::umat locations(2, vals.size());
 	locations.row(0) = arma::conv_to<arma::uvec>::from(ind_row).t();
 	locations.row(1) = arma::conv_to<arma::uvec>::from(ind_col).t();
 
-	// Create an sp_mat
 	arma::sp_mat S(locations, values, N, r);
 	return S;
 }
@@ -50,10 +49,6 @@ arma::sp_mat compute_basis_spt(const arma::mat& X, const arma::mat& cc, double w
 	unsigned int N = X.n_rows;
 	unsigned int r = cc.n_rows;
 
-	// We want to return an arma::sp_mat at the end, but the obvious way of
-	// constructing one - initializing it to all zeros and setting the elements
-	// one-by-one - becomes extremely slow. Instead, we'll do a bit more work
-	// to use the batch insertion method.
 	std::vector<unsigned int> ind_row;
 	std::vector<unsigned int> ind_col;
 	std::vector<double> vals;
@@ -78,14 +73,11 @@ arma::sp_mat compute_basis_spt(const arma::mat& X, const arma::mat& cc, double w
 		}
 	}
 
-	// Convert to a format that can be used to initialize sp_mat efficiently
 	arma::vec values = arma::conv_to<arma::vec>::from(vals);
 	arma::umat locations(2, vals.size());
 	locations.row(0) = arma::conv_to<arma::uvec>::from(ind_row).t();
 	locations.row(1) = arma::conv_to<arma::uvec>::from(ind_col).t();
 
-	// Create an sp_mat
 	arma::sp_mat S(locations, values, N, r);
 	return S;
 }
-
