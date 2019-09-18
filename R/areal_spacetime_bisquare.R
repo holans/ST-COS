@@ -65,9 +65,10 @@
 #' bs$get_ws()
 #' bs$get_wt()
 #' 
-#' # Plot the (spatial) knots and the points at which we evaluated the basis
+#' # Plot the (spatial) knots and the (spatial) domain at which we evaluated
+#' # the basis.
 #' plot(knots[,1], knots[,2], pch = 4, cex = 1.5, col = "red")
-#' text(x, y, labels = t, cex = 0.75)
+#' plot(dom[,1], col = NA, add = TRUE)
 #' 
 #' # Draw a circle representing the basis' radius around one of the knot points
 #' tseq = seq(0, 2*pi, length=100) 

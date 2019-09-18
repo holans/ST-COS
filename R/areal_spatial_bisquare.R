@@ -58,7 +58,7 @@
 #' 
 #' # Plot the knots and the points at which we evaluated the basis
 #' plot(knots[,1], knots[,2], pch = 4, cex = 1.5, col = "red")
-#' points(x, y, cex = 0.5)
+#' plot(dom[,1], col = NA, add = TRUE)
 #' 
 #' # Draw a circle representing the basis' radius around one of the knot points
 #' tseq = seq(0, 2*pi, length=100) 

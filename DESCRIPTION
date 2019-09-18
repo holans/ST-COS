@@ -2,7 +2,6 @@ Package: stcos
 Type: Package
 Title: Space-Time Change of Support
 Version: 0.2.0
-Date: 2019-08-28
 Authors@R: c(
 	person(c("Andrew", "M."), "Raim", email = "andrew.raim@gmail.com", role = c("aut", "cre")),
 	person(c("Scott", "H."), "Holan", role = c("aut", "res")),
@@ -15,9 +14,10 @@ Author: Andrew M. Raim [aut, cre],
 Maintainer: Andrew M. Raim <andrew.raim@gmail.com>
 URL: https://github.com/holans/ST-COS
 Description: Spatio-temporal change of support (STCOS) methods are designed for statistical inference
-	on geographic and/or time domains that differ from those on which the data were observed. 'stcos'
-	implements a parsimonious class of Bayesian hierarchical spatio-temporal models for STCOS with
-	Gaussian outcomes introduced by Bradley, Wikle, and Holan <doi:10.1002/sta4.94>.
+	on geographic and time domains which differ from those on which the data were observed. In
+	particular, a parsimonious class of STCOS models supporting Gaussian outcomes was introduced
+	by Bradley, Wikle, and Holan <doi:10.1002/sta4.94>. The 'stcos' package contains tools which
+	facilitate use of STCOS models.
 License: GPL (>= 2)
 Imports: R6
 Depends: R (>= 3.3), Rcpp, Matrix, sf, dplyr
