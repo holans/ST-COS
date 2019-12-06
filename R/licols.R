@@ -15,7 +15,7 @@
 #' \href{https://www.mathworks.com/matlabcentral/answers/108835-how-to-get-only-linearly-independent-rows-in-a-matrix-or-to-remove-linear-dependency-b-w-rows-in-a-m#answer_117458}{this MathWorks forum post}.
 #'
 #' @examples
-#' x = sample(1:3, size = 20, replace = TRUE)
+#' x = 0:19 %% 3 + 1
 #' Z = model.matrix(~ as.factor(x) - 1)
 #' X = cbind(1, Z)
 #' licols(X)
@@ -33,7 +33,7 @@ licols = function(X, tol = 1e-10, quiet = FALSE)
 	# return the same kind of pivot. It appears to be a "non-rank-revealing
 	# decomposition".
 
-	stopifnot(class(X) == "matrix")
+	stopifnot("matrix" %in% class(X))
 	m = nrow(X)
 	n = ncol(X)
 	if (m*n > 1e6 && !quiet) {
@@ -54,5 +54,5 @@ licols = function(X, tol = 1e-10, quiet = FALSE)
 	idx = qr.out$pivot[1:r]
 
 	elapsed.sec = as.numeric(Sys.time() - st, units = "secs")
-	list(Xsub = X[,idx], idx = idx, elapsed.sec = elapsed.sec)
+	list(Xsub = X[,idx,drop=FALSE], idx = idx, elapsed.sec = elapsed.sec)
 }

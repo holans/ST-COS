@@ -40,8 +40,8 @@
 #' pts = rdomain(10000, dom)
 #' 
 #' # Convert the points to an sf object if desired
-#' dat = data.frame(pts)
-#' pts_sf = st_as_sf(dat, coords = c("X1", "X2"), crs = st_crs(dom))
+#' dat = data.frame(x = pts[,1], y = pts[,2])
+#' pts_sf = st_as_sf(dat, coords = c("x", "y"), crs = st_crs(dom))
 #' 
 #' @export
 rdomain = function(n, dom, blocksize = n, itmax = Inf)
@@ -57,7 +57,7 @@ rdomain = function(n, dom, blocksize = n, itmax = Inf)
 		u_df = data.frame(u1 = u1, u2 = u2)
 		u_sf = st_as_sf(u_df, coords = c("u1", "u2"), crs = st_crs(dom), agr = "constant")
 		idx = unique(unlist(st_contains(dom, u_sf)))
-		res = rbind(res, as.matrix(u_df[idx,]))
+		res = rbind(res, u_df[idx,,drop=FALSE])
 	}
 
 	if (nrow(res) < n && itr == itmax) {
@@ -65,6 +65,6 @@ rdomain = function(n, dom, blocksize = n, itmax = Inf)
 	}
 
 	colnames(res) = c("x", "y")
-	matrix(res[1:n,], ncol = 2)
+	res[1:n,,drop=FALSE]
 }
 

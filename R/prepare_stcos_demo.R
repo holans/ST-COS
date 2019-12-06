@@ -91,7 +91,7 @@ prepare_stcos_demo = function(num_knots_sp = 200, basis_mc_reps = 200, eigval_pr
 	logger("[6/7] Dimension reduction\n")
 	eig = eigen(t(S_full) %*% S_full)
 	idx_S = which(cumsum(eig$values) / sum(eig$values) < eigval_prop)
-	Ts = eig$vectors[,idx_S]
+	Ts = eig$vectors[,idx_S,drop=FALSE]
 
 	S = S_full %*% Ts
 	S_fine = S_fine_full %*% Ts
