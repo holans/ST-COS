@@ -1,20 +1,20 @@
 #' MLE for STCOS Model
 #'
 #' @param z Vector which represents the outcome; assumed to be direct
-#'        estimates from the survey.
+#'   estimates from the survey.
 #' @param v Vector which represents direct variance estimates from the survey.
-#'        The diagonal of the matrix \eqn{\bm{V}} described in the details.
+#'   The diagonal of the matrix \eqn{\bm{V}} described in the details.
 #' @param H Matrix of overlaps between source and fine-level supports.
 #' @param S Design matrix for basis decomposition.
 #' @param K Variance of the random coefficient \eqn{\bm{\eta}}
 #' @param init A list containing the initial values in the MCMC for
-#'        \code{sig2xi} and \code{sig2K}. If not specified, we select an
-#'        arbitrary initial value.
+#'   \code{sig2xi} and \code{sig2K}. If not specified, we select an
+#'   arbitrary initial value.
 #' @param optim_control This is passed as the \code{control} argument to
-#'        \code{optim}. Note that the value \code{fnscale} is ignored if
-#'        specified.
+#'   \code{optim}. Note that the value \code{fnscale} is ignored if
+#'   specified.
 #' @param optim_method Method to be used for likelihood maximization by
-#'        \code{optim}. Default is \code{L-BFGS-B}.
+#'   \code{optim}. Default is \code{L-BFGS-B}.
 #'
 #' @return A list containing maximum likelihood estimates.
 #'

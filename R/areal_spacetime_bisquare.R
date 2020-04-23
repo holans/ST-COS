@@ -81,19 +81,53 @@ NULL
 #' @docType class
 ArealSpaceTimeBisquareBasis = R6Class("ArealSpaceTimeBisquareBasis",
 	lock_objects = TRUE,
-	lock_class = TRUE,
+	lock_class = FALSE,
 	private = list(
+		method = NULL,
 		mc_reps = NULL,
+		nx = NULL,
+		ny = NULL,
 		report_period = NULL,
 		basis_spt = NULL
 	),
 	public = list(
-		initialize = function(knots_x, knots_y, knots_t, w_s, w_t, mc_reps) {
-			private$mc_reps = mc_reps
+		initialize = function(knots_x, knots_y, knots_t, w_s, w_t) {
+			# Default is Monte Carlo with 1000 reps
+			self$set_monte_carlo(1000)
+			private$report_period = Inf
 			private$basis_spt = SpaceTimeBisquareBasis$new(knots_x, knots_y, knots_t, w_s = w_s, w_t = w_t)
+		},
+		set_monte_carlo = function(reps) {
+			private$method = "MonteCarlo"
+			private$mc_reps = reps
+			private$nx = NULL
+			private$ny = NULL
+		},
+		set_quad = function(nx, ny) {
+			private$method = "Quadrature"
+			private$mc_reps = NULL
+			private$nx = nx
+			private$ny = ny
+		},
+		set_w = function(w_s, w_t) {
+			knots = private$basis_spt$get_cutpoints()
+			private$basis_spt = SpaceTimeBisquareBasis$new(knots[,1], knots[,2],
+				knots[,3], w_s = w_s, w_t = w_t)
+		},
+		set_report_period = function(report_period) {
+			private$report_period = report_period
+		},
+		get_method = function() {
+			private$method
 		},
 		get_mc_reps = function() {
 			private$mc_reps
+		},
+		get_nx = function() {
+			private$nx
+		},
+		get_ny = function() {
+			private$nx
 		},
 		get_basis_spt = function() {
 			private$basis_spt
@@ -110,30 +144,79 @@ ArealSpaceTimeBisquareBasis = R6Class("ArealSpaceTimeBisquareBasis",
 		get_wt = function() {
 			private$basis_spt$get_wt()
 		},
-		compute = function(dom, period, report_period = nrow(dom) + 1) {
-			bs = private$basis_spt
-			R = private$mc_reps
-			n = nrow(dom)
-			r = bs$get_dim()
-			S = Matrix(0, n, r)
-			T = length(period)
-
-			for (j in 1:n) {
-				if (j %% report_period == 0) {
-					logger("Computing basis for area %d of %d\n", j, n)
-				}
-
-				# Drawing samples from an area seems more time consuming than computing
-				# basis function. Let's reuse samples over multiple lookbacks.
-				# Request a few more samples than we'll need, to prevent the loop in rdomain.
-				P = rdomain(R, dom[j,], blocksize = ceiling(1.2*R), itmax = R)
-
-				for (t in 1:T) {
-					S[j,] = S[j,] + colSums(bs$compute(P[,1], P[,2], period[t]))
-				}
+		compute = function(dom, period) {
+			if (private$method == "MonteCarlo") {
+				S = private$compute_mc(dom, period)
+			} else if (private$method == "Quadrature") {
+				S = private$compute_quad(dom, period)
+			} else {
+				stop("Unknown method")
 			}
-
-			return( S / (R*T) )
+			return(S)
 		}
 	)
 )
+
+ArealSpaceTimeBisquareBasis$set("private", "compute_mc", 
+	function(dom, period) {
+		bs = private$basis_spt
+		R = private$mc_reps
+		n = nrow(dom)
+		r = bs$get_dim()
+		S = Matrix(0, n, r)
+		report_period = private$report_period
+
+		for (j in 1:n) {
+			if (j %% report_period == 0) {
+				logger("Computing basis for area %d of %d\n", j, n)
+			}
+
+			# Monte Carlo approximation is done only over space and not period.
+			# Therefore, it should be okay to reuse randomly drawn spatial points
+			# for the same area across multiple periods.
+			# 
+			# The factor of 1.2 helps to achieve the desired sample size
+			# in rdomain without repeating the loop there.
+			P = rdomain(R, dom[j,], blocksize = ceiling(1.2*R), itmax = R)
+
+			for (t in seq_along(period)) {
+				B = bs$compute(P$x, P$y, period[t])
+				S[j,] = S[j,] + colSums(B)
+			}
+		}
+
+		return( S / (R * length(period)) )
+	}
+)
+
+ArealSpaceTimeBisquareBasis$set("private", "compute_quad", 
+	function(dom, period) {
+		bs = private$basis_spt
+		n = nrow(dom)
+		r = bs$get_dim()
+		S = Matrix(0, n, r)
+		nx = private$nx
+		ny = private$ny
+		report_period = private$report_period
+
+		for (j in 1:n) {
+			if (j %% report_period == 0) {
+				logger("Computing basis for area %d of %d\n", j, n)
+			}
+
+			out = make_grid(dom[j,], nx, ny)
+			X = out$X
+			dx = out$dx
+			dy = out$dy
+
+			area = as.numeric(st_area(dom[j,]))
+			for (t in seq_along(period)) {
+				B = bs$compute(X[,1], X[,2], period[t])
+				S[j,] = S[j,] + colSums(B) * dx * dy / area
+			}
+		}
+		return(S / length(period))			
+	}
+)
+
+ArealSpaceTimeBisquareBasis$lock()

@@ -62,7 +62,7 @@
 #' }
 #' In any case \eqn{\bm{\Sigma}} may be large and we avoid computing it in its entirety.
 #' @name Covariance Approximation
-#' @export
+NULL
 
 #' @name Covariance Approximation
 #' @export

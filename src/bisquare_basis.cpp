@@ -2,11 +2,14 @@
 #include <RcppArmadillo.h>
 #include <vector>
 
-// As of the last time I checked, the batch insertion method for arma::sp_mat
-// still appears to be a bit faster than initializing S to zeros and then
-// setting non-zero elements. We'll keep using batch insertion for now, and
-// revisit later...
+/** 
+ * As of the last time I checked, the batch insertion method for arma::sp_mat
+ * still appears to be a bit faster than initializing S to zeros and then
+ * setting non-zero elements. We'll keep using batch insertion for now, and
+ * revisit later...
+ */
 
+//' @export
 // [[Rcpp::export]]
 arma::sp_mat compute_basis_sp(const arma::mat& X, const arma::mat& cc, double w)
 {
@@ -19,10 +22,13 @@ arma::sp_mat compute_basis_sp(const arma::mat& X, const arma::mat& cc, double w)
 
 	double w2 = w*w;
 
-	for (unsigned int i = 0; i < N; i++) {
-		for (unsigned int j = 0; j < r; j++) {
-			double ds1 = X.at(i,0) - cc.at(j,0);
-			double ds2 = X.at(i,1) - cc.at(j,1);
+	for (unsigned int j = 0; j < r; j++) {
+		double cc_x = cc.at(j,0);
+		double cc_y = cc.at(j,1);
+
+		for (unsigned int i = 0; i < N; i++) {
+			double ds1 = X.at(i,0) - cc_x;
+			double ds2 = X.at(i,1) - cc_y;
 			double norm2 = ds1*ds1 + ds2*ds2;
 
 			if (norm2 <= w2) {
@@ -34,15 +40,18 @@ arma::sp_mat compute_basis_sp(const arma::mat& X, const arma::mat& cc, double w)
 		}
 	}
 
-	arma::vec values = arma::conv_to<arma::vec>::from(vals);
-	arma::umat locations(2, vals.size());
-	locations.row(0) = arma::conv_to<arma::uvec>::from(ind_row).t();
-	locations.row(1) = arma::conv_to<arma::uvec>::from(ind_col).t();
-
-	arma::sp_mat S(locations, values, N, r);
+	// Batch insertion method
+	// Inputs are sorted in column-major order, and zeros should not be included
+	// by this point, so we set: sort_locations = false, check_for_zeros = false
+	arma::vec values(vals);
+	arma::urowvec row0(ind_row);
+	arma::urowvec row1(ind_col);
+	arma::umat locations = arma::join_cols(row0, row1);
+	arma::sp_mat S(locations, values, N, r, false, false);
 	return S;
 }
 
+//' @export
 // [[Rcpp::export]]
 arma::sp_mat compute_basis_spt(const arma::mat& X, const arma::mat& cc, double w_s, double w_t)
 {
@@ -56,15 +65,19 @@ arma::sp_mat compute_basis_spt(const arma::mat& X, const arma::mat& cc, double w
 	double w2_s = w_s * w_s;
 	double w2_t = w_t * w_t;
 
-	for (unsigned int i = 0; i < N; i++) {
-		for (unsigned int j = 0; j < r; j++) {
-			double ds1 = X.at(i,0) - cc.at(j,0);
-			double ds2 = X.at(i,1) - cc.at(j,1);
-			double dt = X.at(i,2) - cc.at(j,2);
+	for (unsigned int j = 0; j < r; j++) {
+		double cc_x = cc.at(j,0);
+		double cc_y = cc.at(j,1);
+		double cc_t = cc.at(j,2);
+
+		for (unsigned int i = 0; i < N; i++) {
+			double ds1 = X.at(i,0) - cc_x;
+			double ds2 = X.at(i,1) - cc_y;
+			double dt = X.at(i,2) - cc_t;
 			double norm2_s = ds1*ds1 + ds2*ds2;
 			double norm2_t = dt*dt;
 
-			if (norm2_s <= w2_s && norm2_t <= w2_t) {
+			if (norm2_s < w2_s && norm2_t < w2_t) {
 				double root_dist = 2 - norm2_s / w2_s - norm2_t / w2_t;
 				ind_row.push_back(i);
 				ind_col.push_back(j);
@@ -73,11 +86,13 @@ arma::sp_mat compute_basis_spt(const arma::mat& X, const arma::mat& cc, double w
 		}
 	}
 
-	arma::vec values = arma::conv_to<arma::vec>::from(vals);
-	arma::umat locations(2, vals.size());
-	locations.row(0) = arma::conv_to<arma::uvec>::from(ind_row).t();
-	locations.row(1) = arma::conv_to<arma::uvec>::from(ind_col).t();
-
-	arma::sp_mat S(locations, values, N, r);
+	// Batch insertion method
+	// Inputs are sorted in column-major order, and zeros should not be included
+	// by this point, so we set: sort_locations = false, check_for_zeros = false
+	arma::vec values(vals);
+	arma::urowvec row0(ind_row);
+	arma::urowvec row1(ind_col);
+	arma::umat locations = arma::join_cols(row0, row1);
+	arma::sp_mat S(locations, values, N, r, false, false);
 	return S;
 }

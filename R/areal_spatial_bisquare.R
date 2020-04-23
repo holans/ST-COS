@@ -71,19 +71,52 @@ NULL
 #' @docType class
 ArealSpatialBisquareBasis = R6Class("ArealSpatialBisquareBasis",
 	lock_objects = TRUE,
-	lock_class = TRUE,
+	lock_class = FALSE,
 	private = list(
+		method = NULL,
 		mc_reps = NULL,
+		nx = NULL,
+		ny = NULL,
 		report_period = NULL,
 		basis_sp = NULL
 	),
 	public = list(
-		initialize = function(knots_x, knots_y, w, mc_reps) {
-			private$mc_reps = mc_reps
+		initialize = function(knots_x, knots_y, w) {
+			# Default is Monte Carlo with 1000 reps
+			self$set_monte_carlo(1000)
+			private$report_period = Inf
 			private$basis_sp = SpatialBisquareBasis$new(knots_x, knots_y, w = w)
+		},
+		set_monte_carlo = function(reps) {
+			private$method = "MonteCarlo"
+			private$mc_reps = reps
+			private$nx = NULL
+			private$ny = NULL
+		},
+		set_quad = function(nx, ny) {
+			private$method = "Quadrature"
+			private$mc_reps = NULL
+			private$nx = nx
+			private$ny = ny
+		},
+		set_w = function(w) {
+			knots = private$basis_sp$get_cutpoints()
+			private$basis_sp = SpatialBisquareBasis$new(knots[,1], knots[,2], w = w)
+		},
+		set_report_period = function(report_period) {
+			private$report_period = report_period
+		},
+		get_method = function() {
+			private$method
 		},
 		get_mc_reps = function() {
 			private$mc_reps
+		},
+		get_nx = function() {
+			private$nx
+		},
+		get_ny = function() {
+			private$nx
 		},
 		get_basis_sp = function() {
 			private$basis_sp
@@ -97,25 +130,73 @@ ArealSpatialBisquareBasis = R6Class("ArealSpatialBisquareBasis",
 		get_w = function() {
 			private$basis_sp$get_w()
 		},
-		compute = function(dom, report_period = nrow(dom) + 1) {
-			basis = private$basis_sp
-			R = private$mc_reps
-
-			n = nrow(dom)
-			r = basis$get_dim()
-			S = Matrix(0, n, r)
-
-			for (j in 1:n) {
-				if (j %% report_period == 0) {
-					logger("Computing basis for area %d of %d\n", j, n)
-				}
-
-				# Request a few more samples than we'll need, to prevent the loop in rdomain.
-				P = rdomain(R, dom[j,], blocksize = ceiling(1.2*R), itmax = R)
-				S[j,] = S[j,] + colSums(basis$compute(P[,1], P[,2]))
+		get_report_period = function() {
+			private$report_period
+		},
+		compute = function(dom) {
+			if (private$method == "MonteCarlo") {
+				S = private$compute_mc(dom)
+			} else if (private$method == "Quadrature") {
+				S = private$compute_quad(dom)
+			} else {
+				stop("Unknown method")
 			}
-
-			return(S / R)
+			return(S)
 		}
 	)
 )
+
+ArealSpatialBisquareBasis$set("private", "compute_mc",
+	function(dom) {
+		bs = private$basis_sp
+		n = nrow(dom)
+		r = bs$get_dim()
+		S = Matrix(0, n, r)
+		R = private$mc_reps
+		report_period = private$report_period
+
+		for (j in 1:n) {
+			if (j %% report_period == 0) {
+				logger("Computing basis for area %d of %d\n", j, n)
+			}
+
+			# The factor of 1.2 helps to achieve the desired sample size
+			# in rdomain without repeating the loop there.
+			P = rdomain(R, dom[j,], blocksize = ceiling(1.2*R), itmax = R)
+			B = bs$compute(P$x, P$y)
+			S[j,] = S[j,] + colSums(B)
+		}
+
+		return(S / R)
+	}
+)
+
+ArealSpatialBisquareBasis$set("private", "compute_quad",
+	function(dom) {
+		bs = private$basis_sp
+		n = nrow(dom)
+		r = bs$get_dim()
+		S = Matrix(0, n, r)
+		nx = private$nx
+		ny = private$ny
+		report_period = private$report_period
+
+		for (j in 1:n) {
+			if (j %% report_period == 0) {
+				logger("Computing basis for area %d of %d\n", j, n)
+			}
+
+			out = make_grid(dom[j,], nx, ny)
+			X = out$X
+			dx = out$dx
+			dy = out$dy
+
+			B = bs$compute(X[,1], X[,2])
+			area = as.numeric(st_area(dom[j,]))
+			S[j,] = colSums(B) * dx * dy / area
+		}
+		return(S)			
+	}
+)
+
+ArealSpatialBisquareBasis$lock()
