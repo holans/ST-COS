@@ -4,7 +4,8 @@
 #' 
 #' @section Usage:
 #' \preformatted{
-#' bs = ArealSpatialBisquareBasis$new(knots_x, knots_y, w, mc_reps)
+#' bs = ArealSpatialBisquareBasis$new(knots_x, knots_y, w)
+#' bs$set_monte_carlo(reps)
 #' bs$compute(dom)
 #' bs$get_dim()
 #' bs$get_cutpoints()
@@ -22,9 +23,25 @@
 #' @section Methods:
 #' \itemize{
 #' \item \code{new} Create a new \code{ArealSpatialBisquareBasis} object.
+#' \item \code{get_basis_sp} Get the underlying point-level basis function.
 #' \item \code{get_dim} Get the number of cutpoints used to construct this basis.
-#' \item \code{get_cutpoints} Get the cutpoints used to construct this basis.
+#' \item \code{get_cutpoints} Get the cutpoints used to construct this basis;
+#'   the matrix \code{cbind(knots_x,knots_y)}.
 #' \item \code{get_w} Get the radius used to construct this basis.
+#' \item \code{get_nx} Get the size of the Quadrature grid for the .
+#' \item \code{get_ny} Get the size of the Quadrature grid for the y-axis.
+#' \item \code{get_mc_reps} Get the number of Monte Carlo reps.
+#' \item \code{get_report_period} Get the reporting frequency. A log message
+#'   will be printed each time this many areas in a given domain have been
+#'   processed.
+#' \item \code{get_method} Get the computational method which is currently
+#'   set: \code{MonteCarlo} or \code{Quadrature}.
+#' \item \code{set_monte_carlo} Set the computational method to Monte Carlo
+#'   and use the specified number of reps.
+#' \item \code{set_quad} Set the computational method to Quadrature.
+#'   A grid of \code{nx} by \code{ny} points will be used to evaluate each
+#'   area in the domain.
+#' \item \code{set_report_period} Set the reporting frequency.
 #' \item \code{compute} Evaluate this basis on specific areal units.
 #' }
 #'
@@ -74,6 +91,7 @@ ArealSpatialBisquareBasis = R6Class("ArealSpatialBisquareBasis",
 	lock_class = FALSE,
 	private = list(
 		method = NULL,
+		default_msg = NULL,
 		mc_reps = NULL,
 		nx = NULL,
 		ny = NULL,
@@ -84,6 +102,7 @@ ArealSpatialBisquareBasis = R6Class("ArealSpatialBisquareBasis",
 		initialize = function(knots_x, knots_y, w) {
 			# Default is Monte Carlo with 1000 reps
 			self$set_monte_carlo(1000)
+			private$default_msg = TRUE
 			private$report_period = Inf
 			private$basis_sp = SpatialBisquareBasis$new(knots_x, knots_y, w = w)
 		},
@@ -92,12 +111,14 @@ ArealSpatialBisquareBasis = R6Class("ArealSpatialBisquareBasis",
 			private$mc_reps = reps
 			private$nx = NULL
 			private$ny = NULL
+			private$default_msg = FALSE
 		},
 		set_quad = function(nx, ny) {
 			private$method = "Quadrature"
 			private$mc_reps = NULL
 			private$nx = nx
 			private$ny = ny
+			private$default_msg = FALSE
 		},
 		set_w = function(w) {
 			knots = private$basis_sp$get_cutpoints()
@@ -134,6 +155,14 @@ ArealSpatialBisquareBasis = R6Class("ArealSpatialBisquareBasis",
 			private$report_period
 		},
 		compute = function(dom) {
+			if (private$default_msg) {
+				# Print a message the first time compute is called, if the default MC
+				# will be used.
+				msg = sprintf("Using default method: %s with %d reps", private$method, private$mc_reps)
+				message(msg)
+				private$default_msg = FALSE
+			}
+
 			if (private$method == "MonteCarlo") {
 				S = private$compute_mc(dom)
 			} else if (private$method == "Quadrature") {
@@ -200,3 +229,64 @@ ArealSpatialBisquareBasis$set("private", "compute_quad",
 )
 
 ArealSpatialBisquareBasis$lock()
+
+
+#' @export
+areal_spatial_bisquare = function(dom, knots, w, control = NULL)
+{
+	n = nrow(dom)
+	r = nrow(knots)
+	S = Matrix(0, n, r)
+
+	if (is.null(control)) { control = list() }
+	if (is.null(control$mc_reps)) { control$mc_reps = 1000 }
+	if (is.null(control$nx)) { control$nx = 50 }
+	if (is.null(control$ny)) { control$ny = 50 }
+	if (is.null(control$report_period)) { control$report_period = n + 1 }
+	if (is.null(control$verbose)) { control$verbose = FALSE }
+	if (is.null(control$method)) { control$method = "MC" }
+	if (is.null(control$mc_sampling_factor)) { control$mc_sampling_factor = 1.2 }
+
+	R = control$mc_reps
+	nx = control$nx
+	ny = control$ny
+	report_period = control$report_period
+	verbose = control$verbose
+	method = control$method
+	blocksize = ceiling(control$mc_sampling_factor * R)
+
+	if (verbose && method == "MC") {
+		printf("Using Monte Carlo method with %d reps\n", R)
+		printf("Sampling block size is %d\n", blocksize)
+	} else if (verbose && method == "Quad") {
+		printf("Using quadrature method with %d x %d grid\n", nx, ny)
+	}
+
+	if (verbose) {
+		printf("Computing %d areas using %d knots\n", n, r)
+		printf("Radius w = %g\n", w)
+	}
+
+	for (j in 1:n) {
+		if (j %% report_period == 0 && verbose) {
+			logger("Computing basis for area %d of %d\n", j, n)
+		}
+
+		if (method == "MC") {
+			# The blocksize factor of helps to achieve the desired sample size
+			# in rdomain without repeating the loop there.
+			P = rdomain(R, dom[j,], blocksize = blocksize, itmax = R)
+			B = spatial_bisquare(cbind(P$x,P$y), knots, w)
+			S[j,] = colSums(B) / R
+		} else if (method == "Quad") {
+			grid_out = make_grid(dom[j,], nx, ny)
+			B = spatial_bisquare(grid_out$X, knots, w)
+			area = as.numeric(st_area(dom[j,]))
+			S[j,] = colSums(B) * grid_out$dx * grid_out$dy / area
+		} else {
+			stop("Method not recongnized")
+		}
+	}
+
+	return(S)
+}

@@ -90,3 +90,12 @@ SpatialBisquareBasis = R6Class("SpatialBisquareBasis",
 		}
 	)
 )
+
+
+#' @export
+spatial_bisquare = function(X, knots, w)
+{
+	stopifnot(ncol(X) == 2)
+	stopifnot(ncol(knots) == 2)
+	compute_basis_sp(as.matrix(X), as.matrix(knots), w)
+}

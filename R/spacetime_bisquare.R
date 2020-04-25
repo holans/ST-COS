@@ -105,3 +105,11 @@ SpaceTimeBisquareBasis = R6Class("SpaceTimeBisquareBasis",
 		}
 	)
 )
+
+#' @export
+spacetime_bisquare = function(X, knots, w_s, w_t)
+{
+	stopifnot(ncol(X) == 3)
+	stopifnot(ncol(knots) == 3)
+	compute_basis_spt(as.matrix(X), as.matrix(knots), w_s, w_t)
+}

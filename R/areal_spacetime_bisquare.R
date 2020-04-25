@@ -84,6 +84,7 @@ ArealSpaceTimeBisquareBasis = R6Class("ArealSpaceTimeBisquareBasis",
 	lock_class = FALSE,
 	private = list(
 		method = NULL,
+		default_msg = NULL,
 		mc_reps = NULL,
 		nx = NULL,
 		ny = NULL,
@@ -94,6 +95,7 @@ ArealSpaceTimeBisquareBasis = R6Class("ArealSpaceTimeBisquareBasis",
 		initialize = function(knots_x, knots_y, knots_t, w_s, w_t) {
 			# Default is Monte Carlo with 1000 reps
 			self$set_monte_carlo(1000)
+			private$default_msg = TRUE
 			private$report_period = Inf
 			private$basis_spt = SpaceTimeBisquareBasis$new(knots_x, knots_y, knots_t, w_s = w_s, w_t = w_t)
 		},
@@ -102,12 +104,14 @@ ArealSpaceTimeBisquareBasis = R6Class("ArealSpaceTimeBisquareBasis",
 			private$mc_reps = reps
 			private$nx = NULL
 			private$ny = NULL
+			private$default_msg = FALSE
 		},
 		set_quad = function(nx, ny) {
 			private$method = "Quadrature"
 			private$mc_reps = NULL
 			private$nx = nx
 			private$ny = ny
+			private$default_msg = FALSE
 		},
 		set_w = function(w_s, w_t) {
 			knots = private$basis_spt$get_cutpoints()
@@ -145,6 +149,14 @@ ArealSpaceTimeBisquareBasis = R6Class("ArealSpaceTimeBisquareBasis",
 			private$basis_spt$get_wt()
 		},
 		compute = function(dom, period) {
+			if (private$default_msg) {
+				# Print a message the first time compute is called, if the default MC
+				# will be used.
+				msg = sprintf("Using default method: %s with %d reps", private$method, private$mc_reps)
+				message(msg)
+				private$default_msg = FALSE
+			}
+
 			if (private$method == "MonteCarlo") {
 				S = private$compute_mc(dom, period)
 			} else if (private$method == "Quadrature") {
@@ -220,3 +232,77 @@ ArealSpaceTimeBisquareBasis$set("private", "compute_quad",
 )
 
 ArealSpaceTimeBisquareBasis$lock()
+
+
+
+
+#' @export
+areal_spacetime_bisquare = function(dom, period, knots, w_s, w_t, control = NULL)
+{
+	n = nrow(dom)
+	r = nrow(knots)
+	S = Matrix(0, n, r)
+	L = length(period)
+
+	if (is.null(control)) { control = list() }
+	if (is.null(control$mc_reps)) { control$mc_reps = 1000 }
+	if (is.null(control$nx)) { control$nx = 50 }
+	if (is.null(control$ny)) { control$ny = 50 }
+	if (is.null(control$report_period)) { control$report_period = n + 1 }
+	if (is.null(control$verbose)) { control$verbose = FALSE }
+	if (is.null(control$method)) { control$method = "MC" }
+	if (is.null(control$mc_sampling_factor)) { control$mc_sampling_factor = 1.2 }
+
+	R = control$mc_reps
+	nx = control$nx
+	ny = control$ny
+	report_period = control$report_period
+	verbose = control$verbose
+	method = control$method
+	blocksize = ceiling(control$mc_sampling_factor * R)
+
+	if (verbose && method == "MC") {
+		printf("Using Monte Carlo method with %d reps\n", R)
+		printf("Sampling block size is %d\n", blocksize)
+	} else if (verbose && method == "Quad") {
+		printf("Using quadrature method with %d x %d grid\n", nx, ny)
+	}
+
+	if (verbose) {
+		period_str = ifelse(L > 4,
+			paste(c(head(period,2), "...", tail(period,2)), collapse = ", "),
+			paste(period, collapse = ", "))
+		printf("Computing %d areas and %d periods using %d knots\n", n, L, r)
+		printf("Periods: %s\n", period_str)
+		printf("Spatial radius w_s = %g, temporal radius w_t = %g\n", w_s, w_t)
+	}
+
+	for (j in 1:n) {
+		if (j %% report_period == 0 && verbose) {
+			logger("Computing basis for area %d of %d\n", j, n)
+		}
+
+		if (method == "MC") {
+			# The blocksize factor of helps to achieve the desired sample size
+			# in rdomain without repeating the loop there.
+			P = rdomain(R, dom[j,], blocksize = blocksize, itmax = R)
+			for (t in seq_along(period)) {
+				X = cbind(P$x, P$y, period[t])
+				B = spacetime_bisquare(X, knots, w_s, w_t)
+				S[j,] = S[j,] + colSums(B) / R
+			}
+		} else if (method == "Quad") {
+			grid_out = make_grid(dom[j,], nx, ny)
+			area = as.numeric(st_area(dom[j,]))
+			for (t in seq_along(period)) {
+				X = cbind(grid_out$X, period[t])
+				B = spacetime_bisquare(X, knots, w_s, w_t)
+				S[j,] = S[j,] + colSums(B) * grid_out$dx * grid_out$dy / area
+			}
+		} else {
+			stop("Method not recongnized")
+		}
+	}
+
+	return(S / L)
+}
