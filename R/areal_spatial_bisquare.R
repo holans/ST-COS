@@ -13,6 +13,7 @@
 #' @return A sparse \eqn{n \times R} matrix whose \eqn{i}th row
 #' is
 #' \eqn{
+#' \bm{s}_i^\top =
 #' \Big(
 #' \psi_1(A_i), \ldots, \psi_R(A_i)
 #' \Big).
@@ -32,7 +33,7 @@
 #' For each area \eqn{A} in the given domain, compute an approximation to
 #' the basis functions
 #' \deqn{
-#' \psi_j(A) = \int_A \varphi_j(\bm{u}) d\bm{u}
+#' \psi_j(A) = \frac{1}{|A|} \int_A \varphi_j(\bm{u}) d\bm{u}
 #' }
 #' for \eqn{j = 1, \ldots, R}. Here, \eqn{\varphi_j(\bm{u})} represent
 #' \link{spatial_bisquare} basis functions defined at the point level

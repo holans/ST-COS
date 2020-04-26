@@ -17,9 +17,10 @@
 #' @return A sparse \eqn{n \times RT} matrix whose \eqn{i}th row
 #' is
 #' \deqn{
+#' \bm{s}_i^\top =
 #' \Big(
-#' \psi_{11}(A_i), \ldots, \psi_{1T}(A_i),
-#' \ldots, \psi_{R1}(A_i), \ldots, \psi_{RT}(A_i)
+#' \psi_{11}^{(m)}(A_i), \ldots, \psi_{1T}^{(m)}(A_i),
+#' \ldots, \psi_{R1}^{(m)}(A_i), \ldots, \psi_{RT}^{(m)}(A_i)
 #' \Big).
 #' }
 #' 
@@ -34,10 +35,11 @@
 #' If \code{knots_s} is an \code{sf} or \code{sfc} object, it is checked
 #' to ensure the coordinate system matches \code{dom}.
 #' 
-#' For each area \eqn{A} in the given domain, compute an approximation to the basis
+#' For each area \eqn{A} in the given domain, and time period
+#' \eqn{\bm{v} = (v_1, \ldots, v_m)} compute an approximation to the basis
 #' functions
 #' \deqn{
-#' \psi_{jt}(A) = \frac{1}{m} \sum_{k=1}^m \int_A \varphi_{jt}(\bm{u},v_k) d\bm{u},
+#' \psi_{jt}^{(m)}(A, \bm{v}) = \frac{1}{m} \sum_{k=1}^m \frac{1}{|A|} \int_A \varphi_{jt}(\bm{u},v_k) d\bm{u},
 #' }
 #' for \eqn{j = 1, \ldots, R} and \eqn{t = 1, \ldots, T}. Here,
 #' \eqn{\varphi_{jt}{(\bm{u},v)}}

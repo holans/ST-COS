@@ -15,6 +15,7 @@
 #' @return A sparse \eqn{n \times RT} matrix whose \eqn{i}th row
 #' is
 #' \deqn{
+#' \bm{s}_i^\top =
 #' \Big(
 #' \varphi_{11}(\bm{u}_i,v_i), \ldots, \varphi_{1T}(\bm{u}_i,v_i),
 #' \ldots, \varphi_{R1}(\bm{u}_i,v_i), \ldots, \varphi_{RT}(\bm{u}_i,v_i)

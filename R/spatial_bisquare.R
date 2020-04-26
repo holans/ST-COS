@@ -12,6 +12,7 @@
 #' @return A sparse \eqn{n \times R} matrix whose \eqn{i}th row
 #' is
 #' \eqn{
+#' \bm{s}_i^\top =
 #' \Big(
 #' \varphi_1(\bm{u}_i), \ldots, \varphi_R(\bm{u}_i)
 #' \Big).
@@ -33,7 +34,7 @@
 #' 
 #' For each \eqn{\bm{u}_i}, compute the basis functions
 #' \deqn{
-#' \varphi_j(\bm{u},t) =
+#' \varphi_j(\bm{u}) =
 #' \left[ 1 - \frac{\Vert\bm{u} - \bm{c}_j \Vert^2}{w^2} \right]^2  \cdot
 #' I(\Vert \bm{u} - \bm{c}_j \Vert \leq w)
 #' }

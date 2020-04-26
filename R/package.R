@@ -7,7 +7,6 @@
 #' @import Rcpp
 #' @import Matrix
 #' @importFrom stats dgamma dnorm logLik optim rgamma rnorm runif quantile sd
-#' @importFrom R6 R6Class
 #' @importFrom Rcpp evalCpp
 #' @importFrom dplyr mutate row_number
 #' 
