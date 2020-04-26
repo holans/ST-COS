@@ -3,8 +3,11 @@
 #' @description
 #' Spatial bisquare basis on point data.
 #' 
-#' @param X An \eqn{n \times 2} numeric matrix with points to evaluate.
-#' @param knots An \eqn{R \times 2} numeric matrix with knots for the basis.
+#' @param dom An \eqn{n \times 2} numeric matrix with points to evaluate.
+#' @param knots Spatial knots \eqn{\bm{c}_1, \ldots, \bm{c}_R} for the
+#' basis. If an \code{sf} object is provided,  \eqn{R} \code{POINT}
+#' entries are expected in \code{st_geometry(knots)}. Otherwise,
+#' \code{knots} will be interpreted as an \eqn{R \times 2} numeric matrix.
 #' @param w Radius for the basis.
 #'
 #' @return An \eqn{n \times R} sparse matrix where the \eqn{(i,j)}th entry
@@ -45,9 +48,8 @@
 #' lines(coords, col = "red")
 #' 
 #' @export
-spatial_bisquare = function(X, knots, w)
+spatial_bisquare = function(dom, knots, w)
 {
-	stopifnot(ncol(X) == 2)
-	stopifnot(ncol(knots) == 2)
-	compute_basis_sp(as.matrix(X), as.matrix(knots), w)
+	out = prepare_bisquare(dom, knots, knots_t = NULL, type = "point")
+	compute_basis_sp(out$X, out$knot_mat, w)
 }

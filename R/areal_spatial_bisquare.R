@@ -86,15 +86,12 @@
 #' @export
 areal_spatial_bisquare = function(dom, knots, w, control = NULL)
 {
-	if ("sf" %in% class(knots)) {
-		stopifnot(st_crs(dom) == st_crs(knots))
-		knots = matrix(unlist(knots$geometry), ncol = 2, byrow = TRUE)
-	} else {
-		knots = as.matrix(knots)
-	}
+	out = prepare_bisquare(dom, knots, knots_t = NULL, type = "areal")
+	X = out$X
+	knot_mat = out$knot_mat
+	R = out$R
 
-	n = nrow(dom)
-	R = nrow(knots)
+	n = nrow(X)
 	S = Matrix(0, n, R)
 
 	if (is.null(control)) { control = list() }
@@ -135,11 +132,11 @@ areal_spatial_bisquare = function(dom, knots, w, control = NULL)
 			# The blocksize factor of helps to achieve the desired sample size
 			# in rdomain without repeating the loop there.
 			P = rdomain(reps, dom[j,], blocksize = blocksize, itmax = reps)
-			B = compute_basis_sp(cbind(P$x,P$y), knots, w)
+			B = compute_basis_sp(cbind(P$x,P$y), knot_mat, w)
 			S[j,] = colSums(B) / reps
 		} else if (method == "quad") {
 			grid_out = make_grid(dom[j,], nx, ny)
-			B = compute_basis_sp(grid_out$X, knots, w)
+			B = compute_basis_sp(grid_out$X, knot_mat, w)
 			area = as.numeric(st_area(dom[j,]))
 			S[j,] = colSums(B) * grid_out$dx * grid_out$dy / area
 		} else {

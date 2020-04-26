@@ -3,7 +3,7 @@
 #' @description
 #' Space-time bisquare basis on point data.
 #' 
-#' @param X An \eqn{n \times 3} numeric matrix with points \eqn{(\bm{u},v)}
+#' @param dom An \eqn{n \times 3} numeric matrix with points \eqn{(\bm{u},v)}
 #' to evaluate.
 #' @param knots_s An \eqn{R \times 2} numeric matrix with spatial knots
 #' \eqn{\bm{c}_1, \ldots, \bm{c}_R} for the basis.
@@ -54,18 +54,8 @@
 #' lines(coords, col = "red")
 #' 
 #' @export
-spacetime_bisquare = function(X, knots_s, knots_t, w_s, w_t)
+spacetime_bisquare = function(dom, knots_s, knots_t, w_s, w_t)
 {
-	stopifnot(ncol(X) == 3)
-	stopifnot(ncol(knots_s) == 2)
-
-	cat("TBD: Ensure knots_s is matrix and and knots_t is a vector\n")
-	knots_s = as.matrix(knots_s)
-	knots_r = as.numeric(knots_t)
-
-	R = nrow(knots_s)
-	T = length(knots_t)
-	knots = cbind(knots_s %x% matrix(1,T,1), matrix(1,R,1) %x% knots_t)
-
-	compute_basis_spt(as.matrix(X), knots, w_s, w_t)
+	out = prepare_bisquare(dom, knots_s, knots_t, type = "point")
+	compute_basis_spt(out$X, out$knot_mat, w_s, w_t)
 }

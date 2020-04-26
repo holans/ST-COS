@@ -38,7 +38,7 @@ prepare_stcos_demo = function(num_knots_sp = 200, basis_mc_reps = 200, eigval_pr
 
 	logger("[2/7] Preparing areal space-time basis function\n")
 	pts = st_sample(dom_fine, num_knots_sp, type = "hexagonal")
-	knots_sp = matrix(unlist(pts), length(pts), 2, byrow = TRUE)
+	knots_sp = st_coordinates(pts)
 	knots_t = seq(2009, 2017, by = 0.5)
 	knots = merge(knots_sp, knots_t)
 

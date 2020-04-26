@@ -30,7 +30,7 @@
 #' represent \link{spacetime_bisquare} basis functions defined at the point
 #' level using \eqn{\bm{c}_j}, \eqn{g_t}, \eqn{w_s}, and \eqn{w_t}.
 #' 
-#' If \code{knots} is interpreted as a matrix, the three columns correspond
+#' If \code{knots_s} is interpreted as a matrix, the columns correspond
 #' to x-axis and y-axis coordinates. Here, it is assumed that \code{dom}
 #' and \code{sf} are based on a common coordinate system.
 #' 
@@ -95,20 +95,15 @@
 #' @export
 areal_spacetime_bisquare = function(dom, period, knots_s, knots_t, w_s, w_t, control = NULL)
 {
-	if ("sf" %in% class(knots_s)) {
-		stopifnot(st_crs(dom) == st_crs(knots_s))
-		knots_s = matrix(unlist(knots_s$geometry), ncol = 2, byrow = TRUE)
-	} else {
-		knots_s = as.matrix(knots_s)
-	}
+	out = prepare_bisquare(dom, knots_s, knots_t, type = "areal")
+	X = out$X
+	knot_mat = out$knot_mat
+	R = out$R
+	T = out$T
 
-	n = nrow(dom)
-	R = nrow(knots_s)
-	T = length(knots_t)
+	n = nrow(X)
 	S = Matrix(0, n, R*T)
 	m = length(period)
-
-	knots = cbind(knots_s %x% matrix(1,T,1), matrix(1,R,1) %x% knots_t)
 
 	if (is.null(control)) { control = list() }
 	if (is.null(control$mc_reps)) { control$mc_reps = 1000 }
@@ -157,7 +152,7 @@ areal_spacetime_bisquare = function(dom, period, knots_s, knots_t, w_s, w_t, con
 			P = rdomain(reps, dom[j,], blocksize = blocksize, itmax = reps)
 			for (t in seq_along(period)) {
 				X = cbind(P$x, P$y, period[t])
-				B = compute_basis_spt(X, knots, w_s, w_t)
+				B = compute_basis_spt(X, knot_mat, w_s, w_t)
 				s_j = s_j + colSums(B) / reps
 			}
 		} else if (method == "quad") {
@@ -165,7 +160,7 @@ areal_spacetime_bisquare = function(dom, period, knots_s, knots_t, w_s, w_t, con
 			area = as.numeric(st_area(dom[j,]))
 			for (t in seq_along(period)) {
 				X = cbind(grid_out$X, period[t])
-				B = compute_basis_spt(X, knots, w_s, w_t)
+				B = compute_basis_spt(X, knot_mat, w_s, w_t)
 				s_j = s_j + colSums(B) * grid_out$dx * grid_out$dy / area
 			}
 		} else {
