@@ -10,25 +10,25 @@
 #' 
 #' @details
 #' Let \eqn{\bm{\Sigma}} be an \eqn{N \times N} symmetric and positive-definite
-#' covariance matrix, which we would like to approximate in the STCOS model.
-#' Let \eqn{\bm{S}} be the \eqn{N \times r} design matrix of the basis
-#' function computed on \eqn{T} time steps of the fine-level support.
-#' The number of observations at each time point is assumed to be \eqn{n},
-#' so that the number of total observations is \eqn{N = n T}.
-#' 
-#' The objective is to compute a symmetric positive-definite matrix
-#' \eqn{\bm{K}} which minimizes
+#' covariance matrix and \eqn{\bm{S}} be an \eqn{N \times r} matrix with
+#' rank \eqn{r}. The objective is to compute a matrix \eqn{\bm{K}} which minimizes
+#' the Frobenius norm
 #' \deqn{
-#'   || \bm{\Sigma} - \bm{S} \bm{C} \bm{S}^\top {||}_\textrm{F},
+#'   \Vert \bm{\Sigma} - \bm{S} \bm{C} \bm{S}^\top {\Vert}_\textrm{F},
 #' }
-#' where \eqn{|| \cdot {||}_\textrm{F}} represents the Frobenius norm. The
+#' over symmetric positive-definite matrices \eqn{\bm{C}}. The
 #' solution is given by
 #' \deqn{
 #'   \bm{K} = (\bm{S}^\top \bm{S})^{-1} \bm{S}^\top \bm{\Sigma} \bm{S} (\bm{S}^\top \bm{S})^{-1}.
 #' }
 #' 
-#' We provide functions to handle some possible structures for the target
-#' covariance, which are all in the form
+#' In the STCOS model, \eqn{\bm{S}} represents the design matrix from a basis
+#' function computed from a fine-level support having \eqn{n} areas, using
+#' \eqn{T} time steps. Therefore \eqn{N = n T} represents the dimension of
+#' covariance for the fine-level support.
+#' 
+#' We provide functions to handle some possible structures for target
+#' covariance matrices of the form
 #' \deqn{
 #'   \bm{\Sigma} =
 #'   \left(
@@ -37,8 +37,9 @@
 #'   \vdots           & \ddots & \vdots \\
 #'   \bm{\Gamma}(T,1) & \cdots & \bm{\Gamma}(T,T)
 #'   \end{array}
-#'   \right).
+#'   \right),
 #' }
+#' where each \eqn{\bm{\Gamma}(s,t)} is an \eqn{n \times n} matrix.
 #' 
 #' \itemize{
 #' \item \code{cov_approx_randwalk} assumes \eqn{\bm{\Sigma}} is based on the
@@ -60,11 +61,11 @@
 #'   \bm{\Gamma}(s,t) = I(s = t) \bm{\Delta},
 #' }
 #' }
-#' In any case \eqn{\bm{\Sigma}} may be large and we avoid computing it in its entirety.
+#' The block structure is used to reduce the computational burden, as \eqn{N}
+#' may be large.
+#' 
 #' @name Covariance Approximation
-NULL
-
-#' @name Covariance Approximation
+#' 
 #' @export
 cov_approx_randwalk = function(Delta, S)
 {
