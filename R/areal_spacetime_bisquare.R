@@ -3,25 +3,39 @@
 #' @description
 #' Space-Time bisquare basis on areal data.
 #' 
-#' @param dom An \code{sf} object with \eqn{n} areas to evaluate.
+#' @param dom An \code{sf} or \code{sfc} object with areas
+#' \eqn{A_1, \ldots, A_n} to evaluate.
 #' @param period A numeric vector of time periods \eqn{v_1, \ldots, v_m}
 #' to evaluate for each area.
 #' @param knots_s Spatial knots \eqn{\bm{c}_1, \ldots, \bm{c}_R} for the
-#' basis. If an \code{sf} object is provided, it should contain \eqn{R}
-#' \code{POINT} entries. Otherwise, it will be interpreted as an
-#' \eqn{R \times 2} numeric matrix.
+#' basis. See "Details".
 #' @param knots_t A numeric vector with temporal knots \eqn{g_1, \ldots, g_T}
 #' for the basis.
 #' @param w Radius for the basis.
 #' @param control A \code{list} of control arguments. See "Details".
 #'
 #' @return A sparse \eqn{n \times RT} matrix whose \eqn{i}th row
-#' represents the \eqn{i}th point \eqn{(\bm{u}_i,v_i)} evaluated at every
-#' basis function for \eqn{j = 1, \ldots, R} and \eqn{t = 1, \ldots, T}.
-#'   
+#' is
+#' \deqn{
+#' \Big(
+#' \psi_{11}(A_i), \ldots, \psi_{1T}(A_i),
+#' \ldots, \psi_{R1}(A_i), \ldots, \psi_{RT}(A_i)
+#' \Big).
+#' }
+#' 
 #' @details
-#' For each area \eqn{A} in the given domain and \eqn{v} in the given period,
-#' compute an approximation to the basis functions
+#' \code{knots_s} may be provided as either an \code{sf} or \code{sfc} object, or as a
+#' matrix of points.
+#' \itemize{
+#' \item If an \code{sf} or \code{sfc} object is provided for \code{knots_s}, \eqn{R}
+#'   two-dimensional \code{POINT} entries are expected in \code{st_geometry(knots_s)}.
+#'   Otherwise, \code{knots_s} will be interpreted as an \eqn{R \times 2} numeric matrix.
+#' }
+#' If \code{knots_s} is an \code{sf} or \code{sfc} object, it is checked
+#' to ensure the coordinate system matches \code{dom}.
+#' 
+#' For each area \eqn{A} in the given domain, compute an approximation to the basis
+#' functions
 #' \deqn{
 #' \psi_{jt}(A) = \frac{1}{m} \sum_{k=1}^m \int_A \varphi_{jt}(\bm{u},v_k) d\bm{u},
 #' }
@@ -57,14 +71,15 @@
 #' 
 #' @examples
 #' set.seed(1234)
+#' 
+#' # Create knot points
 #' seq_x = seq(0, 1, length.out = 3)
 #' seq_y = seq(0, 1, length.out = 3)
-#' knots_s = expand.grid(x = seq_x, y = seq_y)#' 
+#' knots_s = expand.grid(x = seq_x, y = seq_y)
 #' knots_sf = st_as_sf(knots_s, coords = c("x","y"), crs = NA, agr = "constant")
 #' knots_t = seq(0, 1, length.out = 3)
-
 #' 
-#' # Create a simple domain from rectangles
+#' # Create a simple domain (of rectangles) to evaluate
 #' shape1 = matrix(c(0.0,0.0, 0.5,0.0, 0.5,0.5, 0.0,0.5, 0.0,0.0), ncol=2, byrow=TRUE)
 #' shape2 = shape1 + cbind(rep(0.5,5), rep(0.0,5))
 #' shape3 = shape1 + cbind(rep(0.0,5), rep(0.5,5))
@@ -79,8 +94,8 @@
 #' 
 #' rad = 0.5
 #' period = c(0.4, 0.7)
-#' areal_spatial_bisquare(dom, period, knots, w_s = rad, w_t = 1)
-#' areal_spatial_bisquare(dom, period, knots_sf, w_s = rad, w_t = 1)
+#' areal_spacetime_bisquare(dom, period, knots_s, knots_t, w = rad, w_t = 1)
+#' areal_spacetime_bisquare(dom, period, knots_sf, knots_t, w_s = rad, w_t = 1)
 #' 
 #' # Plot the (spatial) knots and the (spatial) domain at which we evaluated
 #' # the basis.
@@ -101,7 +116,7 @@ areal_spacetime_bisquare = function(dom, period, knots_s, knots_t, w_s, w_t, con
 	R = out$R
 	T = out$T
 
-	n = nrow(X)
+	n = nrow(dom)
 	S = Matrix(0, n, R*T)
 	m = length(period)
 

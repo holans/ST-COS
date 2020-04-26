@@ -3,7 +3,9 @@ prepare_bisquare = function(dom, knots_s, knots_t = NULL, type)
 {
 	if (type == "areal") {
 		# here, dom should be an sf whose geometry provides shapes.
-		# We won't check for the types of shapes provided
+		# We won't check for the types of shapes provided.
+		# We also leave X as NULL.
+		X = NULL
 		dom_crs = st_crs(dom)
 	} else if (type == "point" && (any(c("sf","sfc") %in% class(dom)))) {
 		# Here, dom should be an sf or sfc whose geometry provides POINTs.
@@ -19,9 +21,9 @@ prepare_bisquare = function(dom, knots_s, knots_t = NULL, type)
 
 	# Make sure X has two columns if knots_t is NULL; otherwise, X should
 	# have three columns
-	if (is.null(knots_t)) {
+	if (is.null(knots_t) && !type == "point") {
 		stopifnot(ncol(X) == 2)
-	} else {
+	} else if (type == "point") {
 		stopifnot(ncol(X) == 3)
 	}
 

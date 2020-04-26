@@ -3,19 +3,32 @@
 #' @description
 #' Spatial bisquare basis on areal data.
 #' 
-#' @param dom An \code{sf} object with \eqn{n} areas to evaluate.
-#' @param knots Spatial knots \eqn{\bm{c}_1, \ldots, \bm{c}_R} for the
-#' basis. If an \code{sf} object is provided, it should contain \eqn{R}
-#' \code{POINT} entries. Otherwise, it will be interpreted as an
-#' \eqn{R \times 2} numeric matrix.
+#' @param dom An \code{sf} or \code{sfc} object with areas
+#' \eqn{A_1, \ldots, A_n} to evaluate.
+#' @param knots Knots \eqn{\bm{c}_1, \ldots, \bm{c}_R} for the basis.
+#' See "Details".
 #' @param w Radius for the basis.
 #' @param control A \code{list} of control arguments. See "Details".
 #'
 #' @return A sparse \eqn{n \times R} matrix whose \eqn{i}th row
-#' represents the \eqn{i}th point \eqn{\bm{u}_i} evaluated at every
-#' basis function for \eqn{j = 1, \ldots, R}.
+#' is
+#' \eqn{
+#' \Big(
+#' \psi_1(A_i), \ldots, \psi_R(A_i)
+#' \Big).
+#' }
 #' 
 #' @details
+#' \code{knots} may be provided as either an \code{sf} or \code{sfc} object, or as a
+#' matrix of points.
+#' \itemize{
+#' \item If an \code{sf} or \code{sfc} object is provided for \code{knots}, \eqn{R}
+#'   two-dimensional \code{POINT} entries are expected in \code{st_geometry(knots)}.
+#'   Otherwise, \code{knots} will be interpreted as an \eqn{R \times 2} numeric matrix.
+#' }
+#' If \code{knots} is an \code{sf} or \code{sfc} object, it is checked
+#' to ensure the coordinate system matches \code{dom}.
+#' 
 #' For each area \eqn{A} in the given domain, compute an approximation to
 #' the basis functions
 #' \deqn{
@@ -24,10 +37,6 @@
 #' for \eqn{j = 1, \ldots, R}. Here, \eqn{\varphi_j(\bm{u})} represent
 #' \link{spatial_bisquare} basis functions defined at the point level
 #' using \eqn{\bm{c}_j} and \eqn{w}.
-#' 
-#' If \code{knots} is interpreted as a matrix, the two columns correspond
-#' to x-axis and y-axis coordinates. Here, it is assumed that \code{dom}
-#' and \code{sf} are based on a common coordinate system.
 #' 
 #' The \code{control} argument is a list which may provide any of the following:
 #' \itemize{
@@ -52,12 +61,14 @@
 #' 
 #' @examples
 #' set.seed(1234)
+#' 
+#' # Create knot points
 #' seq_x = seq(0, 1, length.out = 3)
 #' seq_y = seq(0, 1, length.out = 3)
-#' knots = merge(seq_x, seq_y)
+#' knots = expand.grid(x = seq_x, y = seq_y)
 #' knots_sf = st_as_sf(knots, coords = c("x","y"), crs = NA, agr = "constant")
 #' 
-#' # Create a simple domain from rectangles
+#' # Create a simple domain (of rectangles) to evaluate
 #' shape1 = matrix(c(0.0,0.0, 0.5,0.0, 0.5,0.5, 0.0,0.5, 0.0,0.0), ncol=2, byrow=TRUE)
 #' shape2 = shape1 + cbind(rep(0.5,5), rep(0.0,5))
 #' shape3 = shape1 + cbind(rep(0.0,5), rep(0.5,5))
@@ -91,7 +102,7 @@ areal_spatial_bisquare = function(dom, knots, w, control = NULL)
 	knot_mat = out$knot_mat
 	R = out$R
 
-	n = nrow(X)
+	n = nrow(dom)
 	S = Matrix(0, n, R)
 
 	if (is.null(control)) { control = list() }
