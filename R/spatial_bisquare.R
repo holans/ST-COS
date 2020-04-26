@@ -1,35 +1,28 @@
 #' Spatial Bisquare Basis
 #' 
-#' An \code{R6Class} representing the spatial bisquare basis.
+#' @description
+#' Spatial bisquare basis on point data.
 #' 
-#' @section Usage:
-#' \preformatted{
-#' bs = SpatialBisquareBasis$new(knots_x, knots_y, w)
-#' bs$compute(x, y, time)
-#' bs$get_dim()
-#' bs$get_cutpoints()
-#' bs$get_w()
-#' }
-#' 
-#' @section Arguments:
-#' \itemize{
-#' \item \code{knots_x} numeric vector; x-coordinates of knot points.
-#' \item \code{knots_y} numeric vector; y-coordinates of knot points.
-#' \item \code{w} numeric; radius for the basis.
-#' \item \code{x} numeric vector; x-coordinates for points to evaluate.
-#' \item \code{y} numeric vector; y-coordinates for points to evaluate.
-#' }
-#' 
-#' @section Methods:
-#' \itemize{
-#' \item \code{new} Create a new \code{SpatialBisquareBasis} object.
-#' \item \code{get_dim} Get the number of cutpoints used to construct this basis.
-#' \item \code{get_cutpoints} Get the cutpoints used to construct this basis.
-#' \item \code{get_w} Get the radius used to construct this basis. 
-#' \item \code{compute} Evaluate this basis on specific points.
-#' }
+#' @param X An \eqn{n \times 2} numeric matrix with points to evaluate.
+#' @param knots An \eqn{R \times 2} numeric matrix with knots for the basis.
+#' @param w Radius for the basis.
 #'
-#' @name SpatialBisquareBasis
+#' @return An \eqn{n \times R} sparse matrix where the \eqn{(i,j)}th entry
+#' represents the \eqn{i}th row of \code{X} evaluated with the \eqn{j}th
+#' row of \code{knots}.
+#'   
+#' @details
+#' For each \eqn{\bm{u}} in the set of points to evaluate, compute the basis functions
+#' \deqn{
+#' \varphi_j(\bm{u},t) =
+#' \left[ 1 - \frac{\Vert\bm{u} - \bm{c}_j \Vert^2}{w^2} \right]^2  \cdot
+#' I(\Vert \bm{u} - \bm{c}_j \Vert \leq w).
+#' }
+#' for \eqn{j = 1, \ldots, R}.
+#' 
+#' If \code{knots} is interpreted as a matrix, the three columns correspond
+#' to x-axis and y-axis coordinates. Here, it is assumed that \code{dom}
+#' and \code{sf} are based on a common coordinate system.
 #' 
 #' @examples
 #' set.seed(1234)
@@ -38,12 +31,9 @@
 #' knots = merge(seq_x, seq_y)
 #' x = runif(50)
 #' y = runif(50)
+#' rad = 0.5
 #' 
-#' bs = SpatialBisquareBasis$new(knots[,1], knots[,2], w = 0.5)
-#' bs$compute(x, y)
-#' bs$get_dim()
-#' bs$get_cutpoints()
-#' bs$get_w()
+#' spatial_bisquare(cbind(x,y), knots, rad)
 #' 
 #' # Plot the knots and the points at which we evaluated the basis
 #' plot(knots[,1], knots[,2], pch = 4, cex = 1.5, col = "red")
@@ -51,47 +41,9 @@
 #' 
 #' # Draw a circle representing the basis' radius around one of the knot points
 #' tseq = seq(0, 2*pi, length=100) 
-#' rad = bs$get_w()
 #' coords = cbind(rad * cos(tseq) + seq_x[2], rad * sin(tseq) + seq_y[2])
 #' lines(coords, col = "red")
-NULL
-
-#' @export
-#' @docType class
-SpatialBisquareBasis = R6Class("SpatialBisquareBasis",
-	lock_objects = TRUE,
-	lock_class = TRUE,
-	private = list(
-		r = NULL,
-		cutpoints = NULL,
-		w = NULL
-	),
-	public = list(
-		initialize = function(knots_x, knots_y, w) {
-			r = length(knots_x)
-			stopifnot(length(knots_y) == r)
-			private$cutpoints = cbind(knots_x, knots_y)
-			private$w = w
-			private$r = r
-		},
-		get_dim = function() {
-			private$r
-		},
-		get_cutpoints = function() {
-			private$cutpoints
-		},
-		get_w = function() {
-			private$w
-		},
-		compute = function(x, y) {
-			X = cbind(x, y)
-			S = compute_basis_sp(X, private$cutpoints, private$w)
-			return(S)
-		}
-	)
-)
-
-
+#' 
 #' @export
 spatial_bisquare = function(X, knots, w)
 {
