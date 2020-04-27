@@ -15,29 +15,47 @@
 #' \eqn{
 #' \bm{s}_i^\top =
 #' \Big(
-#' \psi_1(A_i), \ldots, \psi_r(A_i)
+#' \bar{\varphi}_1(A_i), \ldots, \bar{\varphi}_r(A_i)
 #' \Big).
 #' }
 #' 
 #' @details
-#' \code{knots} may be provided as either an \code{sf} or \code{sfc} object, or as a
-#' matrix of points.
+#' Notes about arguments:
 #' \itemize{
+#' \item \code{knots} may be provided as either an \code{sf} or \code{sfc} object, or as a
+#'   matrix of points.
 #' \item If an \code{sf} or \code{sfc} object is provided for \code{knots}, \eqn{r}
 #'   two-dimensional \code{POINT} entries are expected in \code{st_geometry(knots)}.
 #'   Otherwise, \code{knots} will be interpreted as an \eqn{r \times 2} numeric matrix.
+#' \item If \code{knots} is an \code{sf} or \code{sfc} object, it is checked
+#'   to ensure the coordinate system matches \code{dom}.
 #' }
-#' If \code{knots} is an \code{sf} or \code{sfc} object, it is checked
-#' to ensure the coordinate system matches \code{dom}.
 #' 
-#' For each area \eqn{A} in the given domain, compute an approximation to
-#' the basis functions
+#' For each area \eqn{A} in the given domain, compute an the basis functions
 #' \deqn{
-#' \psi_j(A) = \frac{1}{|A|} \int_A \varphi_j(\bm{u}) d\bm{u}
+#' \bar{\varphi}_j(A) = \frac{1}{|A|} \int_A \varphi_j(\bm{u}) d\bm{u}
 #' }
 #' for \eqn{j = 1, \ldots, r}. Here, \eqn{\varphi_j(\bm{u})} represent
 #' \link{spatial_bisquare} basis functions defined at the point level
 #' using \eqn{\bm{c}_j} and \eqn{w}.
+#' 
+#' The basis requires an integration which may be computed using one
+#' of two methods. The Monte Carlo method uses
+#' \deqn{
+#' \bar{\varphi}_j(A) \approx
+#' \frac{1}{Q} \sum_{q=1}^Q \varphi_j(\bm{u}_q),
+#' }
+#' based on a random sample of locations \eqn{\bm{u}_1, \ldots, \bm{u}_Q} from
+#' a uniform distribution on area \eqn{A}. The quadrature method uses
+#' \deqn{
+#' \bar{\varphi}_j(A) \approx
+#' \frac{1}{|A|}  \sum_{a=1}^{n_x} \sum_{b=1}^{n_y} \varphi_j(\bm{u}_{ab})
+#' I(\bm{u}_{ab} \in A) \Delta_x \Delta_y,
+#' }
+#' based on points \eqn{\{ \bm{u}_{ab} = (u_a, u_b) \}} from an evenly spaced
+#' grid of size \eqn{n_x \times n_y} points on \code{st_bbox(A)}. Here,
+#' \eqn{\Delta_x} and \eqn{\Delta_y} are the spacings of the grid in the x-axis
+#' and y-axis, respectively.
 #' 
 #' The \code{control} argument is a list which may provide any of the following:
 #' \itemize{

@@ -23,29 +23,44 @@
 #' }
 #' 
 #' @details
-#' \code{knots_s} may be provided as either an \code{sf} or \code{sfc} object, or as a
-#' matrix of points.
+#' Notes about arguments:
 #' \itemize{
+#' \item \code{knots} may be provided as either an \code{sf} or \code{sfc} object, or as a
+#'   matrix of points.
 #' \item If an \code{sf} or \code{sfc} object is provided for \code{knots}, \eqn{r}
 #'   three-dimensional \code{POINT} entries are expected in \code{st_geometry(knots)}.
 #'   Otherwise, \code{knots} will be interpreted as an \eqn{r \times 3} numeric matrix.
+#' \item If \code{knots} is an \code{sf} or \code{sfc} object, it is checked
+#'   to ensure the coordinate system matches \code{dom}.
 #' }
-#' If \code{knots} is an \code{sf} or \code{sfc} object, it is checked
-#' to ensure the coordinate system matches \code{dom}.
 #' 
 #' For each area \eqn{A} in the given domain, and time period
-#' \eqn{\bm{v} = (v_1, \ldots, v_m)} compute an approximation to the basis
+#' \eqn{\bm{v} = (v_1, \ldots, v_m)} compute the basis
 #' functions
 #' \deqn{
-#' \psi_j^{(m)}(A, \bm{v}) = \frac{1}{m} \sum_{k=1}^m \frac{1}{|A|} \int_A \varphi_j(\bm{u},v_k) d\bm{u},
+#' \psi_j^{(m)}(A, \bm{v}) = \frac{1}{m} \sum_{k=1}^m \frac{1}{|A|} \int_A \psi_j(\bm{u},v_k) d\bm{u},
 #' }
 #' for \eqn{j = 1, \ldots, r}. Here, \eqn{\varphi_j{(\bm{u},v)}}
 #' represent \link{spacetime_bisquare} basis functions defined at the point
 #' level using \eqn{\bm{c}_j}, \eqn{g_j}, \eqn{w_s}, and \eqn{w_t}.
 #' 
-#' If \code{knots_s} is interpreted as a matrix, the columns correspond
-#' to x-axis and y-axis coordinates. Here, it is assumed that \code{dom}
-#' and \code{sf} are based on a common coordinate system.
+#' The basis requires an integration which may be computed using one
+#' of two methods. The Monte Carlo method uses
+#' \deqn{
+#' \psi_j^{(m)}(A, \bm{v}) \approx \frac{1}{m} \sum_{k=1}^m 
+#' \frac{1}{Q} \sum_{q=1}^Q \psi_j(\bm{u}_q, v_k),
+#' }
+#' based on a random sample of locations \eqn{\bm{u}_1, \ldots, \bm{u}_Q} from
+#' a uniform distribution on area \eqn{A}. The quadrature method uses
+#' \deqn{
+#' \psi_j^{(m)}(A, \bm{v}) \approx \frac{1}{m} \sum_{k=1}^m 
+#' \frac{1}{|A|}  \sum_{a=1}^{n_x} \sum_{b=1}^{n_y} \psi_j(\bm{u}_{ab}, v_k)
+#' I(\bm{u}_{ab} \in A) \Delta_x \Delta_y,
+#' }
+#' based on points \eqn{\{ \bm{u}_{ab} = (u_a, u_b) \}} from an evenly spaced
+#' grid of size \eqn{n_x \times n_y} points on \code{st_bbox(A)}. Here,
+#' \eqn{\Delta_x} and \eqn{\Delta_y} are the spacings of the grid in the x-axis
+#' and y-axis, respectively.
 #' 
 #' The \code{control} argument is a list which may provide any of the following:
 #' \itemize{

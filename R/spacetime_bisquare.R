@@ -5,45 +5,44 @@
 #' 
 #' @param dom Space-time points \eqn{(\bm{u}_1,v_1), \ldots, (\bm{u}_n,v_n)}
 #' to evaluate. See "Details".
-#' @param knots_s Spatial knots \eqn{\bm{c}_1, \ldots, \bm{c}_R} for the
-#' basis. See "Details".
-#' @param knots_t A numeric vector with temporal knots \eqn{g_1, \ldots, g_T}
-#' for the basis.
+#' @param knots Spatio-temporal knots
+#' \eqn{(\bm{c}_1,g_1), \ldots, (\bm{c}_r,g_r)}
+#' for the basis. See "Details".
 #' @param w_s Spatial radius for the basis.
 #' @param w_t Temporal radius for the basis.
 #'
-#' @return A sparse \eqn{n \times RT} matrix whose \eqn{i}th row
+#' @return A sparse \eqn{n \times r} matrix whose \eqn{i}th row
 #' is
 #' \deqn{
 #' \bm{s}_i^\top =
 #' \Big(
-#' \varphi_{11}(\bm{u}_i,v_i), \ldots, \varphi_{1T}(\bm{u}_i,v_i),
-#' \ldots, \varphi_{R1}(\bm{u}_i,v_i), \ldots, \varphi_{RT}(\bm{u}_i,v_i)
+#' \psi_1(\bm{u}_i,v_i), \ldots, \psi_r(\bm{u}_i,v_i)
 #' \Big).
 #' }
 #' 
 #' @details
-#' Both \code{dom} and \code{knots} may be provided as either \code{sf} or
-#' \code{sfc} objects, or as matrices of points.
+#' Notes about arguments:
 #' \itemize{
+#' \item Both \code{dom} and \code{knots} may be provided as either \code{sf} or
+#'   \code{sfc} objects, or as matrices of points.
 #' \item If an \code{sf} or \code{sfc} object is provided for \code{dom}, \eqn{n}
 #'   three-dimensional \code{POINT} entries are expected in \code{st_geometry(dom)}.
 #'   Otherwise, \code{dom} will be interpreted as an \eqn{n \times 3} numeric matrix.
-#' \item If an \code{sf} or \code{sfc} object is provided for \code{knots_s}, \eqn{R}
-#'   two-dimensional \code{POINT} entries are expected in \code{st_geometry(knots_s)}.
-#'   Otherwise, \code{knots_s} will be interpreted as an \eqn{R \times 2} numeric matrix.
+#' \item If an \code{sf} or \code{sfc} object is provided for \code{knots}, \eqn{r}
+#'   three-dimensional \code{POINT} entries are expected in \code{st_geometry(knots)}.
+#'   Otherwise, \code{knots} will be interpreted as an \eqn{r \times 3} numeric matrix.
+#' \item If both \code{dom} and \code{knots_s} are given as \code{sf} or \code{sfc} objects,
+#'   they will be checked to ensure a common coordinate system.
 #' }
-#' If both \code{dom} and \code{knots_s} are given as \code{sf} or \code{sfc} objects,
-#' they will be checked to ensure a common coordinate system.
 #' 
 #' For each \eqn{(\bm{u}_i,v_i)}, compute the basis functions
 #' \deqn{
-#' \varphi_{jt}(\bm{u},v) =
-#' \left[ 2 - \frac{\Vert \bm{u} - \bm{c}_j \Vert^2}{w_s^2}- \frac{|v - g_t|^2}{w_t^2} \right]^2  \cdot
+#' \psi_j(\bm{u},v) =
+#' \left[ 2 - \frac{\Vert \bm{u} - \bm{c}_j \Vert^2}{w_s^2}- \frac{|v - g_j|^2}{w_t^2} \right]^2  \cdot
 #' I(\Vert \bm{u} - \bm{c}_j \Vert \leq w_s) \cdot
-#' I(|v - g_t| \leq w_t)
+#' I(|v - g_j| \leq w_t)
 #' }
-#' for \eqn{j = 1, \ldots, R} and \eqn{t = 1, \ldots, T}.
+#' for \eqn{j = 1, \ldots, r}.
 #' 
 #' @examples
 #' set.seed(1234)
