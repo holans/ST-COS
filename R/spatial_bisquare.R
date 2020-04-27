@@ -71,6 +71,6 @@
 #' @export
 spatial_bisquare = function(dom, knots, w)
 {
-	out = prepare_bisquare(dom, knots, knots_t = NULL, type = "point")
+	out = prepare_bisquare(dom, knots, type = "point")
 	compute_basis_sp(out$X, out$knot_mat, w)
 }

@@ -5,17 +5,17 @@
 #' 
 #' @param dom An \code{sf} or \code{sfc} object with areas
 #' \eqn{A_1, \ldots, A_n} to evaluate.
-#' @param knots Knots \eqn{\bm{c}_1, \ldots, \bm{c}_R} for the basis.
+#' @param knots Knots \eqn{\bm{c}_1, \ldots, \bm{c}_r} for the basis.
 #' See "Details".
 #' @param w Radius for the basis.
 #' @param control A \code{list} of control arguments. See "Details".
 #'
-#' @return A sparse \eqn{n \times R} matrix whose \eqn{i}th row
+#' @return A sparse \eqn{n \times r} matrix whose \eqn{i}th row
 #' is
 #' \eqn{
 #' \bm{s}_i^\top =
 #' \Big(
-#' \psi_1(A_i), \ldots, \psi_R(A_i)
+#' \psi_1(A_i), \ldots, \psi_r(A_i)
 #' \Big).
 #' }
 #' 
@@ -23,9 +23,9 @@
 #' \code{knots} may be provided as either an \code{sf} or \code{sfc} object, or as a
 #' matrix of points.
 #' \itemize{
-#' \item If an \code{sf} or \code{sfc} object is provided for \code{knots}, \eqn{R}
+#' \item If an \code{sf} or \code{sfc} object is provided for \code{knots}, \eqn{r}
 #'   two-dimensional \code{POINT} entries are expected in \code{st_geometry(knots)}.
-#'   Otherwise, \code{knots} will be interpreted as an \eqn{R \times 2} numeric matrix.
+#'   Otherwise, \code{knots} will be interpreted as an \eqn{r \times 2} numeric matrix.
 #' }
 #' If \code{knots} is an \code{sf} or \code{sfc} object, it is checked
 #' to ensure the coordinate system matches \code{dom}.
@@ -35,7 +35,7 @@
 #' \deqn{
 #' \psi_j(A) = \frac{1}{|A|} \int_A \varphi_j(\bm{u}) d\bm{u}
 #' }
-#' for \eqn{j = 1, \ldots, R}. Here, \eqn{\varphi_j(\bm{u})} represent
+#' for \eqn{j = 1, \ldots, r}. Here, \eqn{\varphi_j(\bm{u})} represent
 #' \link{spatial_bisquare} basis functions defined at the point level
 #' using \eqn{\bm{c}_j} and \eqn{w}.
 #' 
@@ -98,13 +98,13 @@
 #' @export
 areal_spatial_bisquare = function(dom, knots, w, control = NULL)
 {
-	out = prepare_bisquare(dom, knots, knots_t = NULL, type = "areal")
+	out = prepare_bisquare(dom, knots, type = "areal")
 	X = out$X
 	knot_mat = out$knot_mat
-	R = out$R
 
+	r = nrow(knot_mat)
 	n = nrow(dom)
-	S = Matrix(0, n, R)
+	S = Matrix(0, n, r)
 
 	if (is.null(control)) { control = list() }
 	if (is.null(control$mc_reps)) { control$mc_reps = 1000 }
@@ -131,7 +131,7 @@ areal_spatial_bisquare = function(dom, knots, w, control = NULL)
 	}
 
 	if (verbose) {
-		printf("Computing %d areas using %d knots\n", n, R)
+		printf("Computing %d areas using %d spatial knots\n", n, r)
 		printf("Radius w = %g\n", w)
 	}
 

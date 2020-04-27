@@ -51,9 +51,9 @@
 #' # Create knot points
 #' seq_x = seq(0, 1, length.out = 3)
 #' seq_y = seq(0, 1, length.out = 3)
-#' knots_s = expand.grid(x = seq_x, y = seq_y)
-#' knots_sf = st_as_sf(knots_s, coords = c("x","y"), crs = NA, agr = "constant")
-#' knots_t = seq(0, 1, length.out = 3)
+#' seq_t = seq(0, 1, length.out = 3)
+#' knots = expand.grid(x = seq_x, y = seq_y, t = seq_t)
+#' knots_sf = st_as_sf(knots, coords = c("x","y","t"), crs = NA, dim = "XYM", agr = "constant")
 #' 
 #' # Points to evaluate
 #' x = runif(50)
@@ -63,8 +63,8 @@
 #' dom = st_as_sf(pts, coords = c("x","y","t"), crs = NA, dim = "XYM", agr = "constant")
 #' 
 #' rad = 0.5
-#' spacetime_bisquare(cbind(x,y,t), knots_s, knots_t, w_s = rad, w_t = 1)
-#' spacetime_bisquare(dom, knots_s, knots_t, w_s = rad, w_t = 1)
+#' spacetime_bisquare(cbind(x,y,t), knots, w_s = rad, w_t = 1)
+#' spacetime_bisquare(dom, knots_sf, w_s = rad, w_t = 1)
 #' 
 #' # Plot the (spatial) knots and the points at which we evaluated the basis
 #' plot(knots[,1], knots[,2], pch = 4, cex = 1.5, col = "red")
@@ -76,8 +76,8 @@
 #' lines(coords, col = "red")
 #' 
 #' @export
-spacetime_bisquare = function(dom, knots_s, knots_t, w_s, w_t)
+spacetime_bisquare = function(dom, knots, w_s, w_t)
 {
-	out = prepare_bisquare(dom, knots_s, knots_t, type = "point")
+	out = prepare_bisquare(dom, knots, type = "point")
 	compute_basis_spt(out$X, out$knot_mat, w_s, w_t)
 }
