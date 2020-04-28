@@ -69,7 +69,7 @@ rdomain = function(n, dom, blocksize = n, itmax = Inf)
 }
 
 # Note: the sf::st_make_grid function can similarly be used to make a grid within
-# dom[j,], and with more flxibility built in. I.e.
+# dom[j,], and with more flexibility built in. I.e.
 #
 # out = st_make_grid(dom[j,], what = "centers", n = c(nx,ny))
 # X = matrix(unlist(out), ncol = 2, byrow = TRUE)
@@ -78,15 +78,15 @@ rdomain = function(n, dom, blocksize = n, itmax = Inf)
 make_grid = function(dom, nx, ny)
 {
 	bbox = st_bbox(dom)
-	u1 = seq(bbox[1], bbox[3], length.out = nx)
-	u2 = seq(bbox[2], bbox[4], length.out = ny)
+	u1 = seq(bbox[1], bbox[3], length.out = nx+1)
+	u2 = seq(bbox[2], bbox[4], length.out = ny+1)
 	u_df = expand.grid(u1 = u1, u2 = u2)
 	u_sf = st_as_sf(u_df, coords = c("u1","u2"), crs = st_crs(dom), agr = "constant")
 	idx = unlist(st_contains(dom, u_sf))
 	res = u_df[idx,,drop=FALSE]
 	X = as.matrix(res)
 
-	dx = (bbox[3] - bbox[1]) / (nx-1)
-	dy = (bbox[4] - bbox[2]) / (ny-1)
+	dx = (bbox[3] - bbox[1]) / nx
+	dy = (bbox[4] - bbox[2]) / ny
 	list(X = X, dx = dx, dy = dy)
 }

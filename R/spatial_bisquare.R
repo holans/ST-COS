@@ -69,6 +69,7 @@
 #' coords = cbind(rad * cos(tseq) + seq_x[2], rad * sin(tseq) + seq_y[2])
 #' lines(coords, col = "red")
 #' 
+#' @family bisquare
 #' @export
 spatial_bisquare = function(dom, knots, w)
 {

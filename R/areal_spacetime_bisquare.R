@@ -45,32 +45,33 @@
 #' level using \eqn{\bm{c}_j}, \eqn{g_j}, \eqn{w_s}, and \eqn{w_t}.
 #' 
 #' The basis requires an integration which may be computed using one
-#' of two methods. The Monte Carlo method uses
+#' of two methods. The \code{mc} method uses a Monte Carlo approximation
 #' \deqn{
 #' \psi_j^{(m)}(A, \bm{v}) \approx \frac{1}{m} \sum_{k=1}^m 
 #' \frac{1}{Q} \sum_{q=1}^Q \psi_j(\bm{u}_q, v_k),
 #' }
 #' based on a random sample of locations \eqn{\bm{u}_1, \ldots, \bm{u}_Q} from
-#' a uniform distribution on area \eqn{A}. The quadrature method uses
+#' a uniform distribution on area \eqn{A}. The \code{rect} method uses
+#' a simple quadrature approximation
 #' \deqn{
 #' \psi_j^{(m)}(A, \bm{v}) \approx \frac{1}{m} \sum_{k=1}^m 
 #' \frac{1}{|A|}  \sum_{a=1}^{n_x} \sum_{b=1}^{n_y} \psi_j(\bm{u}_{ab}, v_k)
-#' I(\bm{u}_{ab} \in A) \Delta_x \Delta_y,
+#' I(\bm{u}_{ab} \in A) \Delta_x \Delta_y.
 #' }
-#' based on points \eqn{\{ \bm{u}_{ab} = (u_a, u_b) \}} from an evenly spaced
-#' grid of size \eqn{n_x \times n_y} points on \code{st_bbox(A)}. Here,
-#' \eqn{\Delta_x} and \eqn{\Delta_y} are the spacings of the grid in the x-axis
-#' and y-axis, respectively.
+#' Here, the bounding box \code{st_bbox(A)} is divided evenly into a grid of
+#' \eqn{n_x \times n_y} rectangles, each of size \eqn{\Delta_x \times \Delta_y}.
+#' Each \eqn{\bm{u}_{ab} = (u_a, u_b)} is a point from the \eqn{(a,b)}th
+#' rectangle, for \eqn{a = 1, \ldots, n_x} and \eqn{b = 1, \ldots, n_y}.
 #' 
 #' The \code{control} argument is a list which may provide any of the following:
 #' \itemize{
-#' \item \code{method} specifies computation method: use \code{"mc"} for
-#' Monte Carlo or \code{"quad"} for quadrature. Default is \code{"mc"}.
-#' \item \code{mc_reps} is number of repetitions to use for Monte Carlo.
+#' \item \code{method} specifies computation method: \code{mc} or \code{rect}.
+#' Default is \code{mc}.
+#' \item \code{mc_reps} is number of repetitions to use for \code{mc}.
 #' Default is 1000.
-#' \item \code{nx} is number of x-axis grid points to use for quadrature
+#' \item \code{nx} is number of x-axis points to use for \code{rect}
 #' method. Default is 50.
-#' \item \code{ny} is number of y-axis grid points to use for quadrature
+#' \item \code{ny} is number of y-axis points to use for \code{rect}
 #' method. Default is 50.
 #' \item \code{report_period} is an integer; print a message with progress each
 #' time this many areas are processed. Default is \code{Inf} so that message
@@ -121,6 +122,7 @@
 #' coords = cbind(rad * cos(tseq) + seq_x[2], rad * sin(tseq) + seq_y[2])
 #' lines(coords, col = "red")
 #' 
+#' @family bisquare
 #' @export
 areal_spacetime_bisquare = function(dom, period, knots, w_s, w_t, control = NULL)
 {
@@ -150,10 +152,10 @@ areal_spacetime_bisquare = function(dom, period, knots, w_s, w_t, control = NULL
 	blocksize = ceiling(control$mc_sampling_factor * reps)
 
 	if (verbose && method == "mc") {
-		printf("Using Monte Carlo method with %d reps\n", reps)
+		printf("Using 'mc' method with %d reps\n", reps)
 		printf("Sampling block size is %d\n", blocksize)
-	} else if (verbose && method == "quad") {
-		printf("Using quadrature method with %d x %d grid\n", nx, ny)
+	} else if (verbose && method == "rect") {
+		printf("Using 'rect' method with %d x %d grid\n", nx, ny)
 	}
 
 	if (verbose) {
@@ -182,7 +184,7 @@ areal_spacetime_bisquare = function(dom, period, knots, w_s, w_t, control = NULL
 				B = compute_basis_spt(X, knot_mat, w_s, w_t)
 				s_j = s_j + colSums(B) / reps
 			}
-		} else if (method == "quad") {
+		} else if (method == "rect") {
 			grid_out = make_grid(dom[j,], nx, ny)
 			area = as.numeric(st_area(dom[j,]))
 			for (t in seq_along(period)) {
@@ -191,7 +193,7 @@ areal_spacetime_bisquare = function(dom, period, knots, w_s, w_t, control = NULL
 				s_j = s_j + colSums(B) * grid_out$dx * grid_out$dy / area
 			}
 		} else {
-			stop("Unrecongnized method. Use `mc` for Monte Carlo or 'quad' for quadrature")
+			stop("Unrecongnized method. Use `mc`  or 'rect'")
 		}
 
 		S[j,] = s_j

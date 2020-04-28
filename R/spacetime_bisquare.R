@@ -74,6 +74,7 @@
 #' coords = cbind(rad * cos(tseq) + seq_x[2], rad * sin(tseq) + seq_y[2])
 #' lines(coords, col = "red")
 #' 
+#' @family bisquare
 #' @export
 spacetime_bisquare = function(dom, knots, w_s, w_t)
 {
