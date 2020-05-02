@@ -168,6 +168,8 @@ areal_spacetime_bisquare = function(dom, period, knots, w_s, w_t, control = NULL
 		printf("Spatial radius w_s = %g, temporal radius w_t = %g\n", w_s, w_t)
 	}
 
+	dom_area = st_area(dom)
+
 	for (j in 1:n) {
 		if (j %% report_period == 0) {
 			logger("Computing basis for area %d of %d\n", j, n)
@@ -179,18 +181,19 @@ areal_spacetime_bisquare = function(dom, period, knots, w_s, w_t, control = NULL
 			# The blocksize factor of helps to achieve the desired sample size
 			# in rdomain without repeating the loop there.
 			P = rdomain(reps, dom[j,], blocksize = blocksize, itmax = reps)
+			X_s = st_coordinates(P)
 			for (t in seq_along(period)) {
-				X = cbind(P$x, P$y, period[t])
+				X = cbind(X_s, period[t])
 				B = compute_basis_spt(X, knot_mat, w_s, w_t)
 				s_j = s_j + colSums(B) / reps
 			}
 		} else if (method == "rect") {
 			grid_out = make_grid(dom[j,], nx, ny)
-			area = as.numeric(st_area(dom[j,]))
+			X_s = st_coordinates(grid_out$grid)
 			for (t in seq_along(period)) {
-				X = cbind(grid_out$X, period[t])
+				X = cbind(X_s, period[t])
 				B = compute_basis_spt(X, knot_mat, w_s, w_t)
-				s_j = s_j + colSums(B) * grid_out$dx * grid_out$dy / area
+				s_j = s_j + colSums(B) * grid_out$dx * grid_out$dy / dom_area[j]
 			}
 		} else {
 			stop("Unrecongnized method. Use `mc`  or 'rect'")

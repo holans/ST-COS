@@ -87,7 +87,8 @@ mle_stcos = function(z, v, H, S, K, init = NULL,
 	z_hat = H %*% mu_hat
 
 	list(sig2K_hat = sig2K_hat, sig2xi_hat = sig2xi_hat,
-		mu_hat = as.numeric(mu_hat), res = res, elapsed_sec = elapsed_sec)
+		mu_hat = as.numeric(mu_hat), res = res, elapsed_sec = elapsed_sec,
+		loglik = res$value)
 }
 
 # For the model y = X beta + eps, eps ~ N(0, Sigma),
