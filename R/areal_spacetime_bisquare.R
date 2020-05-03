@@ -63,6 +63,10 @@
 #' Each \eqn{\bm{u}_{ab} = (u_a, u_b)} is a point from the \eqn{(a,b)}th
 #' rectangle, for \eqn{a = 1, \ldots, n_x} and \eqn{b = 1, \ldots, n_y}.
 #' 
+#' Due to the treatment of \eqn{A_i} and \eqn{\bm{c}_j} as objects in a
+#' Euclidean space, this basis is more suitable for coordinates from a map
+#' projection than coordinates based on a globe representation.
+#' 
 #' The \code{control} argument is a list which may provide any of the following:
 #' \itemize{
 #' \item \code{method} specifies computation method: \code{mc} or \code{rect}.

@@ -41,6 +41,10 @@
 #' }
 #' for \eqn{j = 1, \ldots, r}.
 #' 
+#' Due to the treatment of \eqn{\bm{u}_i} and \eqn{\bm{c}_j} as points in a
+#' Euclidean space, this basis is more suitable for coordinates from a map
+#' projection than coordinates based on a globe representation.
+#' 
 #' @examples
 #' set.seed(1234)
 #' 
