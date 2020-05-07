@@ -1,0 +1,24 @@
+citHeader("To cite stcos in publications use:")
+
+citEntry(entry = "unpublished",
+	title = "Spatio-Temporal Change of Support Modeling with {R}",
+	author = personList(
+		as.person("Andrew M. Raim"),
+		as.person("Scott H. Holan"),
+		as.person("Jonathan R. Bradley"),
+		as.person("Christopher K. Wikle")
+	),
+	year = "2019",
+	note = "(Submitted)",
+	eprint = "arXiv:1904.12092",
+	primaryClass = "stat.CO",
+	url = "https://arxiv.org/abs/1904.12092",
+	textVersion = paste(
+		"Andrew M. Raim, Scott H. Holan, Jonathan R. Bradley,
+		and Christopher K. Wikle (2019).",
+		"Spatio-Temporal Change of Support Modeling with R.",
+		"arXiv:1904.12092.",
+		"URL https://arxiv.org/abs/1904.12092."
+	)
+)
+

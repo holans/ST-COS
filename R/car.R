@@ -15,18 +15,18 @@
 #' Suppose \eqn{\bm{A}} is an \eqn{n \times n} adjacency matrix and
 #' \eqn{
 #'   \bm{D} = \textrm{Diag}(\bm{A} \bm{1})
-#'   = \textrm{Diag}(a_{1+}, \ldots, a_{n+}),
+#'   = \textrm{Diag}(a_{1+}, \ldots, a_{n+}).
 #' }
-#' and let \eqn{\bm{D}^{-}} be a diagonal matrix whose \eqn{(i,i)}th
-#' entry is \eqn{1/a_{i+}} if \eqn{a_{i+} > 0} and \eqn{0} otherwise.
 #' If \code{scale} is \code{FALSE}, return the CAR precision matrix
 #' \deqn{
 #'   \bm{Q} = \bm{D} - \tau \bm{A}.
 #' }
 #' If \code{scale} is \code{TRUE}, return a scaled version
 #' \deqn{
-#'   \tilde{\bm{Q}} = \bm{D}^{-} \bm{Q}.
+#'   \tilde{\bm{Q}} = \bm{D}^{-1} \bm{Q}.
 #' }
+#' An error is thrown if \code{scale = TRUE} and any of
+#' \eqn{\{ a_{1+}, \ldots, a_{n+} \}} are equal to 0.
 #' Taking \eqn{\tau = 1} corresponds to the Intrinsic CAR
 #' precision matrix.
 #' 
@@ -53,7 +53,8 @@ car_precision = function(A, tau = 1, scale = FALSE)
 	D = Diagonal(x = rowSums(A))
 	Q = D - tau*A
 	if (scale) {
-		dd = rowSums(A) + (rowSums(A) == 0)
+		dd = rowSums(A)
+		stopifnot(all(dd) > 0)
 		return(1/dd * Q)
 	} else {
 		return(Q)

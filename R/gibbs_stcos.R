@@ -387,7 +387,6 @@ predict.stcos_gibbs = function(object, H, S, ...)
 	for (r in 1:R_keep) {
 		muB = object$muB_hist[r,]
 		eta = object$eta_hist[r,]
-		xi = object$xi_hist[r,]
 		sig2xi = object$sig2xi_hist[r]
 		Y_mcmc[r,] = rnorm(n, as.numeric(H %*% muB + S %*% eta), sqrt(sig2xi))
 	}
