@@ -54,7 +54,7 @@ car_precision = function(A, tau = 1, scale = FALSE)
 	Q = D - tau*A
 	if (scale) {
 		dd = rowSums(A)
-		stopifnot(all(dd) > 0)
+		stopifnot(all(dd > 0))
 		return(1/dd * Q)
 	} else {
 		return(Q)
