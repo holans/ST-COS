@@ -1,4 +1,3 @@
-#' @export
 prepare_bisquare = function(dom, knots, type)
 {
 	is_dom_sf = any(c("sf","sfc") %in% class(dom))
@@ -40,4 +39,3 @@ prepare_bisquare = function(dom, knots, type)
 
 	list(X = X, knot_mat = knot_mat)
 }
-

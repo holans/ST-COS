@@ -9,7 +9,6 @@
  * revisit later...
  */
 
-//' @export
 // [[Rcpp::export]]
 arma::sp_mat compute_basis_sp(const arma::mat& X, const arma::mat& cc, double w)
 {
@@ -51,7 +50,6 @@ arma::sp_mat compute_basis_sp(const arma::mat& X, const arma::mat& cc, double w)
 	return S;
 }
 
-//' @export
 // [[Rcpp::export]]
 arma::sp_mat compute_basis_spt(const arma::mat& X, const arma::mat& cc, double w_s, double w_t)
 {

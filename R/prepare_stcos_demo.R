@@ -1,6 +1,7 @@
 #' Prepare Demo Data for STCOS Model
 #' 
 #' Create demo data based on ACS example, making a few simple model choices.
+#' The purpose of this function is to facilitate examples in other functions.
 #' Uses functions in the package to create model terms from shapefiles.
 #' 
 #' @param num_knots_sp Number of spatial knots to use in areal space-time
@@ -44,8 +45,7 @@ prepare_stcos_demo = function(num_knots_sp = 200, basis_mc_reps = 200, eigval_pr
 
 	D = stats::dist(knots)
 	ws_tx = quantile(D[D > 0], prob = 0.05, type = 1)
-	bs = ArealSpaceTimeBisquareBasis$new(knots[,1], knots[,2], knots[,3],
-	    w_s = ws_tx, w_t = 1, mc_reps = basis_mc_reps)
+	bs_ctrl = list(mc_reps = basis_mc_reps)
 
 	logger("[3/7] Preparing overlap matrix\n")
 	H = rbind(
@@ -58,24 +58,24 @@ prepare_stcos_demo = function(num_knots_sp = 200, basis_mc_reps = 200, eigval_pr
 
 	logger("[4/7] Computing areal basis on source supports\n")
 	S_full = rbind(
-	    bs$compute(acs5_2013, 2009:2013),
-		bs$compute(acs5_2014, 2010:2014),
-		bs$compute(acs5_2015, 2011:2015),
-		bs$compute(acs5_2016, 2012:2016),
-	    bs$compute(acs5_2017, 2013:2017)
+		areal_spacetime_bisquare(acs5_2013, 2009:2013, knots, ws_tx, w_t = 1, control = bs_ctrl),
+		areal_spacetime_bisquare(acs5_2014, 2010:2014, knots, ws_tx, w_t = 1, control = bs_ctrl),
+		areal_spacetime_bisquare(acs5_2015, 2011:2015, knots, ws_tx, w_t = 1, control = bs_ctrl),
+		areal_spacetime_bisquare(acs5_2016, 2012:2016, knots, ws_tx, w_t = 1, control = bs_ctrl),
+		areal_spacetime_bisquare(acs5_2017, 2013:2017, knots, ws_tx, w_t = 1, control = bs_ctrl)
 	)
 
 	logger("[5/7] Computing areal basis on fine-level support\n")
 	S_fine_full = rbind(
-		bs$compute(dom_fine, 2009),
-		bs$compute(dom_fine, 2010),
-		bs$compute(dom_fine, 2011),
-		bs$compute(dom_fine, 2012),
-		bs$compute(dom_fine, 2013),
-		bs$compute(dom_fine, 2014),
-		bs$compute(dom_fine, 2015),
-		bs$compute(dom_fine, 2016),
-		bs$compute(dom_fine, 2017)
+		areal_spacetime_bisquare(dom_fine, 2009, knots, ws_tx, w_t = 1, control = bs_ctrl),
+		areal_spacetime_bisquare(dom_fine, 2010, knots, ws_tx, w_t = 1, control = bs_ctrl),
+		areal_spacetime_bisquare(dom_fine, 2011, knots, ws_tx, w_t = 1, control = bs_ctrl),
+		areal_spacetime_bisquare(dom_fine, 2012, knots, ws_tx, w_t = 1, control = bs_ctrl),
+		areal_spacetime_bisquare(dom_fine, 2013, knots, ws_tx, w_t = 1, control = bs_ctrl),
+		areal_spacetime_bisquare(dom_fine, 2014, knots, ws_tx, w_t = 1, control = bs_ctrl),
+		areal_spacetime_bisquare(dom_fine, 2015, knots, ws_tx, w_t = 1, control = bs_ctrl),
+		areal_spacetime_bisquare(dom_fine, 2016, knots, ws_tx, w_t = 1, control = bs_ctrl),
+		areal_spacetime_bisquare(dom_fine, 2017, knots, ws_tx, w_t = 1, control = bs_ctrl)
 	)
 
 	z = c(acs5_2013$DirectEst, acs5_2014$DirectEst, acs5_2015$DirectEst,
@@ -97,10 +97,8 @@ prepare_stcos_demo = function(num_knots_sp = 200, basis_mc_reps = 200, eigval_pr
 	S_fine = S_fine_full %*% Ts
 
 	logger("[7/7] Computing K matrix\n")
-	A = adjacency_matrix(dom_fine)
-	aa = rowSums(A) + (rowSums(A) == 0)
-	W = 1/aa * A
-	Q = Diagonal(n,1) - 0.9*W
+	W = adjacency_matrix(dom_fine)
+	Q = car_precision(W, tau = 0.9, scale = TRUE)
 	Qinv = solve(Q)
 
 	K = cov_approx_blockdiag(Qinv, S_fine)

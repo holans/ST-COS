@@ -19,6 +19,7 @@
 #' @export
 adjacency_matrix = function(dom)
 {
+	stopifnot("sf" %in% class(dom))
 	adj = st_touches(dom, dom, sparse = TRUE)
 	L = length(adj)
 	counts = unlist(Map(length, adj))
@@ -28,12 +29,11 @@ adjacency_matrix = function(dom)
 	sparseMatrix(i = i, j = j, x = 1, dims = c(L, L))
 }
 
-#' @export
-adjacency_pairs = function(x, unduplicate = TRUE)
+adjacency_pairs = function(dom, unduplicate = TRUE)
 {
-	stopifnot("sf" %in% class(x))
-	n = nrow(x)
-	adj_list = st_touches(x, sparse = TRUE)
+	stopifnot("sf" %in% class(dom))
+	n = nrow(dom)
+	adj_list = st_touches(dom, sparse = TRUE)
 	lengths = unlist(Map(length, adj_list))
 	idx_row = rep(1:n, lengths)
 	idx_col = unlist(adj_list)

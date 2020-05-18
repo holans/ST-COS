@@ -10,7 +10,8 @@
 #' @param knots Spatio-temporal knots
 #' \eqn{(\bm{c}_1,g_1), \ldots, (\bm{c}_r,g_r)}
 #' for the basis. See "Details".
-#' @param w Radius for the basis.
+#' @param w_s Spatial radius for the basis.
+#' @param w_t Temporal radius for the basis.
 #' @param control A \code{list} of control arguments. See "Details".
 #'
 #' @return A sparse \eqn{n \times r} matrix whose \eqn{i}th row
