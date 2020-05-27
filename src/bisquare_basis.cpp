@@ -1,33 +1,25 @@
-// [[Rcpp::depends(RcppArmadillo)]]
-#include <RcppArmadillo.h>
-#include <vector>
-
-/** 
- * As of the last time I checked, the batch insertion method for arma::sp_mat
- * still appears to be a bit faster than initializing S to zeros and then
- * setting non-zero elements. We'll keep using batch insertion for now, and
- * revisit later...
- */
+#include <Rcpp.h>
 
 // [[Rcpp::export]]
-arma::sp_mat compute_basis_sp(const arma::mat& X, const arma::mat& cc, double w)
+Rcpp::List compute_basis_sp(const Rcpp::NumericMatrix& X,
+	const Rcpp::NumericMatrix& cc, double w)
 {
-	unsigned int N = X.n_rows;
-	unsigned int r = cc.n_rows;
+	unsigned int N = X.rows();
+	unsigned int r = cc.rows();
 
-	std::vector<unsigned int> ind_row;
-	std::vector<unsigned int> ind_col;
-	std::vector<double> vals;
+	Rcpp::IntegerVector ind_row;
+	Rcpp::IntegerVector ind_col;
+	Rcpp::NumericVector vals;
 
 	double w2 = w*w;
 
 	for (unsigned int j = 0; j < r; j++) {
-		double cc_x = cc.at(j,0);
-		double cc_y = cc.at(j,1);
+		double cc_x = cc(j,0);
+		double cc_y = cc(j,1);
 
 		for (unsigned int i = 0; i < N; i++) {
-			double ds1 = X.at(i,0) - cc_x;
-			double ds2 = X.at(i,1) - cc_y;
+			double ds1 = X(i,0) - cc_x;
+			double ds2 = X(i,1) - cc_y;
 			double norm2 = ds1*ds1 + ds2*ds2;
 
 			if (norm2 <= w2) {
@@ -39,39 +31,38 @@ arma::sp_mat compute_basis_sp(const arma::mat& X, const arma::mat& cc, double w)
 		}
 	}
 
-	// Batch insertion method
-	// Inputs are sorted in column-major order, and zeros should not be included
-	// by this point, so we set: sort_locations = false, check_for_zeros = false
-	arma::vec values(vals);
-	arma::urowvec row0(ind_row);
-	arma::urowvec row1(ind_col);
-	arma::umat locations = arma::join_cols(row0, row1);
-	arma::sp_mat S(locations, values, N, r, false, false);
-	return S;
+	// Sparse representation of result
+	return Rcpp::List::create(
+		Rcpp::Named("ind_row") = ind_row,
+		Rcpp::Named("ind_col") = ind_col,
+		Rcpp::Named("values") = vals,
+		Rcpp::Named("dim") = Rcpp::NumericVector::create(N,r)
+	);
 }
 
 // [[Rcpp::export]]
-arma::sp_mat compute_basis_spt(const arma::mat& X, const arma::mat& cc, double w_s, double w_t)
+Rcpp::List compute_basis_spt(const Rcpp::NumericMatrix& X,
+	const Rcpp::NumericMatrix& cc, double w_s, double w_t)
 {
-	unsigned int N = X.n_rows;
-	unsigned int r = cc.n_rows;
+	unsigned int N = X.rows();
+	unsigned int r = cc.rows();
 
-	std::vector<unsigned int> ind_row;
-	std::vector<unsigned int> ind_col;
-	std::vector<double> vals;
+	Rcpp::IntegerVector ind_row;
+	Rcpp::IntegerVector ind_col;
+	Rcpp::NumericVector vals;
 
 	double w2_s = w_s * w_s;
 	double w2_t = w_t * w_t;
 
 	for (unsigned int j = 0; j < r; j++) {
-		double cc_x = cc.at(j,0);
-		double cc_y = cc.at(j,1);
-		double cc_t = cc.at(j,2);
+		double cc_x = cc(j,0);
+		double cc_y = cc(j,1);
+		double cc_t = cc(j,2);
 
 		for (unsigned int i = 0; i < N; i++) {
-			double ds1 = X.at(i,0) - cc_x;
-			double ds2 = X.at(i,1) - cc_y;
-			double dt = X.at(i,2) - cc_t;
+			double ds1 = X(i,0) - cc_x;
+			double ds2 = X(i,1) - cc_y;
+			double dt = X(i,2) - cc_t;
 			double norm2_s = ds1*ds1 + ds2*ds2;
 			double norm2_t = dt*dt;
 
@@ -84,13 +75,11 @@ arma::sp_mat compute_basis_spt(const arma::mat& X, const arma::mat& cc, double w
 		}
 	}
 
-	// Batch insertion method
-	// Inputs are sorted in column-major order, and zeros should not be included
-	// by this point, so we set: sort_locations = false, check_for_zeros = false
-	arma::vec values(vals);
-	arma::urowvec row0(ind_row);
-	arma::urowvec row1(ind_col);
-	arma::umat locations = arma::join_cols(row0, row1);
-	arma::sp_mat S(locations, values, N, r, false, false);
-	return S;
+	// Sparse representation of result
+	return Rcpp::List::create(
+		Rcpp::Named("ind_row") = ind_row,
+		Rcpp::Named("ind_col") = ind_col,
+		Rcpp::Named("values") = vals,
+		Rcpp::Named("dim") = Rcpp::NumericVector::create(N,r)
+	);
 }

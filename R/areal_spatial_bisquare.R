@@ -122,9 +122,9 @@
 #' @export
 areal_spatial_bisquare = function(dom, knots, w, control = NULL)
 {
-	out = prepare_bisquare(dom, knots, type = "areal")
-	X = out$X
-	knot_mat = out$knot_mat
+	prep = prepare_bisquare(dom, knots, type = "areal")
+	X = prep$X
+	knot_mat = prep$knot_mat
 
 	r = nrow(knot_mat)
 	n = nrow(dom)
@@ -171,12 +171,16 @@ areal_spatial_bisquare = function(dom, knots, w, control = NULL)
 			# in rdomain without repeating the loop there.
 			P = rdomain(reps, dom[j,], blocksize = blocksize, itmax = reps)
 			X = st_coordinates(P)
-			B = compute_basis_sp(X, knot_mat, w)
+			out = compute_basis_sp(X, knot_mat, w)
+			B = sparseMatrix(i = out$ind_row + 1, j = out$ind_col + 1, x = out$values,
+				dims = out$dim)
 			S[j,] = colSums(B) / reps
 		} else if (method == "rect") {
 			grid_out = make_grid(dom[j,], nx, ny)
 			X = st_coordinates(grid_out$grid)
-			B = compute_basis_sp(X, knot_mat, w)
+			out = compute_basis_sp(X, knot_mat, w)
+			B = sparseMatrix(i = out$ind_row + 1, j = out$ind_col + 1, x = out$values,
+				dims = out$dim)
 			S[j,] = colSums(B) * grid_out$dx * grid_out$dy / dom_area[j]
 		} else {
 			stop("Unrecongnized method. Use `mc` or 'rect'")

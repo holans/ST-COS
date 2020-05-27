@@ -25,7 +25,7 @@
 #' VA: American Statistical Association, pp.1524-1540.
 #' 
 #' Andrew M. Raim, Scott H. Holan, Jonathan R. Bradley, and Christopher K.
-#' Wikle (2019+). An R package for spatio-temporal change of support.
+#' Wikle (2020+). Spatio-Temporal Change of Support Modeling with R.
 #' \url{https://arxiv.org/abs/1904.12092}.
 #' 
 #' @docType package

@@ -1,7 +1,7 @@
 Package: stcos
 Type: Package
 Title: Space-Time Change of Support
-Version: 0.2.2
+Version: 0.3.0
 Authors@R: c(
 	person(c("Andrew", "M."), "Raim", email = "andrew.raim@gmail.com", role = c("aut", "cre")),
 	person(c("Scott", "H."), "Holan", role = c("aut", "res")),

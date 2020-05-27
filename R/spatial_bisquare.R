@@ -77,6 +77,8 @@
 #' @export
 spatial_bisquare = function(dom, knots, w)
 {
-	out = prepare_bisquare(dom, knots, type = "point")
-	compute_basis_sp(out$X, out$knot_mat, w)
+	prep = prepare_bisquare(dom, knots, type = "point")
+	out = compute_basis_sp(prep$X, prep$knot_mat, w)
+	sparseMatrix(i = out$ind_row + 1, j = out$ind_col + 1, x = out$values,
+		dims = out$dim)
 }
