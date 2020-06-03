@@ -1,4 +1,12 @@
 #include <Rcpp.h>
+#include <vector>
+
+/*
+ * Note: Rcpp Vectors can be used directly for ind_row, ind_col, and vals,
+ * but their capacity management seemed to be inefficient when doing many
+ * push_backs. This may have been an issue with something in my setup,
+ * and not necessarily Rcpp...
+ */
 
 // [[Rcpp::export]]
 Rcpp::List compute_basis_sp(const Rcpp::NumericMatrix& X,
@@ -7,9 +15,9 @@ Rcpp::List compute_basis_sp(const Rcpp::NumericMatrix& X,
 	unsigned int N = X.rows();
 	unsigned int r = cc.rows();
 
-	Rcpp::IntegerVector ind_row;
-	Rcpp::IntegerVector ind_col;
-	Rcpp::NumericVector vals;
+	std::vector<unsigned int> ind_row;
+	std::vector<unsigned int> ind_col;
+	std::vector<double> vals;
 
 	double w2 = w*w;
 
@@ -47,9 +55,9 @@ Rcpp::List compute_basis_spt(const Rcpp::NumericMatrix& X,
 	unsigned int N = X.rows();
 	unsigned int r = cc.rows();
 
-	Rcpp::IntegerVector ind_row;
-	Rcpp::IntegerVector ind_col;
-	Rcpp::NumericVector vals;
+	std::vector<unsigned int> ind_row;
+	std::vector<unsigned int> ind_col;
+	std::vector<double> vals;
 
 	double w2_s = w_s * w_s;
 	double w2_t = w_t * w_t;
