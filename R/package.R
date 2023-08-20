@@ -30,4 +30,5 @@
 #' 
 #' @docType package
 #' @name stcos
+#' @aliases stcos-package
 NULL

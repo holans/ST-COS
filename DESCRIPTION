@@ -1,7 +1,7 @@
 Package: stcos
 Type: Package
 Title: Space-Time Change of Support
-Version: 0.3.0
+Version: 0.3.1
 Authors@R: c(
 	person(c("Andrew", "M."), "Raim", email = "andrew.raim@gmail.com", role = c("aut", "cre")),
 	person(c("Scott", "H."), "Holan", role = c("aut", "res")),
@@ -21,6 +21,6 @@ Description: Spatio-temporal change of support (STCOS) methods are designed for 
 License: GPL (>= 2)
 Depends: R (>= 3.3), Rcpp, Matrix, sf, dplyr
 LinkingTo: Rcpp, RcppArmadillo
-RoxygenNote: 7.1.0
+RoxygenNote: 7.2.3
 Encoding: UTF-8
 LazyData: true

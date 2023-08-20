@@ -2,6 +2,5 @@
 *.o
 *.so
 .Rhistory
-man
 stcos.pdf
 .Rproj.user
