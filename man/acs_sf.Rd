@@ -43,9 +43,10 @@ An \code{sf} object with ACS estimates for:
 }
 }
 \details{
-Shapefiles were gathered via the \code{tigris} package, and ACS estimates were
-downloaded from the American FactFinder \url{http://factfinder.census.gov}.
-Data were assembled on 2/28/2019. See \code{data-prep-aff.R} in the Columbia
-example code for details.
+This dataset was assembled using shapefiles from the \code{tigris} package
+and ACS estimates from the American FactFinder website on 2/28/2019.
+See \code{data-prep-aff.R} in the Columbia example code for details.
+American FactFinder has since been deprecated, and similar data are
+available at \url{http://data.census.gov}.
 }
 \keyword{datasets}

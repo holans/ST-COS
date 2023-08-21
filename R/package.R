@@ -17,7 +17,7 @@
 #' Jonathan R. Bradley, Christopher K. Wikle, and Scott H. Holan (2015).
 #' Spatio-temporal change of support with application to American Community
 #' Survey multi-year period estimates. STAT 4 pp.255-270.
-#' \url{https://doi.org/10.1002/sta4.94}.
+#' \doi{10.1002/sta4.94}.
 #'
 #' Andrew M. Raim, Scott H. Holan, Jonathan R. Bradley, and Christopher K.
 #' Wikle (2017). A model selection study for spatio-temporal change of

@@ -14,3 +14,4 @@ stan
 ^\.Rproj\.user$
 ^inst/note
 ^columbia-files$
+^LICENSE\.md$

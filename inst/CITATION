@@ -1,24 +1,18 @@
 citHeader("To cite stcos in publications use:")
 
-citEntry(entry = "unpublished",
+bibentry(bibtype = "article",
 	title = "Spatio-Temporal Change of Support Modeling with {R}",
-	author = personList(
-		as.person("Andrew M. Raim"),
-		as.person("Scott H. Holan"),
-		as.person("Jonathan R. Bradley"),
-		as.person("Christopher K. Wikle")
+	author = c(
+		person(c("Andrew M."), "Raim"),
+		person(c("Scott H."), "Holan"),
+		person(c("Jonathan R."), "Bradley"),
+		person(c("Christopher K."), "Wikle")
 	),
-	year = "2019",
-	note = "(Submitted)",
-	eprint = "arXiv:1904.12092",
-	primaryClass = "stat.CO",
-	url = "https://arxiv.org/abs/1904.12092",
-	textVersion = paste(
-		"Andrew M. Raim, Scott H. Holan, Jonathan R. Bradley,
-		and Christopher K. Wikle (2019).",
-		"Spatio-Temporal Change of Support Modeling with R.",
-		"arXiv:1904.12092.",
-		"URL https://arxiv.org/abs/1904.12092."
-	)
+	journal = "Computational Statistics",
+	year = "2021",
+	volume = "36",
+	number = "1",
+	pages = "749-780",
+	preprint = "https://arxiv.org/abs/1904.12092",
+	url = "https://dx.doi.org/10.1007/s00180-020-01029-4"
 )
-

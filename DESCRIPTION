@@ -18,7 +18,7 @@ Description: Spatio-temporal change of support (STCOS) methods are designed for 
 	particular, a parsimonious class of STCOS models supporting Gaussian outcomes was introduced
 	by Bradley, Wikle, and Holan <doi:10.1002/sta4.94>. The 'stcos' package contains tools which
 	facilitate use of STCOS models.
-License: GPL (>= 2)
+License: MIT + file LICENSE
 Depends: R (>= 3.3), Rcpp, Matrix, sf, dplyr
 LinkingTo: Rcpp, RcppArmadillo
 RoxygenNote: 7.2.3
