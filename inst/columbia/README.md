@@ -1,4 +1,5 @@
 The following files are included in this directory:
+
 - 00-data-prep-aff.R: Assemble analysis datasets which have been downloaded
   from the American FactFinder website. 
 - 00-data-prep-api.R: Assemble analysis datasets from the Census Data API.
@@ -22,6 +23,7 @@ produce similar results to the article <arXiv:1904.12092>.
 
 The following R packages are needed as prerequisites to run the code in this
 directory:
+
 - coda
 - dplyr
 - fields

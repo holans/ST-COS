@@ -49,6 +49,7 @@
 #' projection than coordinates based on a globe representation.
 #' 
 #' @examples
+#' library(sf)
 #' set.seed(1234)
 #' 
 #' # Create knot points
