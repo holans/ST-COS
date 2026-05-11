@@ -41,6 +41,7 @@ Useful links:
 
 Authors:
 \itemize{
+  \item Andrew M. Raim \email{andrew.raim@gmail.com}
   \item Scott H. Holan [researcher]
   \item Jonathan R. Bradley [researcher]
   \item Christopher K. Wikle [researcher]

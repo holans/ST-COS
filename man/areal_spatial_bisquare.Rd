@@ -132,9 +132,9 @@ lines(coords, col = "red")
 
 }
 \seealso{
-Other bisquare: 
-\code{\link{areal_spacetime_bisquare}()},
-\code{\link{spacetime_bisquare}()},
-\code{\link{spatial_bisquare}()}
+Other bisquare:
+\code{\link[=areal_spacetime_bisquare]{areal_spacetime_bisquare()}},
+\code{\link[=spacetime_bisquare]{spacetime_bisquare()}},
+\code{\link[=spatial_bisquare]{spatial_bisquare()}}
 }
 \concept{bisquare}
