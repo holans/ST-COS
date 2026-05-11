@@ -28,7 +28,6 @@
 #' Wikle (2020+). Spatio-Temporal Change of Support Modeling with R.
 #' \url{https://arxiv.org/abs/1904.12092}.
 #' 
-#' @docType package
 #' @name stcos
 #' @aliases stcos-package
-NULL
+"_PACKAGE"

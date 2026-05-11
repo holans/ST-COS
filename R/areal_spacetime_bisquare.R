@@ -90,6 +90,7 @@
 #' }
 #' 
 #' @examples
+#' library(sf)
 #' set.seed(1234)
 #' 
 #' # Create knot points

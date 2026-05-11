@@ -103,6 +103,7 @@ is 1.2.
 }
 }
 \examples{
+library(sf)
 set.seed(1234)
 
 # Create knot points

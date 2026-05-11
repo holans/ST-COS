@@ -27,3 +27,21 @@ Andrew M. Raim, Scott H. Holan, Jonathan R. Bradley, and Christopher K.
 Wikle (2020+). Spatio-Temporal Change of Support Modeling with R.
 \url{https://arxiv.org/abs/1904.12092}.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/holans/ST-COS}
+}
+
+}
+\author{
+\strong{Maintainer}: Andrew M. Raim \email{andrew.raim@gmail.com}
+
+Authors:
+\itemize{
+  \item Scott H. Holan [researcher]
+  \item Jonathan R. Bradley [researcher]
+  \item Christopher K. Wikle [researcher]
+}
+
+}

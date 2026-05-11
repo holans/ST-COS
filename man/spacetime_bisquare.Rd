@@ -60,6 +60,7 @@ Euclidean space, this basis is more suitable for coordinates from a map
 projection than coordinates based on a globe representation.
 }
 \examples{
+library(sf)
 set.seed(1234)
 
 # Create knot points
