@@ -84,7 +84,5 @@
 spacetime_bisquare = function(dom, knots, w_s, w_t)
 {
 	prep = prepare_bisquare(dom, knots, type = "point")
-	out = compute_basis_spt(prep$X, prep$knot_mat, w_s, w_t)
-	sparseMatrix(i = out$ind_row + 1, j = out$ind_col + 1, x = out$values,
-		dims = out$dim)
+	compute_basis_spt(prep$X, prep$knot_mat, w_s, w_t)
 }

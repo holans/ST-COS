@@ -1,19 +1,11 @@
-#include <Rcpp.h>
+#include <RcppArmadillo.h>
 #include <vector>
 
-/*
- * Note: Rcpp Vectors can be used directly for ind_row, ind_col, and vals,
- * but their capacity management seemed to be inefficient when doing many
- * push_backs. This may have been an issue with something in my setup,
- * and not necessarily Rcpp...
- */
-
 // [[Rcpp::export]]
-Rcpp::List compute_basis_sp(const Rcpp::NumericMatrix& X,
-	const Rcpp::NumericMatrix& cc, double w)
+arma::sp_mat compute_basis_sp(const arma::mat& X, const arma::mat& cc, double w)
 {
-	unsigned int N = X.rows();
-	unsigned int r = cc.rows();
+	unsigned int N = X.n_rows;
+	unsigned int r = cc.n_rows;
 
 	std::vector<unsigned int> ind_row;
 	std::vector<unsigned int> ind_col;
@@ -39,21 +31,21 @@ Rcpp::List compute_basis_sp(const Rcpp::NumericMatrix& X,
 		}
 	}
 
-	// Sparse representation of result
-	return Rcpp::List::create(
-		Rcpp::Named("ind_row") = ind_row,
-		Rcpp::Named("ind_col") = ind_col,
-		Rcpp::Named("values") = vals,
-		Rcpp::Named("dim") = Rcpp::NumericVector::create(N,r)
-	);
+	// Batch insertion constructor for sparse matrix
+	arma::umat loc(2, vals.size());
+	loc.row(0) = arma::conv_to<arma::urowvec>::from(ind_row);
+	loc.row(1) = arma::conv_to<arma::urowvec>::from(ind_col);
+	arma::sp_mat out(loc, arma::vec(vals), N, r);
+
+	return out;
 }
 
 // [[Rcpp::export]]
-Rcpp::List compute_basis_spt(const Rcpp::NumericMatrix& X,
-	const Rcpp::NumericMatrix& cc, double w_s, double w_t)
+arma::sp_mat compute_basis_spt(const arma::mat& X, const arma::mat& cc,
+	double w_s, double w_t)
 {
-	unsigned int N = X.rows();
-	unsigned int r = cc.rows();
+	unsigned int N = X.n_rows;
+	unsigned int r = cc.n_rows;
 
 	std::vector<unsigned int> ind_row;
 	std::vector<unsigned int> ind_col;
@@ -83,11 +75,11 @@ Rcpp::List compute_basis_spt(const Rcpp::NumericMatrix& X,
 		}
 	}
 
-	// Sparse representation of result
-	return Rcpp::List::create(
-		Rcpp::Named("ind_row") = ind_row,
-		Rcpp::Named("ind_col") = ind_col,
-		Rcpp::Named("values") = vals,
-		Rcpp::Named("dim") = Rcpp::NumericVector::create(N,r)
-	);
+	// Batch insertion constructor for sparse matrix
+	arma::umat loc(2, vals.size());
+	loc.row(0) = arma::conv_to<arma::urowvec>::from(ind_row);
+	loc.row(1) = arma::conv_to<arma::urowvec>::from(ind_col);
+	arma::sp_mat out(loc, arma::vec(vals), N, r);
+
+	return out;
 }
