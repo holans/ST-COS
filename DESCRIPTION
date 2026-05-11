@@ -21,7 +21,7 @@ Description: Spatio-temporal change of support (STCOS) methods are designed for
     which facilitate use of STCOS models.
 License: MIT + file LICENSE
 Depends:
-    R (>= 3.3),
+    R (>= 3.5),
 Imports:
     Rcpp,
     Matrix,
