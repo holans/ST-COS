@@ -11,7 +11,8 @@
 #' @importFrom dplyr mutate row_number %>%
 #' 
 #' @details Supports building and running STCOS and related models. A guide
-#' on package use is given in <arXiv:1904.12092>.
+#' on package use is given by Raim, Holan, Bradley, and Wikle (2021)
+#' <doi:10.1007/s00180-020-01029-4>.
 #' 
 #' @references
 #' Jonathan R. Bradley, Christopher K. Wikle, and Scott H. Holan (2015).
@@ -25,8 +26,9 @@
 #' VA: American Statistical Association, pp.1524-1540.
 #' 
 #' Andrew M. Raim, Scott H. Holan, Jonathan R. Bradley, and Christopher K.
-#' Wikle (2020+). Spatio-Temporal Change of Support Modeling with R.
-#' \url{https://arxiv.org/abs/1904.12092}.
+#' Wikle (2021). Spatio-Temporal Change of Support Modeling with R.
+#' Computational Statistics 36, 749-780
+#' \doi{10.1007/s00180-020-01029-4}.
 #' 
 #' @name stcos
 #' @aliases stcos-package
