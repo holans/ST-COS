@@ -190,9 +190,7 @@ areal_spacetime_bisquare = function(dom, period, knots, w_s, w_t, control = NULL
 			X_s = st_coordinates(P)
 			for (t in seq_along(period)) {
 				X = cbind(X_s, period[t])
-				out = compute_basis_spt(X, knot_mat, w_s, w_t)
-				B = sparseMatrix(i = out$ind_row + 1, j = out$ind_col + 1, x = out$values,
-					dims = out$dim)
+				B = compute_basis_spt(X, knot_mat, w_s, w_t)
 				s_j = s_j + colSums(B) / reps
 			}
 		} else if (method == "rect") {
@@ -200,9 +198,7 @@ areal_spacetime_bisquare = function(dom, period, knots, w_s, w_t, control = NULL
 			X_s = st_coordinates(grid_out$grid)
 			for (t in seq_along(period)) {
 				X = cbind(X_s, period[t])
-				out = compute_basis_spt(X, knot_mat, w_s, w_t)
-				B = sparseMatrix(i = out$ind_row + 1, j = out$ind_col + 1, x = out$values,
-					dims = out$dim)
+				B = compute_basis_spt(X, knot_mat, w_s, w_t)
 				s_j = s_j + colSums(B) * grid_out$dx * grid_out$dy / dom_area[j]
 			}
 		} else {

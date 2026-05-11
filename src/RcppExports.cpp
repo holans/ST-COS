@@ -12,26 +12,26 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // compute_basis_sp
-Rcpp::List compute_basis_sp(const Rcpp::NumericMatrix& X, const Rcpp::NumericMatrix& cc, double w);
+arma::sp_mat compute_basis_sp(const arma::mat& X, const arma::mat& cc, double w);
 RcppExport SEXP _stcos_compute_basis_sp(SEXP XSEXP, SEXP ccSEXP, SEXP wSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Rcpp::NumericMatrix& >::type X(XSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::NumericMatrix& >::type cc(ccSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type cc(ccSEXP);
     Rcpp::traits::input_parameter< double >::type w(wSEXP);
     rcpp_result_gen = Rcpp::wrap(compute_basis_sp(X, cc, w));
     return rcpp_result_gen;
 END_RCPP
 }
 // compute_basis_spt
-Rcpp::List compute_basis_spt(const Rcpp::NumericMatrix& X, const Rcpp::NumericMatrix& cc, double w_s, double w_t);
+arma::sp_mat compute_basis_spt(const arma::mat& X, const arma::mat& cc, double w_s, double w_t);
 RcppExport SEXP _stcos_compute_basis_spt(SEXP XSEXP, SEXP ccSEXP, SEXP w_sSEXP, SEXP w_tSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const Rcpp::NumericMatrix& >::type X(XSEXP);
-    Rcpp::traits::input_parameter< const Rcpp::NumericMatrix& >::type cc(ccSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type X(XSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type cc(ccSEXP);
     Rcpp::traits::input_parameter< double >::type w_s(w_sSEXP);
     Rcpp::traits::input_parameter< double >::type w_t(w_tSEXP);
     rcpp_result_gen = Rcpp::wrap(compute_basis_spt(X, cc, w_s, w_t));
